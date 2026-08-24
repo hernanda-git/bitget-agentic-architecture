@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Fully Agentic Bitget Architecture</title>
+<style>body{margin:0;background:#020617;color:#e2e8f0;font:14px system-ui;padding:28px}h1{color:#67e8f9}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:center;max-width:1200px}.box{padding:20px 14px;border:1px solid #34d399;border-radius:10px;background:#064e3b;text-align:center;min-height:48px}.external{border-color:#94a3b8;background:#1e293b}.ai{border-color:#a78bfa;background:#4c1d95}.security{border-color:#fb7185;background:#881337}.bus{grid-column:1/5;border-color:#fb923c;background:#78350f}.arrow{text-align:center;color:#67e8f9;font-size:24px}.note{max-width:1200px;margin-top:24px;border-left:3px solid #fb7185;padding:12px 16px;background:#0f172a}</style>
+<h1>Fully Agentic Trading System</h1><p>No trader signal. No per-trade human approval. Deterministic policy remains the authority.</p>
+<div class="grid"><div class="box external">Bitget Market REST / WS</div><div class="arrow">→</div><div class="box">Market Data Gateway</div><div class="arrow">→</div>
+<div class="box">Feature + Context Builder</div><div class="arrow">→</div><div class="box ai">AI Provider Adapter<br><small>Anthropic / OpenAI / Local</small></div><div class="arrow">→</div>
+<div class="box ai">Structured Decision</div><div class="arrow">→</div><div class="box security">Schema + Policy Engine</div><div class="arrow">→</div><div class="box security">Risk / Exposure / Kill Switch</div><div class="arrow">→</div>
+<div class="box bus">Approved Execution Intent, idempotent and time-bounded</div>
+<div class="box">Bitget Execution Adapter</div><div class="arrow">→</div><div class="box">Fill + Protection Read-back</div><div class="arrow">→</div><div class="box">Reconciler</div><div class="arrow">→</div>
+<div class="box">Append-only Ledger + Metrics</div></div>
+<div class="note"><b>Hard boundary:</b> the model never receives API secrets, never edits policy, never withdraws funds, and never bypasses protection verification. Provider failure becomes HOLD or PARK, never a guessed order.</div>
+</html>

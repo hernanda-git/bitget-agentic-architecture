@@ -1,0 +1,48 @@
+mode: shadow
+dry_run: true
+testnet: true
+kill_switch: true
+withdrawals_enabled: false
+
+provider:
+  name: anthropic
+  model: claude-sonnet
+  base_url: https://api.anthropic.com
+  timeout_seconds: 8
+  max_retries: 1
+  circuit_breaker_failures: 3
+
+market_data:
+  venue: bitget
+  product_type: SUSDT-FUTURES
+  symbols: [BTCUSDT, ETHUSDT]
+  max_snapshot_age_seconds: 3
+  required_fields: [mark_price, bid, ask, candle_1m, candle_5m, funding_rate]
+
+policy:
+  allow_symbols: [BTCUSDT, ETHUSDT]
+  max_leverage: 3
+  max_position_notional_usd: 25
+  max_concurrent_positions: 1
+  max_daily_loss_usd: 2
+  max_drawdown_pct: 5
+  max_slippage_bps: 50
+  max_spread_bps: 20
+  max_order_age_seconds: 10
+  max_orders_per_minute: 2
+  require_stop_loss: true
+  require_take_profit: true
+  kill_switch: true
+
+execution:
+  venue: bitget
+  dry_run: true
+  testnet: true
+  order_type_default: limit
+  withdrawals_enabled: false
+  allowed_endpoints: [ticker, candles, funding, orderbook, positions, open_orders, place_order, cancel_order]
+
+observability:
+  ledger: sqlite:///data/agentic.sqlite3
+  display_timezone: Asia/Jakarta
+  json_logs: true

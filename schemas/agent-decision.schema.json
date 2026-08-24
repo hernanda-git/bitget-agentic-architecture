@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AutonomousAgentDecision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["decision_id", "action", "symbol", "side", "entry", "stop_loss", "take_profit", "leverage", "max_notional_usd", "valid_until_ms", "thesis", "invalidation"],
+  "properties": {
+    "decision_id": {"type": "string", "minLength": 8, "maxLength": 128},
+    "action": {"enum": ["ENTER", "EXIT", "REDUCE", "HOLD", "CANCEL"]},
+    "symbol": {"type": "string", "pattern": "^[A-Z0-9]{3,20}USDT$"},
+    "side": {"enum": ["BUY", "SELL", "NONE"]},
+    "entry": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "stop_loss": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "take_profit": {"type": ["number", "null"], "exclusiveMinimum": 0},
+    "leverage": {"type": "number", "exclusiveMinimum": 0, "maximum": 100},
+    "max_notional_usd": {"type": "number", "exclusiveMinimum": 0},
+    "valid_until_ms": {"type": "integer", "minimum": 0},
+    "thesis": {"type": "string", "maxLength": 2000},
+    "invalidation": {"type": "string", "maxLength": 1000}
+  }
+}
