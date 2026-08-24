@@ -37,9 +37,10 @@ def size_for_risk(*, side: str, entry: float, stop_loss: float, requested_risk_u
         raise SizingError("invalid venue limits")
     risk_per_unit = abs(entry - stop_loss)
     requested_qty = requested_risk_usd / risk_per_unit
-    target_notional = requested_qty * entry
-    capped = target_notional > max_notional_usd
-    target_notional = min(max(target_notional, min_notional_usd), max_notional_usd)
+    requested_notional = requested_qty * entry
+    capped = requested_notional > max_notional_usd
+    raised_to_minimum = requested_notional < min_notional_usd
+    target_notional = min(max(requested_notional, min_notional_usd), max_notional_usd)
     quantity = _floor_step(target_notional / entry, quantity_step)
     if quantity <= 0:
         raise SizingError("venue quantity step leaves no valid quantity")
@@ -47,4 +48,4 @@ def size_for_risk(*, side: str, entry: float, stop_loss: float, requested_risk_u
     if notional < min_notional_usd:
         raise SizingError("quantity step cannot satisfy minimum notional")
     return SizingResult(quantity, notional, quantity * risk_per_unit, requested_risk_usd,
-                        capped, notional > requested_risk_usd / risk_per_unit * entry)
+                        capped, raised_to_minimum)

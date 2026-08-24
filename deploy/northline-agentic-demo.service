@@ -1,0 +1,21 @@
+[Unit]
+Description=Northline standalone agentic demo (shadow by default)
+After=network.target
+
+[Service]
+Type=simple
+User=%u
+WorkingDirectory=/root/bitget-agentic-architecture
+EnvironmentFile=-/root/bitget-agentic-architecture/.env
+Environment=DEMO_BIND_HOST=127.0.0.1
+Environment=DEMO_EXECUTION_CONFIRM=
+ExecStart=/usr/bin/env python3 /root/bitget-agentic-architecture/scripts/northline_agentic_demo.py --mode shadow --cycles 1 --ledger /root/bitget-agentic-architecture/data/northline-agentic-demo.sqlite3 --reports-dir /root/bitget-agentic-architecture/reports
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/root/bitget-agentic-architecture/data /root/bitget-agentic-architecture/reports
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://northline.local/schemas/runtime-event.schema.json",
+  "title": "Northline runtime event",
+  "type": "object",
+  "required": ["event_type", "cycle_id", "trace_id", "created_ms", "mode", "product_type", "symbol", "payload_hash", "schema_version", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "event_type": {"type": "string", "enum": ["MARKET_OBSERVED", "CONTEXT_BUILT", "AGENT_DECISION", "DECISION_REJECTED", "INTENT_APPROVED", "ORDER_SUBMITTED", "ORDER_ACKNOWLEDGED", "FILL_OBSERVED", "PROTECTION_REQUESTED", "PROTECTION_VERIFIED", "PROTECTION_FAILED", "POSITION_RECONCILED", "RECONCILIATION_DRIFT", "CIRCUIT_BREAKER", "KILL_SWITCH", "CYCLE_TERMINAL"]},
+    "cycle_id": {"type": "string", "minLength": 1},
+    "trace_id": {"type": "string", "minLength": 1},
+    "created_ms": {"type": "integer", "minimum": 1},
+    "mode": {"type": "string", "minLength": 1},
+    "product_type": {"type": "string", "minLength": 1},
+    "symbol": {"type": "string", "minLength": 1},
+    "payload_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "schema_version": {"type": "integer", "minimum": 1},
+    "payload": {"type": "object"}
+  }
+}

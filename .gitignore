@@ -6,3 +6,5 @@ __pycache__/
 *.pem
 data/*.sqlite3
 logs/
+reports/*.json
+reports/*.md
