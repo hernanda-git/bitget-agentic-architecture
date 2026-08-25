@@ -53,6 +53,12 @@ class Policy:
     require_stop_loss: bool = True
     require_take_profit: bool = True
     kill_switch: bool = True
+    requested_risk_usd: float = 1.0
+    quantity_step: float = 0.001
+    min_notional_usd: float = 1.0
+    max_total_notional_usd: float = 25.0
+    available_equity_usd: float = 10000.0
+    contract_multiplier: float = 1.0
 
 
 def validate_decision(decision: AgentDecision, market: MarketSnapshot, policy: Policy) -> tuple[bool, str]:

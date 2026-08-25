@@ -13,6 +13,7 @@ from src.market.models import MarketSnapshot
 from src.providers.circuit import ProviderCircuit
 from src.providers.ports import AgentProvider, ProviderResponse
 from src.reconcile.engine import reconcile_positions, verify_protection
+from src.policy.sizing import size_for_risk
 
 
 class AutonomousPaperRuntime:
@@ -70,8 +71,17 @@ class AutonomousPaperRuntime:
         assert decision.entry is not None
         assert decision.stop_loss is not None
         assert decision.take_profit is not None
+        sizing = size_for_risk(side=decision.side, entry=decision.entry, stop_loss=decision.stop_loss,
+                               requested_risk_usd=self.policy.requested_risk_usd,
+                               min_notional_usd=max(self.policy.min_notional_usd, self.exchange.venue.minimum_notional),
+                               max_notional_usd=min(self.policy.max_position_notional_usd, decision.max_notional_usd),
+                               quantity_step=max(self.policy.quantity_step, self.exchange.venue.quantity_step),
+                               contract_multiplier=self.policy.contract_multiplier,
+                               available_equity_usd=self.policy.available_equity_usd,
+                               existing_gross_notional_usd=sum(p.quantity * p.entry_price * self.exchange.venue.contract_multiplier for p in self.exchange.positions.values()),
+                               max_total_notional_usd=self.policy.max_total_notional_usd)
         oid = "paper-" + cycle_id[:24]
-        fill = self.exchange.place_order(oid, decision.symbol, decision.side, 1, decision.entry)
+        fill = self.exchange.place_order(oid, decision.symbol, decision.side, sizing.quantity, decision.entry)
         self._append("INTENT_APPROVED", {"cycle_id": cycle_id, "client_order_id": oid})
         self._append("ORDER_SUBMITTED", {"cycle_id": cycle_id, "client_order_id": oid})
         self._append("FILL_OBSERVED", {"cycle_id": cycle_id, "client_order_id": oid, "symbol": decision.symbol,

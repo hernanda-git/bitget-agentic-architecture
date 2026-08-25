@@ -8,10 +8,12 @@ import uuid
 from pathlib import Path
 from typing import Any, Mapping
 
+from src.risk.portfolio import PortfolioSnapshot
+
 from .events import EVENT_TYPES, LEGACY_EVENT_TYPES, RuntimeEvent
 
 REQUIRED = ("cycle_id", "trace_id", "created_ms", "mode", "product_type", "symbol", "payload_hash", "schema_version")
-TABLES = ("cycles", "events", "orders", "fills", "positions", "protection", "reconciliation", "runtime_state")
+TABLES = ("cycles", "events", "orders", "fills", "positions", "protection", "reconciliation", "runtime_state", "portfolio_snapshots")
 
 
 def _now() -> int:
@@ -51,6 +53,7 @@ class EventLedger:
                 CREATE TABLE IF NOT EXISTS protection (id INTEGER PRIMARY KEY AUTOINCREMENT, event_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
                 CREATE TABLE IF NOT EXISTS reconciliation (id INTEGER PRIMARY KEY AUTOINCREMENT, event_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
                 CREATE TABLE IF NOT EXISTS runtime_state (key TEXT PRIMARY KEY, value_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
+                CREATE TABLE IF NOT EXISTS portfolio_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, snapshot_json TEXT NOT NULL, created_ms INTEGER NOT NULL, cycle_id TEXT NOT NULL DEFAULT '', trace_id TEXT NOT NULL DEFAULT '', mode TEXT NOT NULL DEFAULT 'paper', product_type TEXT NOT NULL DEFAULT 'SUSDT-FUTURES', symbol TEXT NOT NULL DEFAULT '', payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1);
             """)
             for table in TABLES:
                 columns = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
@@ -187,5 +190,15 @@ class EventLedger:
     def latest_protection_status(self): return self._latest("protection")
     def latest_reconciliation_status(self): return self._latest("reconciliation")
     def active_breakers(self): return [e for e in self.all() if e["event_type"] in {"CIRCUIT_BREAKER", "RISK_BREAKER_OPEN"} and e["payload"].get("status", "OPEN") != "CLOSED"]
+    def save_portfolio_snapshot(self, snapshot: PortfolioSnapshot) -> None:
+        with self._connect() as db:
+            db.execute("INSERT INTO portfolio_snapshots(snapshot_json,created_ms) VALUES(?,?)",
+                       (json.dumps(snapshot.to_dict(), sort_keys=True), _now()))
+
+    def latest_portfolio_snapshot(self) -> PortfolioSnapshot | None:
+        with self._connect() as db:
+            row = db.execute("SELECT snapshot_json FROM portfolio_snapshots ORDER BY id DESC LIMIT 1").fetchone()
+        return PortfolioSnapshot.from_dict(json.loads(row[0])) if row else None
+
     def runtime_status(self):
-        return {"latest_cycle": self.latest_cycle(), "disposition_counts": self.disposition_counts(), "open_positions": self.open_positions(), "closed_trades": self.closed_trades(), "realized_pnl": self.realized_pnl(), "fees": self.fees(), "funding": self.funding(), "protection": self.latest_protection_status(), "reconciliation": self.latest_reconciliation_status(), "active_breakers": self.active_breakers(), "recent_events": self.recent_events()}
+        return {"latest_cycle": self.latest_cycle(), "disposition_counts": self.disposition_counts(), "open_positions": self.open_positions(), "closed_trades": self.closed_trades(), "realized_pnl": self.realized_pnl(), "fees": self.fees(), "funding": self.funding(), "protection": self.latest_protection_status(), "reconciliation": self.latest_reconciliation_status(), "active_breakers": self.active_breakers(), "recent_events": self.recent_events(), "portfolio": self.latest_portfolio_snapshot()}

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import FrozenSet
+import math
 
 from src.agentic_engine import Action, AgentDecision, MarketSnapshot
 
@@ -19,12 +19,26 @@ class SemanticPolicy:
     max_funding_bps: float = 100.0
     max_fee_bps: float = 100.0
     max_leverage: float = 10.0
-    min_notional_usd: float = 0.0
-    max_notional_usd: float = float("inf")
-    max_daily_loss_usd: float = float("inf")
-    max_drawdown_pct: float = 100.0
-    max_concurrent_positions: int = 100
+    min_notional_usd: float = 1.0
+    max_notional_usd: float = 1000.0
+    max_total_notional_usd: float = 2000.0
+    max_correlated_notional_usd: float = 1500.0
+    max_symbol_notional_usd: float = 1000.0
+    max_daily_loss_usd: float = 100.0
+    max_drawdown_pct: float = 20.0
+    max_concurrent_positions: int = 10
+    max_orders_per_minute: int = 60
     max_spread_bps: float = 20.0
+
+    def __post_init__(self) -> None:
+        for name in ("max_leverage", "min_notional_usd", "max_notional_usd", "max_total_notional_usd",
+                     "max_correlated_notional_usd", "max_symbol_notional_usd",
+                     "max_daily_loss_usd", "max_drawdown_pct", "max_spread_bps"):
+            value = float(getattr(self, name))
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be finite and positive")
+        if self.max_concurrent_positions <= 0 or self.max_orders_per_minute <= 0:
+            raise ValueError("count limits must be positive")
 
 
 @dataclass(frozen=True)
@@ -40,6 +54,10 @@ class SemanticState:
     slippage_bps: float = 0.0
     funding_bps: float = 0.0
     fee_bps: float = 0.0
+    gross_notional: float = 0.0
+    net_notional: float = 0.0
+    correlated_notional: float = 0.0
+    symbol_notional: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -116,6 +134,14 @@ def validate_semantic(decision: AgentDecision, market: MarketSnapshot,
         return _reject("DRAWDOWN_LIMIT")
     if state.concurrent_positions >= policy.max_concurrent_positions:
         return _reject("CONCURRENT_POSITIONS_LIMIT")
+    if state.gross_notional >= policy.max_total_notional_usd:
+        return _reject("GROSS_EXPOSURE_LIMIT")
+    if abs(state.net_notional) >= policy.max_total_notional_usd:
+        return _reject("NET_EXPOSURE_LIMIT")
+    if state.correlated_notional >= policy.max_correlated_notional_usd:
+        return _reject("CORRELATED_EXPOSURE_LIMIT")
+    if state.symbol_notional >= policy.max_symbol_notional_usd:
+        return _reject("SYMBOL_CONCENTRATION_LIMIT")
     if decision.symbol in state.existing_symbols:
         return _reject("DUPLICATE_EXPOSURE")
     if not state.protection_verified:

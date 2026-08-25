@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+import math
 
 
 class ConfigError(ValueError):
@@ -21,6 +22,25 @@ class ProviderConfig:
 
 
 @dataclass(frozen=True)
+class RiskLimits:
+    max_daily_loss_usd: float = 2.0
+    max_drawdown_pct: float = 5.0
+    max_position_notional_usd: float = 25.0
+    max_total_notional_usd: float = 25.0
+    max_concurrent_positions: int = 1
+    max_leverage: float = 3.0
+    max_orders_per_minute: int = 2
+
+    def __post_init__(self) -> None:
+        for name in ("max_daily_loss_usd", "max_drawdown_pct", "max_position_notional_usd", "max_total_notional_usd", "max_leverage"):
+            value = float(getattr(self, name))
+            if not math.isfinite(value) or value <= 0:
+                raise ConfigError(f"{name} must be finite and positive")
+        if self.max_concurrent_positions <= 0 or self.max_orders_per_minute <= 0:
+            raise ConfigError("position and order limits must be positive")
+
+
+@dataclass(frozen=True)
 class RuntimeConfig:
     mode: str = "shadow"
     dry_run: bool = True
@@ -28,6 +48,7 @@ class RuntimeConfig:
     kill_switch: bool = True
     withdrawals_enabled: bool = False
     provider: ProviderConfig = ProviderConfig()
+    risk_limits: RiskLimits = RiskLimits()
 
     def __post_init__(self) -> None:
         if self.mode not in {"shadow", "paper", "testnet", "live"}:
@@ -77,7 +98,23 @@ def from_mapping(raw: dict[str, Any], deployment_gate: Path | None = None) -> Ru
         max_retries=int(provider_raw.get("max_retries", 1)),
         circuit_breaker_failures=int(provider_raw.get("circuit_breaker_failures", 3)),
     )
-    return RuntimeConfig(mode, dry_run, testnet, kill_switch, withdrawals, provider)
+    policy_raw = raw.get("policy")
+    risk_limits = RiskLimits()
+    if policy_raw is not None:
+        if not isinstance(policy_raw, dict):
+            raise ConfigError("policy must be a mapping")
+        required = {"max_daily_loss_usd", "max_drawdown_pct", "max_position_notional_usd",
+                    "max_total_notional_usd", "max_concurrent_positions", "max_leverage",
+                    "max_orders_per_minute"}
+        missing = sorted(required - policy_raw.keys())
+        if missing:
+            raise ConfigError("missing executable risk limits: " + ", ".join(missing))
+        try:
+            risk_limits = RiskLimits(**{key: policy_raw[key] for key in required})
+        except (TypeError, ValueError) as exc:
+            raise ConfigError("invalid executable risk limits") from exc
+    return RuntimeConfig(mode=mode, dry_run=dry_run, testnet=testnet, kill_switch=kill_switch,
+                         withdrawals_enabled=withdrawals, provider=provider, risk_limits=risk_limits)
 
 
 def load_yaml(path: Path, deployment_gate: Path | None = None) -> RuntimeConfig:

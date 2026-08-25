@@ -1,0 +1,74 @@
+{
+  "phase": 3,
+  "status": "VERIFIED",
+  "source_revision_before_commit": "fc977bb",
+  "files_changed": [
+    "config.example.yaml",
+    "src/agentic_engine.py",
+    "src/config.py",
+    "src/ledger/sqlite.py",
+    "src/paper_loop.py",
+    "src/policy/semantic.py",
+    "src/policy/sizing.py",
+    "src/runtime/paper_runtime.py",
+    "src/risk/__init__.py",
+    "src/risk/exposure.py",
+    "src/risk/portfolio.py",
+    "tests/test_phase3_risk.py"
+  ],
+  "tdd": {
+    "red_command": "python3 -m pytest -q tests/test_phase3_risk.py",
+    "red_result": "collection error: ModuleNotFoundError: No module named 'src.risk'",
+    "green_command": "python3 -m pytest -q tests/test_phase3_risk.py",
+    "green_result": "7 passed"
+  },
+  "tests": {
+    "focused": "python3 -m pytest -q tests/test_phase3_risk.py",
+    "focused_result": "7 passed",
+    "relevant": "python3 -m pytest -q tests/test_phase3_risk.py tests/test_sizing.py tests/test_risk_report.py tests/test_config.py tests/test_semantic_policy.py tests/test_paper_loop.py tests/test_paper_runtime.py",
+    "relevant_result": "31 passed",
+    "full": "python3 -m pytest -q",
+    "full_result": "173 passed"
+  },
+  "verification": {
+    "compileall": "python3 -m compileall -q src scripts tests: passed",
+    "diff_check": "git diff --check: passed",
+    "paper_help": "python3 scripts/run_autonomous_paper.py --help: passed",
+    "paper_run": "python3 scripts/run_autonomous_paper.py --mode paper --cycles 100 --scenario enter --ledger /tmp/phase3-paper.sqlite3 --reports-dir /tmp/phase3-paper-reports",
+    "paper_result": {
+      "status": "PASS",
+      "cycles_completed": 100,
+      "open_positions": [],
+      "closed_trades": 100,
+      "fees": 2.1989999999999936,
+      "funding": 2.1999999999999993,
+      "net_pnl": -0.19900000000000131,
+      "network_calls": 0,
+      "signed_calls": 0,
+      "orders_placed": 200,
+      "protection_verified": 100,
+      "reconciled": 100,
+      "integrity_ok": true
+    },
+    "replay": "python3 scripts/replay_ledger.py /tmp/phase3-paper.sqlite3: completed; net_pnl -0.19900000000000131, open_positions []"
+  },
+  "risk_features": [
+    "account and portfolio snapshots with equity, available/used margin, gross/net/long/short notional, per-symbol positions, realized daily PnL, unrealized PnL, fees, funding, peak equity, and drawdown",
+    "portfolio snapshots persisted and restored through SQLite restart",
+    "finite explicit executable limits with missing/infinite rejection",
+    "sizing uses stop distance, venue minimum/step/max, contract multiplier, available equity, and total exposure",
+    "both PaperLoop and AutonomousPaperRuntime use size_for_risk; provider quantity is not accepted",
+    "effective risk report retains requested versus venue-adjusted actual risk and minimum-notional distortion",
+    "gross, net, correlated, and symbol concentration gates"
+  ],
+  "network_calls": 0,
+  "signed_calls": 0,
+  "demo_orders": 0,
+  "funded_mode": false,
+  "known_limitations": [
+    "Portfolio snapshots are exposed as a durable ledger projection, but the paper runtime does not yet automatically write a snapshot after every fill cycle.",
+    "Exposure correlation uses a configured matrix; rolling-return correlation is deferred.",
+    "The Phase 3 paper run is an engineering smoke test, not profitability evidence; its fee-inclusive net PnL was negative."
+  ],
+  "next_gate": "Phase 4 market-data and public-shadow work"
+}
