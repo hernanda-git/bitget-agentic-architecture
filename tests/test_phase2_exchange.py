@@ -62,6 +62,26 @@ def test_duplicate_rejection_slippage_spread_and_reduce_only():
     assert no_reduce.status is OrderStatus.REJECTED
 
 
+def test_trade_accounting_separates_spread_and_execution_slippage():
+    exchange = FakeExchange(venue=venue(), initial_balance=1000, slippage_bps=10)
+    exchange.market_prices["BTCUSDT"] = (99.0, 101.0, 100.0)
+    entry = exchange.submit_order(OrderRequest("accounted-entry", "BTCUSDT", "BUY", 1, None))
+    assert entry.status is OrderStatus.FILLED
+    exchange.market_prices["BTCUSDT"] = (109.0, 111.0, 110.0)
+    exit_order = exchange.submit_order(
+        OrderRequest("accounted-exit", "BTCUSDT", "SELL", 1, None, reduce_only=True)
+    )
+
+    assert exit_order.status is OrderStatus.FILLED
+    trade = exchange.closed_trades[-1]
+    assert trade["gross_pnl"] == pytest.approx(10.0)
+    assert trade["spread_cost"] == pytest.approx(2.0)
+    assert trade["slippage_cost"] == pytest.approx(0.21)
+    assert trade["net_pnl"] == pytest.approx(
+        10.0 - trade["entry_fee"] - trade["exit_fee"] - 2.0 - 0.21
+    )
+
+
 def test_cancel_request_and_cancelled_state():
     exchange = FakeExchange(venue=venue(), initial_balance=1000)
     exchange.submit_order(OrderRequest("rest", "BTCUSDT", "BUY", 1, 90))

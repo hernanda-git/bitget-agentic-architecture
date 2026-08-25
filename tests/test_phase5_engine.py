@@ -86,8 +86,10 @@ def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
 def test_baseline_exposes_gross_pnl_and_explicit_cost_attribution():
     result = run_baseline(make_series())
     assert result.gross_pnl == sum(row["gross_pnl"] for row in result.strategy_breakdown.values())
-    assert result.net_pnl == result.gross_pnl - result.fees - result.slippage - result.funding
+    assert result.net_pnl == result.gross_pnl - result.fees - result.spread - result.slippage - result.funding
+    assert result.spread >= 0
     assert all("gross_pnl" in row for row in result.strategy_breakdown.values())
+    assert all("spread" in row for row in result.strategy_breakdown.values())
 
 
 def test_walk_forward_evaluation_has_disjoint_embargoed_test_windows():
@@ -107,7 +109,7 @@ def test_walk_forward_reports_slippage_and_net_pnl_formula():
     evaluation = run_walk_forward(make_series(36), BaselineConfig(train_fraction=0.6, embargo=1, test_window=10))
     row = evaluation[0]
     assert row["slippage"] >= 0
-    assert row["net_pnl"] == row["gross_pnl"] - row["fees"] - row["slippage"] - row["funding"]
+    assert row["net_pnl"] == row["gross_pnl"] - row["fees"] - row["spread"] - row["slippage"] - row["funding"]
 
 
 def test_funding_received_offsets_funding_paid_in_cost_attribution():
@@ -122,7 +124,7 @@ def test_cost_stress_reports_degradation_without_changing_baseline():
     assert stress[0]["net_pnl"] == base.net_pnl
     assert stress[0]["slippage"] == base.slippage
     assert stress[0]["net_pnl"] == (stress[0]["gross_pnl"] - stress[0]["fees"]
-                                     - stress[0]["slippage"] - stress[0]["funding"])
+                                     - stress[0]["spread"] - stress[0]["slippage"] - stress[0]["funding"])
     assert stress[1]["net_pnl"] <= stress[0]["net_pnl"]
     assert stress[1]["fee_bps"] == 10.0
     assert stress[1]["funding"] > stress[0]["funding"]

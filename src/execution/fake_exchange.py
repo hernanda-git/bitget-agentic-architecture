@@ -48,6 +48,7 @@ class FakeFill:
     fee: float
     funding: float = 0.0
     slippage_cost: float = 0.0
+    spread_cost: float = 0.0
 
 @dataclass(frozen=True)
 class FakePosition:
@@ -57,6 +58,9 @@ class FakePosition:
     entry_price: float
     stop_loss: float | None = None
     take_profit: float | None = None
+    entry_reference_price: float | None = None
+    entry_spread_cost: float = 0.0
+    entry_slippage_cost: float = 0.0
 
 @dataclass(frozen=True)
 class ExchangeEvent:
@@ -121,25 +125,50 @@ class FakeExchange:
 
     def _fill(self, order, quantity, price):
         fee = quantity * price * self.fee_bps / 10000
-        fill = FakeFill(order.client_order_id, order.symbol, order.side, quantity, price, fee, 0.0, abs(price - (self.market_prices.get(order.symbol, (price, price, price))[2])) * quantity)
+        bid, ask, mark = self.market_prices.get(order.symbol, (price, price, price))
+        quoted = ask if order.side == "BUY" else bid
+        spread_cost = abs(quoted - mark) * quantity
+        slippage_cost = abs(price - quoted) * quantity
+        fill = FakeFill(order.client_order_id, order.symbol, order.side, quantity, price, fee,
+                        0.0, slippage_cost, spread_cost)
         self.fills.append(fill); self._apply_position(order, quantity, price, fee)
 
     def _apply_position(self, order, quantity, price, fee):
         old = self.positions.get(order.symbol)
         if old and old.side != order.side:
             close_qty = min(old.quantity, quantity)
-            gross = (price - old.entry_price) * close_qty * (1 if old.side == "BUY" else -1)
+            reference_price = self.market_prices.get(order.symbol, (price, price, price))[2]
+            entry_reference_price = old.entry_reference_price if old.entry_reference_price is not None else old.entry_price
+            gross = (reference_price - entry_reference_price) * close_qty * (1 if old.side == "BUY" else -1)
             entry_fee = old.entry_price * close_qty * self.fee_bps / 10000
-            self.closed_trades.append({"symbol": order.symbol, "status": "CLOSED", "gross_pnl": gross, "entry_fee": entry_fee, "exit_fee": fee, "funding": 0.0, "net_pnl": gross-entry_fee-fee, "close_reason": order.close_reason.value if order.close_reason else None, "reduce_only": order.reduce_only})
+            fill = self.fills[-1]
+            ratio = close_qty / old.quantity
+            spread_cost = old.entry_spread_cost * ratio + fill.spread_cost
+            slippage_cost = old.entry_slippage_cost * ratio + fill.slippage_cost
+            self.closed_trades.append({"symbol": order.symbol, "status": "CLOSED", "gross_pnl": gross, "entry_fee": entry_fee, "exit_fee": fee, "funding": 0.0, "spread_cost": spread_cost, "slippage_cost": slippage_cost, "net_pnl": gross-entry_fee-fee-spread_cost-slippage_cost, "close_reason": order.close_reason.value if order.close_reason else None, "reduce_only": order.reduce_only})
             rem = old.quantity - close_qty
             if rem <= 1e-12: self.positions.pop(order.symbol, None)
-            else: self.positions[order.symbol] = replace(old, quantity=rem)
+            else: self.positions[order.symbol] = replace(old, quantity=rem,
+                                                         entry_spread_cost=old.entry_spread_cost * (1 - ratio),
+                                                         entry_slippage_cost=old.entry_slippage_cost * (1 - ratio))
             if quantity <= old.quantity: return
             quantity -= old.quantity
         if old and old.side == order.side:
             total = old.quantity + quantity; avg = (old.entry_price*old.quantity + price*quantity)/total
-            self.positions[order.symbol] = replace(old, quantity=total, entry_price=avg)
-        else: self.positions[order.symbol] = FakePosition(order.symbol, order.side, quantity, price)
+            reference_price = self.market_prices.get(order.symbol, (price, price, price))[2]
+            old_reference = old.entry_reference_price if old.entry_reference_price is not None else old.entry_price
+            entry_fill = self.fills[-1]
+            self.positions[order.symbol] = replace(old, quantity=total, entry_price=avg,
+                                                   entry_reference_price=(old_reference * old.quantity + reference_price * quantity) / total,
+                                                   entry_spread_cost=old.entry_spread_cost + entry_fill.spread_cost,
+                                                   entry_slippage_cost=old.entry_slippage_cost + entry_fill.slippage_cost)
+        else:
+            reference_price = self.market_prices.get(order.symbol, (price, price, price))[2]
+            fill = self.fills[-1]
+            self.positions[order.symbol] = FakePosition(order.symbol, order.side, quantity, price,
+                                                        entry_reference_price=reference_price,
+                                                        entry_spread_cost=fill.spread_cost,
+                                                        entry_slippage_cost=fill.slippage_cost)
 
     def cancel_order(self, client_order_id):
         order = self.orders[client_order_id]

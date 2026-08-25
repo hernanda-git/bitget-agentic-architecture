@@ -1,8 +1,8 @@
 {
   "phase": "5",
   "mode": "offline-paper-replay",
-  "source_revision_before_commit": "e45906f7d17f60d93c638cba3c8cdd14f79a8972",
-  "tests": {"command": "python3 -m pytest -q", "passed": 201, "failed": 0},
+  "source_revision_before_commit": "b20b783",
+  "tests": {"command": "python3 -m pytest -q", "passed": 203, "failed": 0},
   "compileall_ok": true,
   "network_calls": 0,
   "signed_calls": 0,
@@ -12,23 +12,24 @@
   "end_of_replay_closes": 1,
   "protection_attachments": 36,
   "reconciliation_checks": 0,
-  "walk_forward_protection_attachments": [10, 3],
-  "walk_forward_reconciliation_checks": [0, 0],
-  "gross_pnl": -37.55597200000011,
+  "walk_forward_protection_attachments": [10],
+  "walk_forward_reconciliation_checks": [0],
+  "gross_pnl": -36.5,
   "fees": 3.398265286,
-  "slippage": 1.0559720000001107,
+  "spread": 0.710000000000349,
+  "slippage": 1.0459720000001056,
   "funding": 1.2428000000000003,
-  "net_pnl": -43.25300928600022,
+  "net_pnl": -42.897037286000455,
   "promotion_allowed": false,
   "promotion_reason": "NEGATIVE_NET_PNL",
   "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
   "walk_forward_evaluation": [
-    {"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 31, "context_start": 0, "context_end": 21, "test_snapshots": 10, "closed_trades": 10, "gross_pnl": -22.784220000000047, "fees": 0.8363774100000001, "slippage": 0.28422000000004743, "funding": 0.1503, "net_pnl": -24.055117410000097}
+    {"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 31, "context_start": 0, "context_end": 21, "test_snapshots": 10, "closed_trades": 10, "gross_pnl": -22.5, "fees": 0.8363774100000001, "spread": 0.1900000000000972, "slippage": 0.2742200000000423, "funding": 0.1503, "net_pnl": -23.95089741000014}
   ],
   "cost_stress": [
-    {"multiplier": 1.0, "fee_bps": 5.0, "funding_bps": 2.0, "slippage_bps": 2.0, "gross_pnl": -37.55597200000011, "fees": 3.398265286, "slippage": 1.0559720000001107, "funding": 1.2428000000000003, "net_pnl": -43.25300928600022},
-    {"multiplier": 1.5, "fee_bps": 7.5, "funding_bps": 3.0, "slippage_bps": 3.0, "gross_pnl": -37.9039580000001, "fees": 5.0976493935, "slippage": 1.4039580000001024, "funding": 1.8641999999999999, "net_pnl": -46.2697653935002},
-    {"multiplier": 2.0, "fee_bps": 10.0, "funding_bps": 4.0, "slippage_bps": 4.0, "gross_pnl": -38.25194400000002, "fees": 6.797201143999998, "slippage": 1.751944000000023, "funding": 2.4856000000000007, "net_pnl": -49.28668914400004}
+    {"multiplier": 1.0, "fee_bps": 5.0, "funding_bps": 2.0, "slippage_bps": 2.0, "gross_pnl": -36.5, "fees": 3.398265286, "spread": 0.710000000000349, "slippage": 1.0459720000001056, "funding": 1.2428000000000003, "net_pnl": -42.897037286000455},
+    {"multiplier": 1.5, "fee_bps": 7.5, "funding_bps": 3.0, "slippage_bps": 3.0, "gross_pnl": -36.5, "fees": 5.0976493935, "spread": 0.710000000000349, "slippage": 1.3939580000000973, "funding": 1.8641999999999999, "net_pnl": -45.56580739350044},
+    {"multiplier": 2.0, "fee_bps": 10.0, "funding_bps": 4.0, "slippage_bps": 4.0, "gross_pnl": -36.5, "fees": 6.797201143999998, "spread": 0.710000000000349, "slippage": 1.741944000000018, "funding": 2.4856000000000007, "net_pnl": -48.234745144000364}
   ],
   "limitations": [
     "Synthetic offline fixture; not evidence of live profitability or loss rates.",
@@ -36,6 +37,7 @@
     "Walk-forward windows are replay-only and do not fit parameters or validate independent market data.",
     "Funding stress uses a configured deterministic rate proxy, not venue funding history.",
     "No venue reconciliation checks were possible in the offline simulator.",
+    "Mark-to-mark gross PnL now separates bid/ask spread and execution slippage exactly once; fees remain based on executed prices.",
     "Walk-forward parameter validation is deterministic and fail-closed; no parameter tuning was performed.",
     "Replay-input validation rejects stale hashes, mixed symbols, and timestamp regressions without sorting or repairing malformed data.",
     "The synthetic fixture contains repeated warm-up snapshots; equal timestamps are retained and not silently deduplicated.",

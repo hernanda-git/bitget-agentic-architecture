@@ -19,6 +19,7 @@ _NUMERIC_FIELDS = (
     "reconciliation_checks",
     "gross_pnl",
     "fees",
+    "spread",
     "slippage",
     "funding",
     "net_pnl",
@@ -85,6 +86,7 @@ def validate_phase5_report(root: Path) -> list[str]:
     markdown_expectations = {
         "gross PnL": f"- Gross PnL: `{baseline['gross_pnl']}`",
         "fees": f"- Fees: `{baseline['fees']}`",
+        "spread": f"- Spread: `{baseline['spread']}`",
         "slippage": f"- Simulated slippage: `{baseline['slippage']}`",
         "funding": f"- Funding: `{baseline['funding']}`",
         "net PnL": f"- Net PnL: `{baseline['net_pnl']}`",

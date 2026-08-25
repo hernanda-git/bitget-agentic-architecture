@@ -2,7 +2,7 @@
 
 ## Gate verdict
 
-`BLOCKED`: the deterministic baseline remains negative after fees, funding, and simulated slippage. Promotion is disabled, and Phase 6 must not begin.
+`BLOCKED`: the deterministic baseline remains negative after fees, funding, bid/ask spread, and simulated execution slippage. Promotion is disabled, and Phase 6 must not begin.
 
 ## Raw verified run metrics
 
@@ -16,33 +16,39 @@
 - End-of-replay closes: `1`
 - Protection attachments: `36` paper positions configured with stop and target
 - Reconciliation checks: `0` venue reconciliation checks; this is an offline simulator, not an exchange adapter
-- Walk-forward protection attachments: `10` in window `[22,31]`, `3` in window `[33,35]`
-- Walk-forward reconciliation checks: `0` in both windows
-- Gross PnL: `-37.55597200000011`
-- Fees: `3.398265286`
-- Simulated slippage: `1.0559720000001107`
+- Walk-forward protection attachments: `10` in complete window `[22,31]`
+- Walk-forward reconciliation checks: `0` in the complete window
+- Gross PnL: `-36.5` (mark-to-mark before transaction costs)
+- Fees: `3.398265286` (calculated from executed prices)
+- Spread: `0.710000000000349` (bid/ask cost)
+- Simulated slippage: `1.0459720000001056` (execution impact beyond the quoted bid/ask)
 - Funding: `1.2428000000000003`
-- Net PnL: `-43.25300928600022` (gross minus fees, slippage, and funding)
+- Net PnL: `-42.897037286000455` (gross minus fees, spread, slippage, and funding)
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Tests: `201 passed`, `0 failed`
+- Tests: `203 passed`, `0 failed`
 - Network-data calls in this work unit: `0`
 
 ## Evaluation improvements
 
+- Versioned feature values with source snapshot identity and timestamp.
+- Deterministic technical features and candidate generators.
+- Candidate cost gate requiring expected move to exceed expected cost.
+- Deterministic regime classification.
+- Offline `FakeExchange` replay with typed `END_OF_REPLAY` flattening and fee, funding, spread, and execution-slippage accounting.
+- Corrected paper accounting so gross PnL is mark-to-mark and spread plus execution slippage are each charged exactly once. A focused regression test proves that zero configured execution slippage does not erase the separately measured spread and that increased slippage is not double-counted.
+- Strategy/regime attribution, robust walk-forward evaluation, and cost stress reporting now expose spread separately from execution slippage.
 - Added explicit gross PnL and cost attribution by strategy and regime.
-- Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. Only complete test windows are reported; the fixture produced one complete window `[22,31]`, while the trailing 3-snapshot remainder is excluded rather than presented as a comparable result.
-- Walk-forward net PnL was `-24.055117410000097` for the complete window `[22,31]`.
+- Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. Only complete test windows are reported; the fixture produced one complete window `[22,31]`, while the trailing 3-snapshot remainder is excluded rather than presented as comparable evidence.
+- Walk-forward net PnL was `-23.95089741000014` for the complete window `[22,31]`.
 - Added per-window strategy attribution. In this fixture, all 10 complete-window closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
-- Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction. Net PnL was `-42.19703728600011` at `1.0x`, `-44.8658073935001` at `1.5x`, and `-47.53474514400002` at `2.0x` cost assumptions; funding was `1.2428000000000003`, `1.8641999999999999`, and `2.4856000000000007` respectively.
-- Corrected net funding attribution so funding received offsets funding paid rather than being incorrectly added to costs. The existing synthetic baseline is long-only and therefore unchanged; a regression test now verifies the signed funding arithmetic directly.
-- Added strict walk-forward parameter validation (`0 < train_fraction < 1`, non-negative embargo, and positive test window) so malformed evaluation requests fail closed instead of silently changing the evaluation shape.
-- Added a fail-closed minimum-data guard requiring at least one complete walk-forward test window; short datasets no longer return misleading partial-only evaluations.
-- Added finite, positive cost-stress multiplier validation so zero, negative, NaN, infinity, and empty stress requests are rejected before replay.
-- Corrected net PnL accounting to subtract simulated slippage, and exposed slippage in cost-stress and walk-forward reports. Replayed net PnL is `-43.25300928600022`; cost-stress net PnL is `-43.25300928600022`, `-46.2697653935002`, and `-49.28668914400004` at `1.0x`, `1.5x`, and `2.0x`.
-- Added a fail-closed Phase 5 artifact validator that compares the detailed baseline JSON with compact summary fields and all checked-in Markdown numerical claims.
-- Added replay-input data-quality validation: missing or stale snapshot hashes, mixed symbols, and regressing observed or source timestamps fail closed before evaluation; malformed input is never sorted, deduplicated, or repaired.
+- Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction.
+- Corrected net funding attribution so funding received offsets funding paid rather than being incorrectly added to costs.
+- Added strict walk-forward parameter validation and a fail-closed minimum-data guard requiring at least one complete test window.
+- Added finite, positive cost-stress multiplier validation.
+- Added a fail-closed Phase 5 artifact validator that compares detailed baseline JSON with compact summary fields and checked-in Markdown numerical claims, including separate spread attribution.
+- Added replay-input data-quality validation: missing or stale snapshot hashes, mixed symbols, and regressing observed or source timestamps fail closed before evaluation.
 
 ## Implemented
 
@@ -50,15 +56,16 @@
 - Deterministic technical features and candidate generators.
 - Candidate cost gate requiring expected move to exceed expected cost.
 - Deterministic regime classification.
-- Offline `FakeExchange` replay with typed `END_OF_REPLAY` flattening and fee, funding, and slippage accounting.
-- Strategy/regime attribution, robust walk-forward evaluation, and cost stress reporting.
+- Offline `FakeExchange` replay with typed `END_OF_REPLAY` flattening and fee, funding, spread, and execution-slippage accounting.
+- Strategy/regime attribution, robust walk-forward evaluation, cost stress reporting, and synchronized evidence validation.
 
 ## Verification commands
 
 ```text
 python3 scripts/resource_guard.py --json
-python3 -m pytest tests/test_phase5_engine.py -q  # 12 passed
-python3 -m pytest -q                             # 194 passed
+python3 -m pytest tests/test_phase2_exchange.py::test_trade_accounting_separates_spread_and_execution_slippage -q
+python3 -m pytest tests/test_phase5_engine.py tests/test_phase5_report.py -q
+python3 -m pytest -q
 python3 -m compileall -q src scripts tests
 python3 scripts/run_strategy_baseline.py --output reports/phase-5/baseline.json
 python3 scripts/verify_phase5_report.py --root .
@@ -66,4 +73,4 @@ python3 scripts/verify_phase5_report.py --root .
 
 ## Limitations and safety
 
-The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Phase 6 bounded LLM selection remains explicitly blocked.
+The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history. Spread is derived from the fixture's bid/ask versus mark, and execution slippage is derived from the configured fill impact beyond the quoted side. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Phase 6 bounded LLM selection remains explicitly blocked.

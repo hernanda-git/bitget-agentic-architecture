@@ -32,6 +32,7 @@ class BaselineResult:
     protection_attachments: int
     reconciliation_checks: int
     fees: float
+    spread: float
     slippage: float
     funding: float
     gross_pnl: float
@@ -49,7 +50,7 @@ def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
     if cut >= n: return ()
     return ({"train_start": 0, "train_end": cut - 1, "test_start": min(n, cut + embargo), "test_end": n - 1},)
 
-def _empty(): return {"closed_trades": 0, "gross_pnl": 0.0, "fees": 0.0, "slippage": 0.0, "funding": 0.0, "net_pnl": 0.0}
+def _empty(): return {"closed_trades": 0, "gross_pnl": 0.0, "fees": 0.0, "spread": 0.0, "slippage": 0.0, "funding": 0.0, "net_pnl": 0.0}
 
 def _replay_funding_rate(snapshot, funding_bps: float) -> float:
     """Apply the configured stress rate while preserving fixture funding direction."""
@@ -91,7 +92,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     costs = CostAssumptions(config.fee_bps, config.funding_bps, config.slippage_bps)
     generators = (("trend_continuation", generate_trend_continuation), ("mean_reversion", generate_mean_reversion), ("volatility_breakout", generate_volatility_breakout))
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
-    total_fees = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = protection_attachments = 0
+    total_fees = total_spread = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = protection_attachments = 0
     reconciliation_checks = 0
     replay_parts = []
     for index, snapshot in enumerate(snapshots):
@@ -126,21 +127,22 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             # FakeExchange supplies closed-trade fees and gross PnL. Funding is charged
             # deterministically over the holding events and included in net PnL.
             funding = _funding_cost(venue.read_balance())
-            slippage = sum(fill.slippage_cost for fill in venue.fills)
-            total_fees += trade["entry_fee"] + trade["exit_fee"]; total_slippage += slippage; total_funding += funding
+            spread = trade["spread_cost"]
+            slippage = trade["slippage_cost"]
+            total_fees += trade["entry_fee"] + trade["exit_fee"]; total_spread += spread; total_slippage += slippage; total_funding += funding
             total_gross += trade["gross_pnl"]; closed += 1
-            row = strategy[name]; row["closed_trades"] += 1; row["gross_pnl"] += trade["gross_pnl"]; row["fees"] += trade["entry_fee"] + trade["exit_fee"]; row["slippage"] += slippage; row["funding"] += funding
-            row["net_pnl"] = row["gross_pnl"] - row["fees"] - row["slippage"] - row["funding"]
-            regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["gross_pnl"] += trade["gross_pnl"]; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["slippage"] += slippage; rr["funding"] += funding; rr["net_pnl"] = rr["gross_pnl"] - rr["fees"] - rr["slippage"] - rr["funding"]
+            row = strategy[name]; row["closed_trades"] += 1; row["gross_pnl"] += trade["gross_pnl"]; row["fees"] += trade["entry_fee"] + trade["exit_fee"]; row["spread"] += spread; row["slippage"] += slippage; row["funding"] += funding
+            row["net_pnl"] = row["gross_pnl"] - row["fees"] - row["spread"] - row["slippage"] - row["funding"]
+            regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["gross_pnl"] += trade["gross_pnl"]; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["spread"] += spread; rr["slippage"] += slippage; rr["funding"] += funding; rr["net_pnl"] = rr["gross_pnl"] - rr["fees"] - rr["spread"] - rr["slippage"] - rr["funding"]
     import hashlib, json
     replay_hash = hashlib.sha256(json.dumps(replay_parts, separators=(",", ":")).encode()).hexdigest()
     splits = _splits(len(snapshots), config.train_fraction, config.embargo) if evaluation_start == 0 and evaluation_end == len(snapshots) - 1 else ()
-    total_net = total_gross - total_fees - total_slippage - total_funding
+    total_net = total_gross - total_fees - total_spread - total_slippage - total_funding
     reason = "POSITIVE_EVIDENCE_REQUIRED"
     if closed == 0: reason = "INCONCLUSIVE_NO_CLOSED_TRADES"
     elif total_net < 0: reason = "NEGATIVE_NET_PNL"
     return BaselineResult(len(snapshots), 0, 0, orders, closed, 0, end_of_replay_closes,
-                          protection_attachments, reconciliation_checks, total_fees, total_slippage, total_funding, total_gross, total_net,
+                          protection_attachments, reconciliation_checks, total_fees, total_spread, total_slippage, total_funding, total_gross, total_net,
                           strategy, regime, splits, False, reason, replay_hash)
 
 
@@ -172,6 +174,7 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
                      "protection_attachments": result.protection_attachments,
                      "reconciliation_checks": result.reconciliation_checks,
                      "fees": result.fees, "funding": result.funding, "slippage": result.slippage, "net_pnl": result.net_pnl,
+                     "spread": result.spread,
                      "strategy_breakdown": result.strategy_breakdown})
         test_start = test_end + 1 + config.embargo
     if not any(row["test_snapshots"] == window for row in rows):
@@ -193,6 +196,6 @@ def run_cost_stress(snapshots: Iterable, config: BaselineConfig = BaselineConfig
                      "funding_bps": config.funding_bps * multiplier,
                      "slippage_bps": config.slippage_bps * multiplier,
                      "gross_pnl": result.gross_pnl, "fees": result.fees,
-                     "slippage": result.slippage, "funding": result.funding,
+                     "spread": result.spread, "slippage": result.slippage, "funding": result.funding,
                      "net_pnl": result.net_pnl})
     return tuple(rows)
