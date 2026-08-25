@@ -141,7 +141,7 @@ class BitgetPublicClient:
                       "open_interest": float(row["holdingAmount"]) if row.get("holdingAmount") is not None else None}
         except (TypeError, ValueError) as exc:
             self.metrics.schema_rejections += 1; raise PublicMarketError("TICKER_VALUES") from exc
-        if values["bid"] <= 0 or values["ask"] <= 0 or values["bid"] > values["ask"] or not values["bid"] <= values["mark_price"] <= values["ask"]:
+        if values["bid"] <= 0 or values["ask"] <= 0 or values["bid"] > values["ask"] or values["mark_price"] <= 0:
             self.metrics.policy_rejections += 1; raise PublicMarketError("TICKER_IMPOSSIBLE_PRICES")
         return values
 

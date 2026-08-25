@@ -2,28 +2,26 @@
   "candidate_rate": 0.0,
   "closed_trades": 0,
   "cycles": 100,
-  "cycles_completed": 14,
+  "cycles_completed": 100,
   "cycles_requested": 100,
+  "terminal_cycles": 100,
+  "terminal_status_counts": {
+    "HOLD": 100
+  },
   "decision_latency": {
     "count": 100,
-    "max": 711.8758400902152,
-    "mean": 272.4672650452703,
-    "min": 152.80786994844675,
-    "p50": 208.8857819326222
+    "max": 892.2973431181163,
+    "mean": 650.6960365641862,
+    "min": 592.58679789491,
+    "p50": 639.9039749521762
   },
-  "failure_samples": [
-    "TICKER_IMPOSSIBLE_PRICES",
-    "TICKER_IMPOSSIBLE_PRICES",
-    "TICKER_IMPOSSIBLE_PRICES",
-    "TICKER_IMPOSSIBLE_PRICES",
-    "TICKER_IMPOSSIBLE_PRICES"
-  ],
-  "failures": 86,
+  "failure_samples": [],
+  "failures": 0,
   "freshness_distribution": {
-    "count": 14,
-    "max": 226,
-    "mean": 211.14285714285714,
-    "min": 190,
+    "count": 100,
+    "max": 425,
+    "mean": 216.24,
+    "min": 189,
     "p50": 211
   },
   "hold_rate": 1.0,
@@ -34,17 +32,17 @@
   ],
   "mode": "public-shadow",
   "net_pnl_after_costs": 0.0,
-  "network_calls": 142,
+  "network_calls": 400,
   "open_positions": 0,
   "orders_placed": 0,
-  "policy_rejections": 86,
+  "policy_rejections": 0,
   "provider": {
     "calls": 0,
     "failures": 0
   },
   "provider_calls": 0,
   "provider_failures": 0,
-  "run_id": "2c98afbe1085",
+  "run_id": "2c7f0bd33268",
   "schema_rejections": 0,
   "signed_calls": 0,
   "simulated_entries": 0,
@@ -52,17 +50,22 @@
   "source_labels": [
     "bitget-public"
   ],
+  "validation": {
+    "earlier_bug": "The prior validator incorrectly rejected legitimate positive mark/last prices outside the bid-ask interval, producing TICKER_IMPOSSIBLE_PRICES during the earlier shadow run.",
+    "repair": "Bid/ask ordering and positive bid, ask, and mark values are now validated independently; mark is no longer required to be inside the spread.",
+    "regression_test": "test_ticker_validation_accepts_positive_mark_outside_spread_and_rejects_invalid_values"
+  },
   "source_timestamp_ms": {
-    "count": 14,
-    "max": 1787632951698,
-    "min": 1787632932423
+    "count": 100,
+    "max": 1787633247371,
+    "min": 1787633182821
   },
   "spread_distribution": {
-    "count": 14,
-    "max": 0.012464165524843671,
-    "mean": 0.012462977274001596,
-    "min": 0.012460888385488653,
-    "p50": 0.01246279854525103
+    "count": 100,
+    "max": 0.012455549259308439,
+    "mean": 0.012452210470533617,
+    "min": 0.01244908324842256,
+    "p50": 0.012451842499859391
   },
-  "status": "PUBLIC_SHADOW_DEGRADED"
+  "status": "PUBLIC_SHADOW_COMPLETE"
 }

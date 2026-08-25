@@ -49,3 +49,33 @@ def test_rate_limit_is_explicit():
     client = BitgetPublicClient(transport=transport, min_interval_seconds=0)
     with pytest.raises(PublicMarketError, match="PUBLIC_RATE_LIMIT"):
         asyncio.run(client.fetch_ticker("BTCUSDT"))
+
+
+def test_ticker_validation_accepts_positive_mark_outside_spread_and_rejects_invalid_values():
+    valid_outside_spread = {
+        "lastPr": "80223.3",
+        "markPrice": "80223.3",
+        "bidPr": "80224",
+        "askPr": "80224.1",
+        "ts": "10000",
+    }
+    client = BitgetPublicClient(
+        transport=httpx.MockTransport(lambda request: httpx.Response(200, json={"code": "00000", "data": [valid_outside_spread]})),
+        min_interval_seconds=0,
+    )
+    ticker = asyncio.run(client.fetch_ticker("BTCUSDT"))
+    assert ticker["mark_price"] == 80223.3
+    assert ticker["bid"] == 80224.0
+    assert ticker["ask"] == 80224.1
+
+    invalid_tickers = [
+        ({**valid_outside_spread, "bidPr": "80225", "askPr": "80224"}, "TICKER_IMPOSSIBLE_PRICES"),
+        ({**valid_outside_spread, "bidPr": "0"}, "TICKER_IMPOSSIBLE_PRICES"),
+        ({**valid_outside_spread, "askPr": "-1"}, "TICKER_IMPOSSIBLE_PRICES"),
+        ({**valid_outside_spread, "markPrice": "not-a-number"}, "TICKER_VALUES"),
+    ]
+    for row, error in invalid_tickers:
+        transport = httpx.MockTransport(lambda request, row=row: httpx.Response(200, json={"code": "00000", "data": [row]}))
+        client = BitgetPublicClient(transport=transport, min_interval_seconds=0)
+        with pytest.raises(PublicMarketError, match=error):
+            asyncio.run(client.fetch_ticker("BTCUSDT"))
