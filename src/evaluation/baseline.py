@@ -48,14 +48,21 @@ def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
 
 def _empty(): return {"closed_trades": 0, "gross_pnl": 0.0, "fees": 0.0, "slippage": 0.0, "funding": 0.0, "net_pnl": 0.0}
 
-def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig()) -> BaselineResult:
+def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), *,
+                 evaluation_start: int = 0, evaluation_end: int | None = None) -> BaselineResult:
     snapshots = tuple(snapshots)
+    if evaluation_end is None:
+        evaluation_end = len(snapshots) - 1
+    if not snapshots or not 0 <= evaluation_start <= evaluation_end < len(snapshots):
+        raise ValueError("evaluation window must be within snapshots")
     costs = CostAssumptions(config.fee_bps, config.funding_bps, config.slippage_bps)
     generators = (("trend_continuation", generate_trend_continuation), ("mean_reversion", generate_mean_reversion), ("volatility_breakout", generate_volatility_breakout))
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
     total_fees = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = 0
     replay_parts = []
     for index, snapshot in enumerate(snapshots):
+        if index < evaluation_start or index > evaluation_end:
+            continue
         replay_parts.append(snapshot.snapshot_hash or snapshot.computed_hash())
         for name, generator in generators:
             venue = FakeExchange(fee_bps=config.fee_bps, slippage_bps=config.slippage_bps)
@@ -68,11 +75,11 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig())
             if not order.filled_quantity: continue
             orders += 1
             venue.set_protection(snapshot.symbol, candidate.stop_loss, candidate.take_profit)
-            for future_index, future in enumerate(snapshots[index + 1:], index + 1):
+            for future_index, future in enumerate(snapshots[index + 1:evaluation_end + 1], index + 1):
                 venue.apply_market_event(MarketEvent(future.symbol, future.bid, future.ask, future.mark_price, future_index, future.source_ts_ms, future.funding_rate or 0.0))
                 if not venue.read_positions(snapshot.symbol): break
             if venue.read_positions(snapshot.symbol):
-                final = snapshots[-1]
+                final = snapshots[evaluation_end]
                 close = venue.close_position_at_end_of_replay(snapshot.symbol, final.mark_price,
                                                                f"baseline-end-of-replay-{name}-{index}")
                 if not close.filled_quantity or venue.read_positions(snapshot.symbol):
@@ -92,7 +99,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig())
             regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["gross_pnl"] += trade["gross_pnl"]; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["slippage"] += slippage; rr["funding"] += funding; rr["net_pnl"] = rr["gross_pnl"] - rr["fees"] - rr["funding"]
     import hashlib, json
     replay_hash = hashlib.sha256(json.dumps(replay_parts, separators=(",", ":")).encode()).hexdigest()
-    splits = _splits(len(snapshots), config.train_fraction, config.embargo)
+    splits = _splits(len(snapshots), config.train_fraction, config.embargo) if evaluation_start == 0 and evaluation_end == len(snapshots) - 1 else ()
     total_net = total_gross - total_fees - total_funding
     reason = "POSITIVE_EVIDENCE_REQUIRED"
     if closed == 0: reason = "INCONCLUSIVE_NO_CLOSED_TRADES"
@@ -110,11 +117,19 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
     test_start = cut + config.embargo
     while test_start < len(snapshots):
         test_end = min(len(snapshots) - 1, test_start + window - 1)
-        result = run_baseline(snapshots[test_start:test_end + 1], replace(config, train_fraction=0.5))
+        # Keep all pre-test snapshots available as feature context, but only
+        # execute and flatten positions inside this test window. This avoids
+        # cold-start indicators and prevents future test windows leaking into
+        # the current result.
+        result = run_baseline(snapshots, replace(config, train_fraction=0.5),
+                              evaluation_start=test_start, evaluation_end=test_end)
         rows.append({"train_start": 0, "train_end": test_start - config.embargo - 1,
                      "test_start": test_start, "test_end": test_end,
+                     "context_start": 0, "context_end": test_start - 1,
+                     "test_snapshots": test_end - test_start + 1,
                      "closed_trades": result.closed_trades, "gross_pnl": result.gross_pnl,
-                     "fees": result.fees, "funding": result.funding, "net_pnl": result.net_pnl})
+                     "fees": result.fees, "funding": result.funding, "net_pnl": result.net_pnl,
+                     "strategy_breakdown": result.strategy_breakdown})
         test_start = test_end + 1 + config.embargo
     return tuple(rows)
 

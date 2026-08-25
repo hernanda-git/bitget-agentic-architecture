@@ -21,8 +21,8 @@
   "promotion_reason": "NEGATIVE_NET_PNL",
   "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
   "walk_forward_evaluation": [
-    {"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 31, "closed_trades": 10, "gross_pnl": -22.784220000000047, "fees": 0.8363774100000001, "funding": 0.1503, "net_pnl": -23.77089741000005},
-    {"train_start": 0, "train_end": 31, "test_start": 33, "test_end": 35, "closed_trades": 3, "gross_pnl": -5.082305999999988, "fees": 0.19552845300000002, "funding": 0.0259, "net_pnl": -5.303734452999988}
+    {"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 31, "context_start": 0, "context_end": 21, "test_snapshots": 10, "closed_trades": 10, "gross_pnl": -22.784220000000047, "fees": 0.8363774100000001, "funding": 0.1503, "net_pnl": -23.77089741000005},
+    {"train_start": 0, "train_end": 31, "test_start": 33, "test_end": 35, "context_start": 0, "context_end": 32, "test_snapshots": 3, "closed_trades": 3, "gross_pnl": -5.082305999999988, "fees": 0.19552845300000002, "funding": 0.0259, "net_pnl": -5.303734452999988}
   ],
   "cost_stress": [
     {"multiplier": 1.0, "fee_bps": 5.0, "funding_bps": 2.0, "slippage_bps": 2.0, "gross_pnl": -37.55597200000011, "fees": 3.398265286, "funding": 1.2428000000000003, "net_pnl": -42.19703728600011},

@@ -30,7 +30,9 @@
 ## Evaluation improvements
 
 - Added explicit gross PnL and cost attribution by strategy and regime.
-- Added expanding walk-forward test windows with an embargo. The fixture produced test windows `[22,31]` and `[33,35]`; the final window is short because the fixture ends at snapshot `35`.
+- Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. The fixture produced test windows `[22,31]` and `[33,35]`; the final window is short because the fixture ends at snapshot `35`.
+- Walk-forward net PnL was `-23.77089741000005` for `[22,31]` and `-5.303734452999988` for `[33,35]`; both windows were negative.
+- Added per-window strategy attribution. In this fixture, all 13 walk-forward closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
 - Added a cost-stress matrix. Net PnL was `-42.19703728600011` at `1.0x`, `-44.244407393500104` at `1.5x`, and `-46.291945144000024` at `2.0x` cost assumptions.
 - The stress result is not tuned for profitability. It confirms the negative gate becomes worse under adverse costs.
 

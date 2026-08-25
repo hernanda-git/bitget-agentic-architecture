@@ -125,22 +125,80 @@
   "walk_forward_evaluation": [
     {
       "closed_trades": 10,
+      "context_end": 21,
+      "context_start": 0,
       "fees": 0.8363774100000001,
       "funding": 0.1503,
       "gross_pnl": -22.784220000000047,
       "net_pnl": -23.77089741000005,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 10,
+          "fees": 0.8363774100000001,
+          "funding": 0.1503,
+          "gross_pnl": -22.784220000000047,
+          "net_pnl": -23.77089741000005,
+          "slippage": 0.28422000000004743
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0
+        }
+      },
       "test_end": 31,
+      "test_snapshots": 10,
       "test_start": 22,
       "train_end": 20,
       "train_start": 0
     },
     {
       "closed_trades": 3,
+      "context_end": 32,
+      "context_start": 0,
       "fees": 0.19552845300000002,
       "funding": 0.0259,
       "gross_pnl": -5.082305999999988,
       "net_pnl": -5.303734452999988,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 3,
+          "fees": 0.19552845300000002,
+          "funding": 0.0259,
+          "gross_pnl": -5.082305999999988,
+          "net_pnl": -5.303734452999988,
+          "slippage": 0.08230599999998844
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0
+        }
+      },
       "test_end": 35,
+      "test_snapshots": 3,
       "test_start": 33,
       "train_end": 31,
       "train_start": 0

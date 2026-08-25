@@ -92,6 +92,11 @@ def test_walk_forward_evaluation_has_disjoint_embargoed_test_windows():
     assert all(item["train_end"] < item["test_start"] for item in evaluation)
     assert all(item["test_end"] - item["test_start"] + 1 == 10 for item in evaluation)
     assert all(evaluation[i]["test_end"] < evaluation[i + 1]["test_start"] for i in range(len(evaluation) - 1))
+    assert all(item["context_start"] == 0 for item in evaluation)
+    assert all(item["context_end"] == item["test_start"] - 1 for item in evaluation)
+    assert all(item["test_snapshots"] == 10 for item in evaluation)
+    assert all(set(item["strategy_breakdown"]) == {"trend_continuation", "mean_reversion", "volatility_breakout"}
+               for item in evaluation)
 
 
 def test_cost_stress_reports_degradation_without_changing_baseline():
