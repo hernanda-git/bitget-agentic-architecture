@@ -22,7 +22,7 @@
 - Fees: `3.398265286`
 - Simulated slippage: `1.0559720000001107`
 - Funding: `1.2428000000000003`
-- Net PnL: `-42.19703728600011`
+- Net PnL: `-43.25300928600022` (gross minus fees, slippage, and funding)
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
@@ -40,6 +40,7 @@
 - Added strict walk-forward parameter validation (`0 < train_fraction < 1`, non-negative embargo, and positive test window) so malformed evaluation requests fail closed instead of silently changing the evaluation shape.
 - Added a fail-closed minimum-data guard requiring at least one complete walk-forward test window; short datasets no longer return misleading partial-only evaluations.
 - Added finite, positive cost-stress multiplier validation so zero, negative, NaN, infinity, and empty stress requests are rejected before replay.
+- Corrected net PnL accounting to subtract simulated slippage, and exposed slippage in cost-stress and walk-forward reports. Replayed net PnL is `-43.25300928600022`; cost-stress net PnL is `-43.25300928600022`, `-46.2697653935002`, and `-49.28668914400004` at `1.0x`, `1.5x`, and `2.0x`.
 
 ## Implemented
 
@@ -54,8 +55,8 @@
 
 ```text
 python3 scripts/resource_guard.py --json
-python3 -m pytest tests/test_phase5_engine.py -q  # 8 passed
-python3 -m pytest -q                             # 190 passed
+python3 -m pytest tests/test_phase5_engine.py -q  # 12 passed
+python3 -m pytest -q                             # 194 passed
 python3 -m compileall -q src scripts tests
 python3 scripts/run_strategy_baseline.py --output reports/phase-5/baseline.json
 ```

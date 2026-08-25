@@ -86,7 +86,7 @@ def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
 def test_baseline_exposes_gross_pnl_and_explicit_cost_attribution():
     result = run_baseline(make_series())
     assert result.gross_pnl == sum(row["gross_pnl"] for row in result.strategy_breakdown.values())
-    assert result.net_pnl == result.gross_pnl - result.fees - result.funding
+    assert result.net_pnl == result.gross_pnl - result.fees - result.slippage - result.funding
     assert all("gross_pnl" in row for row in result.strategy_breakdown.values())
 
 
@@ -113,10 +113,14 @@ def test_cost_stress_reports_degradation_without_changing_baseline():
     base = run_baseline(make_series())
     stress = run_cost_stress(make_series(), BaselineConfig(), (1.0, 2.0))
     assert stress[0]["net_pnl"] == base.net_pnl
+    assert stress[0]["slippage"] == base.slippage
+    assert stress[0]["net_pnl"] == (stress[0]["gross_pnl"] - stress[0]["fees"]
+                                     - stress[0]["slippage"] - stress[0]["funding"])
     assert stress[1]["net_pnl"] <= stress[0]["net_pnl"]
     assert stress[1]["fee_bps"] == 10.0
     assert stress[1]["funding"] > stress[0]["funding"]
     assert stress[1]["funding"] == 2 * stress[0]["funding"]
+    assert stress[1]["slippage"] > stress[0]["slippage"]
 
 
 def test_walk_forward_rejects_invalid_evaluation_parameters():

@@ -18,17 +18,17 @@
   "fees": 3.398265286,
   "slippage": 1.0559720000001107,
   "funding": 1.2428000000000003,
-  "net_pnl": -42.19703728600011,
+  "net_pnl": -43.25300928600022,
   "promotion_allowed": false,
   "promotion_reason": "NEGATIVE_NET_PNL",
   "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
   "walk_forward_evaluation": [
-    {"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 31, "context_start": 0, "context_end": 21, "test_snapshots": 10, "closed_trades": 10, "gross_pnl": -22.784220000000047, "fees": 0.8363774100000001, "funding": 0.1503, "net_pnl": -23.77089741000005}
+    {"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 31, "context_start": 0, "context_end": 21, "test_snapshots": 10, "closed_trades": 10, "gross_pnl": -22.784220000000047, "fees": 0.8363774100000001, "slippage": 0.28422000000004743, "funding": 0.1503, "net_pnl": -24.055117410000097}
   ],
   "cost_stress": [
-    {"multiplier": 1.0, "fee_bps": 5.0, "funding_bps": 2.0, "slippage_bps": 2.0, "gross_pnl": -37.55597200000011, "fees": 3.398265286, "funding": 1.2428000000000003, "net_pnl": -42.19703728600011},
-    {"multiplier": 1.5, "fee_bps": 7.5, "funding_bps": 3.0, "slippage_bps": 3.0, "gross_pnl": -37.9039580000001, "fees": 5.0976493935, "funding": 1.8641999999999999, "net_pnl": -44.8658073935001},
-    {"multiplier": 2.0, "fee_bps": 10.0, "funding_bps": 4.0, "slippage_bps": 4.0, "gross_pnl": -38.25194400000002, "fees": 6.797201143999998, "funding": 2.4856000000000007, "net_pnl": -47.53474514400002}
+    {"multiplier": 1.0, "fee_bps": 5.0, "funding_bps": 2.0, "slippage_bps": 2.0, "gross_pnl": -37.55597200000011, "fees": 3.398265286, "slippage": 1.0559720000001107, "funding": 1.2428000000000003, "net_pnl": -43.25300928600022},
+    {"multiplier": 1.5, "fee_bps": 7.5, "funding_bps": 3.0, "slippage_bps": 3.0, "gross_pnl": -37.9039580000001, "fees": 5.0976493935, "slippage": 1.4039580000001024, "funding": 1.8641999999999999, "net_pnl": -46.2697653935002},
+    {"multiplier": 2.0, "fee_bps": 10.0, "funding_bps": 4.0, "slippage_bps": 4.0, "gross_pnl": -38.25194400000002, "fees": 6.797201143999998, "slippage": 1.751944000000023, "funding": 2.4856000000000007, "net_pnl": -49.28668914400004}
   ],
   "limitations": [
     "Synthetic offline fixture; not evidence of live profitability or loss rates.",

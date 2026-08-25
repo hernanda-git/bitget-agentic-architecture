@@ -111,12 +111,12 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             total_fees += trade["entry_fee"] + trade["exit_fee"]; total_slippage += slippage; total_funding += funding
             total_gross += trade["gross_pnl"]; closed += 1
             row = strategy[name]; row["closed_trades"] += 1; row["gross_pnl"] += trade["gross_pnl"]; row["fees"] += trade["entry_fee"] + trade["exit_fee"]; row["slippage"] += slippage; row["funding"] += funding
-            row["net_pnl"] = row["gross_pnl"] - row["fees"] - row["funding"]
-            regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["gross_pnl"] += trade["gross_pnl"]; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["slippage"] += slippage; rr["funding"] += funding; rr["net_pnl"] = rr["gross_pnl"] - rr["fees"] - rr["funding"]
+            row["net_pnl"] = row["gross_pnl"] - row["fees"] - row["slippage"] - row["funding"]
+            regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["gross_pnl"] += trade["gross_pnl"]; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["slippage"] += slippage; rr["funding"] += funding; rr["net_pnl"] = rr["gross_pnl"] - rr["fees"] - rr["slippage"] - rr["funding"]
     import hashlib, json
     replay_hash = hashlib.sha256(json.dumps(replay_parts, separators=(",", ":")).encode()).hexdigest()
     splits = _splits(len(snapshots), config.train_fraction, config.embargo) if evaluation_start == 0 and evaluation_end == len(snapshots) - 1 else ()
-    total_net = total_gross - total_fees - total_funding
+    total_net = total_gross - total_fees - total_slippage - total_funding
     reason = "POSITIVE_EVIDENCE_REQUIRED"
     if closed == 0: reason = "INCONCLUSIVE_NO_CLOSED_TRADES"
     elif total_net < 0: reason = "NEGATIVE_NET_PNL"
@@ -173,5 +173,6 @@ def run_cost_stress(snapshots: Iterable, config: BaselineConfig = BaselineConfig
                      "funding_bps": config.funding_bps * multiplier,
                      "slippage_bps": config.slippage_bps * multiplier,
                      "gross_pnl": result.gross_pnl, "fees": result.fees,
-                     "funding": result.funding, "net_pnl": result.net_pnl})
+                     "slippage": result.slippage, "funding": result.funding,
+                     "net_pnl": result.net_pnl})
     return tuple(rows)
