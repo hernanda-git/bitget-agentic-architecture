@@ -33,7 +33,7 @@
 
 - Added explicit gross PnL and cost attribution by strategy and regime.
 - Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. Only complete test windows are reported; the fixture produced one complete window `[22,31]`, while the trailing 3-snapshot remainder is excluded rather than presented as a comparable result.
-- Walk-forward net PnL was `-23.77089741000005` for the complete window `[22,31]`.
+- Walk-forward net PnL was `-24.055117410000097` for the complete window `[22,31]`.
 - Added per-window strategy attribution. In this fixture, all 10 complete-window closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
 - Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction. Net PnL was `-42.19703728600011` at `1.0x`, `-44.8658073935001` at `1.5x`, and `-47.53474514400002` at `2.0x` cost assumptions; funding was `1.2428000000000003`, `1.8641999999999999`, and `2.4856000000000007` respectively.
 - Corrected net funding attribution so funding received offsets funding paid rather than being incorrectly added to costs. The existing synthetic baseline is long-only and therefore unchanged; a regression test now verifies the signed funding arithmetic directly.
@@ -41,6 +41,7 @@
 - Added a fail-closed minimum-data guard requiring at least one complete walk-forward test window; short datasets no longer return misleading partial-only evaluations.
 - Added finite, positive cost-stress multiplier validation so zero, negative, NaN, infinity, and empty stress requests are rejected before replay.
 - Corrected net PnL accounting to subtract simulated slippage, and exposed slippage in cost-stress and walk-forward reports. Replayed net PnL is `-43.25300928600022`; cost-stress net PnL is `-43.25300928600022`, `-46.2697653935002`, and `-49.28668914400004` at `1.0x`, `1.5x`, and `2.0x`.
+- Added a fail-closed Phase 5 artifact validator that compares the detailed baseline JSON with compact summary fields and all checked-in Markdown numerical claims.
 
 ## Implemented
 
@@ -59,6 +60,7 @@ python3 -m pytest tests/test_phase5_engine.py -q  # 12 passed
 python3 -m pytest -q                             # 194 passed
 python3 -m compileall -q src scripts tests
 python3 scripts/run_strategy_baseline.py --output reports/phase-5/baseline.json
+python3 scripts/verify_phase5_report.py --root .
 ```
 
 ## Limitations and safety

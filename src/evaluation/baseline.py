@@ -151,7 +151,7 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
                      "closed_trades": result.closed_trades, "gross_pnl": result.gross_pnl,
                      "protection_attachments": result.protection_attachments,
                      "reconciliation_checks": result.reconciliation_checks,
-                     "fees": result.fees, "funding": result.funding, "net_pnl": result.net_pnl,
+                     "fees": result.fees, "funding": result.funding, "slippage": result.slippage, "net_pnl": result.net_pnl,
                      "strategy_breakdown": result.strategy_breakdown})
         test_start = test_end + 1 + config.embargo
     if not any(row["test_snapshots"] == window for row in rows):

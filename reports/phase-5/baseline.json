@@ -138,6 +138,7 @@
       "net_pnl": -24.055117410000097,
       "protection_attachments": 10,
       "reconciliation_checks": 0,
+      "slippage": 0.28422000000004743,
       "strategy_breakdown": {
         "mean_reversion": {
           "closed_trades": 0,

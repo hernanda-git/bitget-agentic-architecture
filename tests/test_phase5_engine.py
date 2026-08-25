@@ -103,6 +103,13 @@ def test_walk_forward_evaluation_has_disjoint_embargoed_test_windows():
                for item in evaluation)
 
 
+def test_walk_forward_reports_slippage_and_net_pnl_formula():
+    evaluation = run_walk_forward(make_series(36), BaselineConfig(train_fraction=0.6, embargo=1, test_window=10))
+    row = evaluation[0]
+    assert row["slippage"] >= 0
+    assert row["net_pnl"] == row["gross_pnl"] - row["fees"] - row["slippage"] - row["funding"]
+
+
 def test_funding_received_offsets_funding_paid_in_cost_attribution():
     from src.evaluation.baseline import _funding_cost
 
