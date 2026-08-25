@@ -36,7 +36,7 @@ class PaperLoop:
         fill=self.venue.place_order(oid,d.symbol,d.side,1,d.entry)
         self.ledger.append('INTENT_APPROVED', {'cycle_id':cycle_id,'client_order_id':oid})
         self.ledger.append('ORDER_SUBMITTED', {'cycle_id':cycle_id,'client_order_id':oid})
-        self.ledger.append('FILL_OBSERVED', {'cycle_id':cycle_id,'client_order_id':oid,'fee':fill.fee,'price':fill.price})
+        self.ledger.append('FILL_OBSERVED', {'cycle_id':cycle_id,'client_order_id':oid,'symbol':d.symbol,'side':d.side,'quantity':fill.quantity,'price':fill.price,'fee':fill.fee})
         if attach_protection:
             self.venue.set_protection(d.symbol,d.stop_loss,d.take_profit)
         pos=self.venue.positions[d.symbol]

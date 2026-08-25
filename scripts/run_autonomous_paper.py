@@ -22,6 +22,7 @@ from src.providers.fake import FakeProvider
 from src.providers.ports import ProviderResponse
 from src.paper_loop import PaperLoop
 from src.reporting import write_run_report
+from src.simulation.events import MarketEvent
 
 
 def _response(symbol: str, scenario: str, now: int) -> ProviderResponse:
@@ -54,6 +55,23 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
             provider = FakeProvider([_response(symbol, scenario, now + index)])
             result = asyncio.run(PaperLoop(provider, policy, ledger, venue).process(
                 snapshot, PortfolioView(), now + index))
+            # A bounded paper cycle includes the market path to a terminal exit.
+            # This is deliberately deterministic and remains entirely offline.
+            if scenario == "enter" and symbol in venue.positions:
+                position = venue.positions[symbol]
+                target = position.take_profit or 110.0
+                exits = venue.apply_market_event(MarketEvent(symbol, target, target, target, index + 1, funding_rate=0.001))
+                for event in exits:
+                    ledger.append("FILL_OBSERVED", {"cycle_id": result["cycle_id"], "client_order_id": event.client_order_id,
+                        "symbol": symbol, "side": "SELL" if position.side == "BUY" else "BUY", "quantity": position.quantity,
+                        "price": event.price, "fee": venue.fills[-1].fee})
+                    ledger.append("PROTECTION_TRIGGERED", {"cycle_id": result["cycle_id"], "symbol": symbol,
+                        "client_order_id": event.client_order_id, "price": event.price})
+                if symbol not in venue.positions:
+                    trade = venue.closed_trades[-1]
+                    ledger.append("TRADE_CLOSED", {"cycle_id": result["cycle_id"], "symbol": symbol,
+                        "net_pnl": trade["net_pnl"], "gross_pnl": trade["gross_pnl"],
+                        "entry_fee": trade["entry_fee"], "exit_fee": trade["exit_fee"], "funding": trade["funding"]})
             results.append(result)
     events = ledger.all()
     counts = Counter(event["event_type"] for event in events)
@@ -64,6 +82,8 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
     if inject_integrity_failure:
         anomalies.append("INTEGRITY_FAILURE_INJECTED")
     integrity_ok = not anomalies and counts["CYCLE_TERMINAL"] == cycles * len(symbols)
+    fees = sum(fill.fee for fill in venue.fills)
+    net_pnl = sum(float(trade["net_pnl"]) for trade in venue.closed_trades)
     report = {"run_id": uuid.uuid4().hex[:12], "mode": "paper", "status": "PASS" if integrity_ok else "FAIL",
               "integrity_ok": integrity_ok, "cycles_requested": cycles * len(symbols),
               "cycles_completed": len(results), "orders_placed": len(venue.orders), "signed_calls": 0,
@@ -72,7 +92,10 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
               "duplicate_prevention": {"ledger_claims": len(results), "duplicate_events": counts["CYCLE_TERMINAL"] - len(results)},
               "protection_reconciliation": {"verified": counts["PROTECTION_VERIFIED"], "reconciled": counts["POSITION_RECONCILED"]},
               "provider": {"name": "fake", "calls": len(results), "failures": 0, "latency_ms": 0},
-              "fee_inclusive_outcome": {"fees_paid": sum(fill.fee for fill in venue.fills), "realized_pnl": 0.0},
+              "open_positions": [p.__dict__ for p in venue.read_positions()],
+              "closed_trades": venue.closed_trades, "fees": fees, "funding": venue.read_balance()["funding_paid"] - venue.read_balance()["funding_received"],
+              "net_pnl": net_pnl,
+              "fee_inclusive_outcome": {"fees_paid": fees, "realized_pnl": net_pnl},
               "anomalies": anomalies, "ledger_events_before": events_before, "ledger_events_after": len(events)}
     write_run_report(report, reports_dir)
     return report

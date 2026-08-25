@@ -55,7 +55,7 @@ def test_launcher_paper_execution_requires_explicit_confirmation(tmp_path):
 
     allowed_env = os.environ | {"DEMO_EXECUTION_CONFIRM": "I_UNDERSTAND_DEMO_EXECUTION"}
     allowed = subprocess.run(args, cwd=ROOT, text=True, capture_output=True, timeout=20, env=allowed_env)
-    assert allowed.returncode != 0  # the fixture intentionally leaves an open paper position
+    assert allowed.returncode == 0
     assert '"mode": "paper"' in allowed.stdout
 
 

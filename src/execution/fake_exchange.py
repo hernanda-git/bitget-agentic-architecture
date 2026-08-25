@@ -1,8 +1,25 @@
-"""Deterministic paper exchange. No network and no credentials."""
+"""Deterministic, event-driven paper exchange. It never opens a network connection."""
 from __future__ import annotations
+from dataclasses import dataclass, replace
+from enum import Enum
+from typing import Any
+from src.accounting.pnl import calculate_trade
+from src.execution.specifications import FeeSchedule, FundingSchedule, VenueSpecification, VenueRuleError
 
-from dataclasses import dataclass
+class OrderStatus(str, Enum):
+    NEW="NEW"; PARTIALLY_FILLED="PARTIALLY_FILLED"; FILLED="FILLED"; CANCEL_REQUESTED="CANCEL_REQUESTED"; CANCELLED="CANCELLED"; REJECTED="REJECTED"; EXPIRED="EXPIRED"
 
+@dataclass(frozen=True)
+class OrderRequest:
+    client_order_id: str
+    symbol: str
+    side: str
+    quantity: float
+    price: float | None
+    time_in_force: str = "GTC"
+    reduce_only: bool = False
+    leverage: float = 1
+    margin_mode: str = "isolated"
 
 @dataclass(frozen=True)
 class FakeOrder:
@@ -10,8 +27,11 @@ class FakeOrder:
     symbol: str
     side: str
     quantity: float
-    price: float
-    status: str
+    price: float | None
+    status: OrderStatus
+    filled_quantity: float = 0.0
+    reason: str = ""
+    reduce_only: bool = False
 
 @dataclass(frozen=True)
 class FakeFill:
@@ -21,6 +41,8 @@ class FakeFill:
     quantity: float
     price: float
     fee: float
+    funding: float = 0.0
+    slippage_cost: float = 0.0
 
 @dataclass(frozen=True)
 class FakePosition:
@@ -31,39 +53,137 @@ class FakePosition:
     stop_loss: float | None = None
     take_profit: float | None = None
 
+@dataclass(frozen=True)
+class ExchangeEvent:
+    kind: str
+    symbol: str
+    client_order_id: str | None = None
+    price: float | None = None
+
 class FakeExchange:
-    def __init__(self, fee_bps: float = 5.0):
-        self.fee_bps = fee_bps
-        self.orders: dict[str, FakeOrder] = {}
-        self.fills: list[FakeFill] = []
-        self.positions: dict[str, FakePosition] = {}
+    def __init__(self, fee_bps: float = 5.0, *, venue: VenueSpecification | None = None,
+                 initial_balance: float = 10_000.0, slippage_bps: float = 0.0,
+                 partial_fill_ratio: float = 0.5):
+        self.venue = venue or VenueSpecification(0.01, 0.001, 0.001, 1.0, 1.0,
+            FeeSchedule(fee_bps, fee_bps), FundingSchedule(0.0), 20, frozenset({"isolated", "cross"}))
+        self.fee_bps, self.slippage_bps = fee_bps, slippage_bps
+        self.partial_fill_ratio = partial_fill_ratio
+        self.balance = float(initial_balance)
+        self.orders: dict[str, FakeOrder] = {}; self.fills: list[FakeFill] = []
+        self.positions: dict[str, FakePosition] = {}; self.closed_trades: list[dict[str, Any]] = []
+        self.market_prices: dict[str, tuple[float, float, float]] = {}
+        self._last_sequence: dict[str, int] = {}
+        self._funding_paid = 0.0; self._funding_received = 0.0
 
-    def place_order(self, client_order_id: str, symbol: str, side: str, quantity: float, price: float) -> FakeFill:
-        if client_order_id in self.orders:
-            existing = [f for f in self.fills if f.client_order_id == client_order_id]
-            if existing:
-                return existing[0]
-            raise ValueError("duplicate order without fill")
-        if quantity <= 0 or price <= 0 or side not in {"BUY", "SELL"}:
-            raise ValueError("invalid order")
-        self.orders[client_order_id] = FakeOrder(client_order_id, symbol, side, quantity, price, "FILLED")
-        fee = quantity * price * self.fee_bps / 10_000
-        fill = FakeFill(client_order_id, symbol, side, quantity, price, fee)
-        self.fills.append(fill)
-        existing = self.positions.get(symbol)
-        if existing and existing.side != side:
-            remaining = existing.quantity - quantity
-            if remaining <= 0:
-                self.positions.pop(symbol, None)
-            else:
-                self.positions[symbol] = FakePosition(symbol, existing.side, remaining, existing.entry_price, existing.stop_loss, existing.take_profit)
-        else:
-            self.positions[symbol] = FakePosition(symbol, side, quantity, price)
-        return fill
+    def _price(self, symbol, side, requested=None):
+        bid, ask, mark = self.market_prices.get(symbol, (100.0, 100.0, 100.0))
+        base = ask if side == "BUY" else bid
+        if requested is None: return base * (1 + (1 if side == "BUY" else -1) * self.slippage_bps / 10000)
+        return requested
 
-    def set_protection(self, symbol: str, stop_loss: float, take_profit: float) -> None:
+    def submit_order(self, request: OrderRequest) -> FakeOrder:
+        if request.client_order_id in self.orders:
+            old = self.orders[request.client_order_id]
+            if old.symbol == request.symbol and old.side == request.side and old.quantity == request.quantity: return old
+            raise ValueError("duplicate client order id")
+        try: self.venue.validate_order(symbol=request.symbol, quantity=request.quantity, price=request.price or 100.0, leverage=request.leverage, margin_mode=request.margin_mode)
+        except VenueRuleError as exc:
+            order = FakeOrder(request.client_order_id, request.symbol, request.side, request.quantity, request.price, OrderStatus.REJECTED, reason=str(exc), reduce_only=request.reduce_only)
+            self.orders[request.client_order_id] = order; return order
+        existing = self.positions.get(request.symbol)
+        if request.reduce_only and (not existing or existing.side == request.side or request.quantity > existing.quantity):
+            order = FakeOrder(request.client_order_id, request.symbol, request.side, request.quantity, request.price, OrderStatus.REJECTED, reason="REDUCE_ONLY_NO_POSITION", reduce_only=True)
+            self.orders[request.client_order_id] = order; return order
+        bid, ask, _ = self.market_prices.get(request.symbol, (100.0, 100.0, 100.0))
+        crosses = request.price is None or (request.side == "BUY" and request.price >= ask) or (request.side == "SELL" and request.price <= bid)
+        if not crosses:
+            status = OrderStatus.EXPIRED if request.time_in_force in {"IOC", "FOK"} else OrderStatus.NEW
+            order = FakeOrder(request.client_order_id, request.symbol, request.side, request.quantity, request.price, status, reduce_only=request.reduce_only)
+            self.orders[request.client_order_id] = order; return order
+        qty = request.quantity
+        price = self._price(request.symbol, request.side, request.price)
+        order = FakeOrder(request.client_order_id, request.symbol, request.side, qty, price, OrderStatus.FILLED, qty, reduce_only=request.reduce_only)
+        self.orders[request.client_order_id] = order; self._fill(order, qty, price)
+        return self.orders[request.client_order_id]
+
+    def place_order(self, client_order_id, symbol, side, quantity, price):
+        # Compatibility facade is an immediate paper fill, matching the legacy
+        # unit API. New code should use submit_order and market events.
+        order = self.submit_order(OrderRequest(client_order_id, symbol, side, quantity, None))
+        fills = self.read_fills(client_order_id)
+        if not fills: raise ValueError(order.reason or "order not filled")
+        return fills[-1]
+
+    def _fill(self, order, quantity, price):
+        fee = quantity * price * self.fee_bps / 10000
+        fill = FakeFill(order.client_order_id, order.symbol, order.side, quantity, price, fee, 0.0, abs(price - (self.market_prices.get(order.symbol, (price, price, price))[2])) * quantity)
+        self.fills.append(fill); self._apply_position(order, quantity, price, fee)
+
+    def _apply_position(self, order, quantity, price, fee):
+        old = self.positions.get(order.symbol)
+        if old and old.side != order.side:
+            close_qty = min(old.quantity, quantity)
+            gross = (price - old.entry_price) * close_qty * (1 if old.side == "BUY" else -1)
+            entry_fee = old.entry_price * close_qty * self.fee_bps / 10000
+            self.closed_trades.append({"symbol": order.symbol, "status": "CLOSED", "gross_pnl": gross, "entry_fee": entry_fee, "exit_fee": fee, "funding": 0.0, "net_pnl": gross-entry_fee-fee})
+            rem = old.quantity - close_qty
+            if rem <= 1e-12: self.positions.pop(order.symbol, None)
+            else: self.positions[order.symbol] = replace(old, quantity=rem)
+            if quantity <= old.quantity: return
+            quantity -= old.quantity
+        if old and old.side == order.side:
+            total = old.quantity + quantity; avg = (old.entry_price*old.quantity + price*quantity)/total
+            self.positions[order.symbol] = replace(old, quantity=total, entry_price=avg)
+        else: self.positions[order.symbol] = FakePosition(order.symbol, order.side, quantity, price)
+
+    def cancel_order(self, client_order_id):
+        order = self.orders[client_order_id]
+        if order.status not in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}: return order
+        self.orders[client_order_id] = replace(order, status=OrderStatus.CANCEL_REQUESTED)
+        self.orders[client_order_id] = replace(self.orders[client_order_id], status=OrderStatus.CANCELLED)
+        return self.orders[client_order_id]
+
+    def read_order(self, client_order_id): return self.orders[client_order_id]
+    def read_fills(self, client_order_id=None): return [f for f in self.fills if client_order_id is None or f.client_order_id == client_order_id]
+    def read_positions(self, symbol=None): return [p for s,p in self.positions.items() if symbol is None or s == symbol]
+    def read_open_orders(self): return [o for o in self.orders.values() if o.status in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED, OrderStatus.CANCEL_REQUESTED}]
+    def read_balance(self): return {"equity": self.balance, "fees": sum(f.fee for f in self.fills), "funding_paid": self._funding_paid, "funding_received": self._funding_received}
+
+    def set_protection(self, symbol, stop_loss, take_profit):
         position = self.positions[symbol]
-        self.positions[symbol] = FakePosition(position.symbol, position.side, position.quantity, position.entry_price, stop_loss, take_profit)
+        self.positions[symbol] = replace(position, stop_loss=stop_loss, take_profit=take_profit)
 
-    def read_state(self) -> dict:
-        return {"orders": dict(self.orders), "fills": list(self.fills), "positions": dict(self.positions)}
+    def apply_market_event(self, event):
+        previous = self._last_sequence.get(event.symbol, -1)
+        if event.sequence <= previous: return []
+        self._last_sequence[event.symbol] = event.sequence
+        self.market_prices[event.symbol] = (event.bid, event.ask, event.mark)
+        if event.funding_rate:
+            for p in self.read_positions(event.symbol):
+                value = p.quantity * event.mark * event.funding_rate
+                self._funding_paid += value if p.side == "BUY" and event.funding_rate > 0 else 0
+                self._funding_received += value if p.side == "SELL" and event.funding_rate > 0 else 0
+        events = []
+        for oid, order in list(self.orders.items()):
+            if order.symbol != event.symbol or order.status not in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}: continue
+            crosses = (order.side == "BUY" and order.price is not None and order.price >= event.ask) or (order.side == "SELL" and order.price is not None and order.price <= event.bid)
+            if crosses:
+                remaining = order.quantity - order.filled_quantity
+                qty = remaining if order.status is OrderStatus.PARTIALLY_FILLED else (remaining * self.partial_fill_ratio if remaining > 0 and self.partial_fill_ratio < 1 else remaining)
+                status = OrderStatus.FILLED if qty >= remaining-1e-12 else OrderStatus.PARTIALLY_FILLED
+                self.orders[oid] = replace(order, status=status, filled_quantity=order.filled_quantity+qty)
+                self._fill(self.orders[oid], qty, order.price); events.append(ExchangeEvent("ORDER_FILLED", event.symbol, oid, order.price))
+        p = self.positions.get(event.symbol)
+        breach = False
+        if p and p.side == "BUY":
+            breach = event.mark <= (p.stop_loss if p.stop_loss is not None else float("-inf")) or event.mark >= (p.take_profit if p.take_profit is not None else float("inf"))
+        elif p and p.side == "SELL":
+            breach = event.mark >= (p.stop_loss if p.stop_loss is not None else float("inf")) or event.mark <= (p.take_profit if p.take_profit is not None else float("-inf"))
+        if p and breach:
+            oid = f"protection-{event.symbol}-{event.sequence}"
+            self._fill(FakeOrder(oid, event.symbol, "SELL" if p.side == "BUY" else "BUY", p.quantity, event.mark, OrderStatus.FILLED, p.quantity), p.quantity, event.mark)
+            self.orders[oid] = FakeOrder(oid, event.symbol, "SELL" if p.side == "BUY" else "BUY", p.quantity, event.mark, OrderStatus.FILLED, p.quantity)
+            events.append(ExchangeEvent("PROTECTION_TRIGGERED", event.symbol, oid, event.mark))
+        return events
+
+    def read_state(self): return {"orders": dict(self.orders), "fills": list(self.fills), "positions": dict(self.positions)}

@@ -19,6 +19,8 @@ def replay_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
     protection: dict[str, str] = {}
     reconciliation = "UNKNOWN"
     risk_breaker = "CLOSED"
+    closed_trades = []
+    net_pnl = 0.0
     for event in events:
         kind = event.get("event_type")
         payload = event.get("payload", {})
@@ -40,6 +42,9 @@ def replay_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
                 positions.setdefault(symbol, {"quantity": 0.0})["protection"] = protection[symbol]
         elif kind == "POSITION_RECONCILED":
             reconciliation = "IN_SYNC" if payload.get("in_sync") else "DEGRADED"
+        elif kind == "TRADE_CLOSED":
+            closed_trades.append(payload)
+            net_pnl += float(payload.get("net_pnl", 0.0))
         elif kind == "RISK_BREAKER_OPEN":
             risk_breaker = "OPEN"
         elif kind == "RISK_BREAKER_CLOSED":
@@ -47,6 +52,8 @@ def replay_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
         elif kind == "CYCLE_TERMINAL":
             dispositions[str(payload.get("disposition", "UNKNOWN"))] += 1
     return {"dispositions": dict(dispositions), "positions": positions,
+            "open_positions": [p for p in positions.values() if abs(float(p.get("quantity", 0))) > 1e-12],
+            "closed_trades": closed_trades, "net_pnl": net_pnl,
             "protection": protection, "reconciliation": reconciliation, "risk_breaker": risk_breaker}
 
 

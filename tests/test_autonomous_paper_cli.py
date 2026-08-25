@@ -30,14 +30,15 @@ def test_paper_cli_bounded_run_writes_json_and_markdown_report(tmp_path):
     assert "fee_inclusive_outcome" in report
 
 
-def test_paper_cli_fails_when_fake_run_leaves_open_position(tmp_path):
+def test_paper_cli_closes_enter_position_before_success(tmp_path):
     result = run_cli(tmp_path, "--mode", "paper", "--cycles", "1", "--symbols", "BTCUSDT",
                      "--scenario", "enter", "--ledger", str(tmp_path / "ledger.sqlite3"),
                      "--reports-dir", str(tmp_path / "reports"))
-    assert result.returncode != 0
+    assert result.returncode == 0
     summary = json.loads(result.stdout)
-    assert summary["integrity_ok"] is False
-    assert "OPEN_POSITIONS" in summary["anomalies"]
+    assert summary["integrity_ok"] is True
+    assert summary["open_positions"] == []
+    assert summary["closed_trades"]
 
 
 def test_paper_cli_rejects_live_mode(tmp_path):
