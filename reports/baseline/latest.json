@@ -1,0 +1,15 @@
+{
+  "boundary_ok": true,
+  "compile_ok": true,
+  "git_status": [
+    " M pyproject.toml",
+    "?? .hermes/",
+    "?? reports/baseline/",
+    "?? requirements-lock.txt",
+    "?? scripts/baseline_check.py",
+    "?? tests/test_baseline_check.py"
+  ],
+  "revision": "f5eac10f17cc80a5f0305eabf3907abf56fabdd8",
+  "secrets_found": [],
+  "test_count": 153
+}
