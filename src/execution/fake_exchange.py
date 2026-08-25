@@ -9,6 +9,9 @@ from src.execution.specifications import FeeSchedule, FundingSchedule, VenueSpec
 class OrderStatus(str, Enum):
     NEW="NEW"; PARTIALLY_FILLED="PARTIALLY_FILLED"; FILLED="FILLED"; CANCEL_REQUESTED="CANCEL_REQUESTED"; CANCELLED="CANCELLED"; REJECTED="REJECTED"; EXPIRED="EXPIRED"
 
+class CloseReason(str, Enum):
+    END_OF_REPLAY = "END_OF_REPLAY"
+
 @dataclass(frozen=True)
 class OrderRequest:
     client_order_id: str
@@ -20,6 +23,7 @@ class OrderRequest:
     reduce_only: bool = False
     leverage: float = 1
     margin_mode: str = "isolated"
+    close_reason: CloseReason | None = None
 
 @dataclass(frozen=True)
 class FakeOrder:
@@ -32,6 +36,7 @@ class FakeOrder:
     filled_quantity: float = 0.0
     reason: str = ""
     reduce_only: bool = False
+    close_reason: CloseReason | None = None
 
 @dataclass(frozen=True)
 class FakeFill:
@@ -88,7 +93,7 @@ class FakeExchange:
             raise ValueError("duplicate client order id")
         try: self.venue.validate_order(symbol=request.symbol, quantity=request.quantity, price=request.price or 100.0, leverage=request.leverage, margin_mode=request.margin_mode)
         except VenueRuleError as exc:
-            order = FakeOrder(request.client_order_id, request.symbol, request.side, request.quantity, request.price, OrderStatus.REJECTED, reason=str(exc), reduce_only=request.reduce_only)
+            order = FakeOrder(request.client_order_id, request.symbol, request.side, request.quantity, request.price, OrderStatus.REJECTED, reason=str(exc), reduce_only=request.reduce_only, close_reason=request.close_reason)
             self.orders[request.client_order_id] = order; return order
         existing = self.positions.get(request.symbol)
         if request.reduce_only and (not existing or existing.side == request.side or request.quantity > existing.quantity):
@@ -98,11 +103,11 @@ class FakeExchange:
         crosses = request.price is None or (request.side == "BUY" and request.price >= ask) or (request.side == "SELL" and request.price <= bid)
         if not crosses:
             status = OrderStatus.EXPIRED if request.time_in_force in {"IOC", "FOK"} else OrderStatus.NEW
-            order = FakeOrder(request.client_order_id, request.symbol, request.side, request.quantity, request.price, status, reduce_only=request.reduce_only)
+            order = FakeOrder(request.client_order_id, request.symbol, request.side, request.quantity, request.price, status, reduce_only=request.reduce_only, close_reason=request.close_reason)
             self.orders[request.client_order_id] = order; return order
         qty = request.quantity
         price = self._price(request.symbol, request.side, request.price)
-        order = FakeOrder(request.client_order_id, request.symbol, request.side, qty, price, OrderStatus.FILLED, qty, reduce_only=request.reduce_only)
+        order = FakeOrder(request.client_order_id, request.symbol, request.side, qty, price, OrderStatus.FILLED, qty, reduce_only=request.reduce_only, close_reason=request.close_reason)
         self.orders[request.client_order_id] = order; self._fill(order, qty, price)
         return self.orders[request.client_order_id]
 
@@ -125,7 +130,7 @@ class FakeExchange:
             close_qty = min(old.quantity, quantity)
             gross = (price - old.entry_price) * close_qty * (1 if old.side == "BUY" else -1)
             entry_fee = old.entry_price * close_qty * self.fee_bps / 10000
-            self.closed_trades.append({"symbol": order.symbol, "status": "CLOSED", "gross_pnl": gross, "entry_fee": entry_fee, "exit_fee": fee, "funding": 0.0, "net_pnl": gross-entry_fee-fee})
+            self.closed_trades.append({"symbol": order.symbol, "status": "CLOSED", "gross_pnl": gross, "entry_fee": entry_fee, "exit_fee": fee, "funding": 0.0, "net_pnl": gross-entry_fee-fee, "close_reason": order.close_reason.value if order.close_reason else None, "reduce_only": order.reduce_only})
             rem = old.quantity - close_qty
             if rem <= 1e-12: self.positions.pop(order.symbol, None)
             else: self.positions[order.symbol] = replace(old, quantity=rem)
@@ -152,6 +157,16 @@ class FakeExchange:
     def set_protection(self, symbol, stop_loss, take_profit):
         position = self.positions[symbol]
         self.positions[symbol] = replace(position, stop_loss=stop_loss, take_profit=take_profit)
+
+    def close_position_at_end_of_replay(self, symbol: str, final_mark: float, client_order_id: str) -> FakeOrder:
+        """Close the remaining paper position at the final observed mark."""
+        position = self.positions.get(symbol)
+        if position is None:
+            return self.submit_order(OrderRequest(client_order_id, symbol, "BUY", 0.0, None, reduce_only=True, close_reason=CloseReason.END_OF_REPLAY))
+        self.market_prices[symbol] = (final_mark, final_mark, final_mark)
+        side = "SELL" if position.side == "BUY" else "BUY"
+        return self.submit_order(OrderRequest(client_order_id, symbol, side, position.quantity, None,
+                                              reduce_only=True, close_reason=CloseReason.END_OF_REPLAY))
 
     def apply_market_event(self, event):
         previous = self._last_sequence.get(event.symbol, -1)

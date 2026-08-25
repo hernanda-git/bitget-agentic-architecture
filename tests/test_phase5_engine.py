@@ -9,6 +9,7 @@ from src.strategies.mean_reversion import generate_mean_reversion
 from src.strategies.regime import Regime, classify_regime
 from src.strategies.trend_continuation import generate_trend_continuation
 from src.strategies.volatility_breakout import generate_volatility_breakout
+from scripts.run_strategy_baseline import make_series
 
 
 def candles(closes, start=1_700_000_000_000):
@@ -62,12 +63,15 @@ def test_regime_classification_is_deterministic_and_fail_closed():
 
 
 def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
-    series = [snapshot([100 + i * 0.1 for i in range(n)]) for n in range(8, 28)]
+    series = make_series()
     result = run_baseline(series, BaselineConfig(quantity=1.0, fee_bps=5, funding_bps=2, slippage_bps=2))
     again = run_baseline(series, BaselineConfig(quantity=1.0, fee_bps=5, funding_bps=2, slippage_bps=2))
     assert result == again
-    assert result.network_calls == result.signed_calls == result.orders == 0
+    assert result.network_calls == result.signed_calls == 0
+    assert result.orders == 37
     assert result.closed_trades >= 0
+    assert result.open_positions == 0
+    assert result.end_of_replay_closes == 1
     assert result.fees >= 0 and result.funding >= 0
     assert set(result.strategy_breakdown) == {"trend_continuation", "mean_reversion", "volatility_breakout"}
     assert result.promotion_allowed is False

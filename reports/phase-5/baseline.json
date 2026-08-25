@@ -1,10 +1,12 @@
 {
-  "closed_trades": 35,
-  "fees": 3.3347602849999998,
+  "closed_trades": 36,
+  "end_of_replay_closes": 1,
+  "fees": 3.398265286,
   "funding": 1.2428000000000003,
-  "net_pnl": -42.09813028500013,
+  "net_pnl": -42.197037286000125,
   "network_calls": 0,
-  "orders": 36,
+  "open_positions": 0,
+  "orders": 37,
   "promotion_allowed": false,
   "promotion_reason": "NEGATIVE_NET_PNL",
   "regime_breakdown": {
@@ -12,60 +14,70 @@
       "closed_trades": 0,
       "fees": 0.0,
       "funding": 0.0,
-      "net_pnl": 0.0
+      "net_pnl": 0.0,
+      "slippage": 0.0
     },
     "HIGH_VOLATILITY": {
       "closed_trades": 0,
       "fees": 0.0,
       "funding": 0.0,
-      "net_pnl": 0.0
+      "net_pnl": 0.0,
+      "slippage": 0.0
     },
     "LIQUIDATION_EVENT": {
       "closed_trades": 0,
       "fees": 0.0,
       "funding": 0.0,
-      "net_pnl": 0.0
+      "net_pnl": 0.0,
+      "slippage": 0.0
     },
     "LOW_VOLATILITY": {
       "closed_trades": 34,
       "fees": 3.269998684,
       "funding": 0.0,
-      "net_pnl": -39.49746668400013
+      "net_pnl": -39.49746668400013,
+      "slippage": 0.9973680000001224
     },
     "RANGING": {
       "closed_trades": 0,
       "fees": 0.0,
       "funding": 0.0,
-      "net_pnl": 0.0
+      "net_pnl": 0.0,
+      "slippage": 0.0
     },
     "TRENDING": {
-      "closed_trades": 1,
-      "fees": 0.064761601,
+      "closed_trades": 2,
+      "fees": 0.128266602,
       "funding": 0.0,
-      "net_pnl": -2.600663600999998
+      "net_pnl": -2.699570601999989,
+      "slippage": 0.05860399999998833
     }
   },
   "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
   "signed_calls": 0,
+  "slippage": 1.0559720000001107,
   "snapshots": 36,
   "strategy_breakdown": {
     "mean_reversion": {
       "closed_trades": 0,
       "fees": 0.0,
       "funding": 0.0,
-      "net_pnl": 0.0
+      "net_pnl": 0.0,
+      "slippage": 0.0
     },
     "trend_continuation": {
-      "closed_trades": 35,
-      "fees": 3.3347602849999998,
+      "closed_trades": 36,
+      "fees": 3.398265286,
       "funding": 1.2428000000000003,
-      "net_pnl": -42.09813028500013
+      "net_pnl": -42.197037286000125,
+      "slippage": 1.0559720000001107
     },
     "volatility_breakout": {
       "closed_trades": 0,
       "fees": 0.0,
       "funding": 0.0,
-      "net_pnl": 0.0
+      "net_pnl": 0.0,
+      "slippage": 0.0
     }
   },
   "walk_forward_splits": [
