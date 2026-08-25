@@ -72,6 +72,8 @@ def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
     assert result.closed_trades >= 0
     assert result.open_positions == 0
     assert result.end_of_replay_closes == 1
+    assert result.protection_attachments == result.closed_trades
+    assert result.reconciliation_checks == 0
     assert result.fees >= 0 and result.funding >= 0
     assert set(result.strategy_breakdown) == {"trend_continuation", "mean_reversion", "volatility_breakout"}
     assert result.promotion_allowed is False

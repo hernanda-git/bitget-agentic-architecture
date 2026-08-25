@@ -42,6 +42,8 @@
   "orders": 37,
   "promotion_allowed": false,
   "promotion_reason": "NEGATIVE_NET_PNL",
+  "protection_attachments": 36,
+  "reconciliation_checks": 0,
   "regime_breakdown": {
     "DATA_DEGRADED": {
       "closed_trades": 0,
@@ -131,6 +133,8 @@
       "funding": 0.1503,
       "gross_pnl": -22.784220000000047,
       "net_pnl": -23.77089741000005,
+      "protection_attachments": 10,
+      "reconciliation_checks": 0,
       "strategy_breakdown": {
         "mean_reversion": {
           "closed_trades": 0,
@@ -171,6 +175,8 @@
       "funding": 0.0259,
       "gross_pnl": -5.082305999999988,
       "net_pnl": -5.303734452999988,
+      "protection_attachments": 3,
+      "reconciliation_checks": 0,
       "strategy_breakdown": {
         "mean_reversion": {
           "closed_trades": 0,

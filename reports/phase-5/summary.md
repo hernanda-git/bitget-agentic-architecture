@@ -16,6 +16,8 @@
 - End-of-replay closes: `1`
 - Protection attachments: `36` paper positions configured with stop and target
 - Reconciliation checks: `0` venue reconciliation checks; this is an offline simulator, not an exchange adapter
+- Walk-forward protection attachments: `10` in window `[22,31]`, `3` in window `[33,35]`
+- Walk-forward reconciliation checks: `0` in both windows
 - Gross PnL: `-37.55597200000011`
 - Fees: `3.398265286`
 - Simulated slippage: `1.0559720000001107`

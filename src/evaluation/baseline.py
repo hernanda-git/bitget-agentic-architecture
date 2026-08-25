@@ -28,6 +28,8 @@ class BaselineResult:
     closed_trades: int
     open_positions: int
     end_of_replay_closes: int
+    protection_attachments: int
+    reconciliation_checks: int
     fees: float
     slippage: float
     funding: float
@@ -69,7 +71,8 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     costs = CostAssumptions(config.fee_bps, config.funding_bps, config.slippage_bps)
     generators = (("trend_continuation", generate_trend_continuation), ("mean_reversion", generate_mean_reversion), ("volatility_breakout", generate_volatility_breakout))
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
-    total_fees = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = 0
+    total_fees = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = protection_attachments = 0
+    reconciliation_checks = 0
     replay_parts = []
     for index, snapshot in enumerate(snapshots):
         if index < evaluation_start or index > evaluation_end:
@@ -86,6 +89,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             if not order.filled_quantity: continue
             orders += 1
             venue.set_protection(snapshot.symbol, candidate.stop_loss, candidate.take_profit)
+            protection_attachments += 1
             for future_index, future in enumerate(snapshots[index + 1:evaluation_end + 1], index + 1):
                 venue.apply_market_event(MarketEvent(future.symbol, future.bid, future.ask, future.mark_price, future_index, future.source_ts_ms, _replay_funding_rate(future, config.funding_bps)))
                 if not venue.read_positions(snapshot.symbol): break
@@ -115,7 +119,8 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     reason = "POSITIVE_EVIDENCE_REQUIRED"
     if closed == 0: reason = "INCONCLUSIVE_NO_CLOSED_TRADES"
     elif total_net < 0: reason = "NEGATIVE_NET_PNL"
-    return BaselineResult(len(snapshots), 0, 0, orders, closed, 0, end_of_replay_closes, total_fees, total_slippage, total_funding, total_gross, total_net,
+    return BaselineResult(len(snapshots), 0, 0, orders, closed, 0, end_of_replay_closes,
+                          protection_attachments, reconciliation_checks, total_fees, total_slippage, total_funding, total_gross, total_net,
                           strategy, regime, splits, False, reason, replay_hash)
 
 
@@ -139,6 +144,8 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
                      "context_start": 0, "context_end": test_start - 1,
                      "test_snapshots": test_end - test_start + 1,
                      "closed_trades": result.closed_trades, "gross_pnl": result.gross_pnl,
+                     "protection_attachments": result.protection_attachments,
+                     "reconciliation_checks": result.reconciliation_checks,
                      "fees": result.fees, "funding": result.funding, "net_pnl": result.net_pnl,
                      "strategy_breakdown": result.strategy_breakdown})
         test_start = test_end + 1 + config.embargo
