@@ -98,6 +98,17 @@ A service with fresh timestamps but flat decisions is degraded, not healthy.
 9. Treat demo execution as a separate future gate requiring explicit governance and isolated credentials.
 10. Keep funded execution disabled unless every promotion criterion is independently proven and explicitly authorized outside the model.
 
+## Resource safety and self-recovery
+
+- Heavy work must pass `scripts/resource_guard.py` before launch.
+- Default hard gates are 768 MiB available RAM, 90% swap use, 85% disk use, 8 GiB free disk, and 10% free inodes.
+- Bounded child runs use an explicit timeout and address-space limit.
+- The resource watchdog runs every 10 minutes and alerts on pressure.
+- The watchdog may remove only stale project-owned temporary artifacts.
+- It never kills or restarts Hermes, deployed bots, databases, or unrelated services automatically.
+- When pressure is detected, new heavy work is blocked and existing services are left untouched for operator-safe recovery.
+- Current evidence shows swap pressure is close to the limit: approximately 84% used. No new large workload should start while this remains elevated.
+
 ## Autonomous operating rules
 
 - Automatic execution means offline paper execution or unauthenticated public shadow only.
