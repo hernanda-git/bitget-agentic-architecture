@@ -55,6 +55,10 @@ def _replay_funding_rate(snapshot, funding_bps: float) -> float:
         return 0.0
     return (1 if raw_rate > 0 else -1) * funding_bps / 10_000
 
+def _funding_cost(balance: dict) -> float:
+    """Return net funding paid, with funding received treated as a credit."""
+    return balance["funding_paid"] - balance["funding_received"]
+
 def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), *,
                  evaluation_start: int = 0, evaluation_end: int | None = None) -> BaselineResult:
     snapshots = tuple(snapshots)
@@ -97,7 +101,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             trade = trades[-1]
             # FakeExchange supplies closed-trade fees and gross PnL. Funding is charged
             # deterministically over the holding events and included in net PnL.
-            funding = venue.read_balance()["funding_paid"] + venue.read_balance()["funding_received"]
+            funding = _funding_cost(venue.read_balance())
             slippage = sum(fill.slippage_cost for fill in venue.fills)
             total_fees += trade["entry_fee"] + trade["exit_fee"]; total_slippage += slippage; total_funding += funding
             total_gross += trade["gross_pnl"]; closed += 1

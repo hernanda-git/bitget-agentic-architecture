@@ -99,6 +99,12 @@ def test_walk_forward_evaluation_has_disjoint_embargoed_test_windows():
                for item in evaluation)
 
 
+def test_funding_received_offsets_funding_paid_in_cost_attribution():
+    from src.evaluation.baseline import _funding_cost
+
+    assert _funding_cost({"funding_paid": 3.0, "funding_received": 1.25}) == 1.75
+
+
 def test_cost_stress_reports_degradation_without_changing_baseline():
     base = run_baseline(make_series())
     stress = run_cost_stress(make_series(), BaselineConfig(), (1.0, 2.0))
