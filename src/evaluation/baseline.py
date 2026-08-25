@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict, replace
+import math
 from typing import Iterable
 from src.execution.fake_exchange import CloseReason, FakeExchange, OrderRequest
 from src.simulation.events import MarketEvent
@@ -129,6 +130,8 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
     if not 0 < config.train_fraction < 1 or config.embargo < 0 or config.test_window < 1:
         raise ValueError("walk-forward parameters must have 0 < train_fraction < 1, embargo >= 0, and test_window >= 1")
     snapshots = tuple(snapshots)
+    if not snapshots:
+        raise ValueError("walk-forward requires snapshots")
     cut = max(1, int(len(snapshots) * config.train_fraction))
     window = config.test_window
     rows = []
@@ -151,11 +154,16 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
                      "fees": result.fees, "funding": result.funding, "net_pnl": result.net_pnl,
                      "strategy_breakdown": result.strategy_breakdown})
         test_start = test_end + 1 + config.embargo
+    if not any(row["test_snapshots"] == window for row in rows):
+        raise ValueError("walk-forward requires at least one complete test window")
     return tuple(rows)
 
 
 def run_cost_stress(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), multipliers=(1.0, 1.5, 2.0)) -> tuple[dict, ...]:
     """Run the same replay under increasingly adverse fee, funding, and slippage assumptions."""
+    multipliers = tuple(multipliers)
+    if not multipliers or any(not isinstance(multiplier, (int, float)) or not math.isfinite(multiplier) or multiplier <= 0 for multiplier in multipliers):
+        raise ValueError("cost-stress multipliers must be finite and greater than zero")
     rows = []
     for multiplier in multipliers:
         result = run_baseline(snapshots, replace(config, fee_bps=config.fee_bps * multiplier,

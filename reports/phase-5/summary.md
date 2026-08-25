@@ -26,7 +26,7 @@
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Tests: `191 passed`, `0 failed`
+- Tests: `193 passed`, `0 failed`
 - Network-data calls in this work unit: `0`
 
 ## Evaluation improvements
@@ -38,6 +38,8 @@
 - Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction. Net PnL was `-42.19703728600011` at `1.0x`, `-44.8658073935001` at `1.5x`, and `-47.53474514400002` at `2.0x` cost assumptions; funding was `1.2428000000000003`, `1.8641999999999999`, and `2.4856000000000007` respectively.
 - Corrected net funding attribution so funding received offsets funding paid rather than being incorrectly added to costs. The existing synthetic baseline is long-only and therefore unchanged; a regression test now verifies the signed funding arithmetic directly.
 - Added strict walk-forward parameter validation (`0 < train_fraction < 1`, non-negative embargo, and positive test window) so malformed evaluation requests fail closed instead of silently changing the evaluation shape.
+- Added a fail-closed minimum-data guard requiring at least one complete walk-forward test window; short datasets no longer return misleading partial-only evaluations.
+- Added finite, positive cost-stress multiplier validation so zero, negative, NaN, infinity, and empty stress requests are rejected before replay.
 
 ## Implemented
 
