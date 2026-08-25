@@ -136,6 +136,14 @@ def test_walk_forward_rejects_series_without_a_complete_test_window():
         run_walk_forward(make_series(6), BaselineConfig(train_fraction=0.8, embargo=1, test_window=3))
 
 
+def test_walk_forward_excludes_incomplete_trailing_window():
+    evaluation = run_walk_forward(make_series(36), BaselineConfig(train_fraction=0.6, embargo=1, test_window=10))
+    assert len(evaluation) == 1
+    assert evaluation[0]["test_start"] == 22
+    assert evaluation[0]["test_end"] == 31
+    assert evaluation[0]["test_snapshots"] == 10
+
+
 def test_cost_stress_rejects_non_positive_or_non_finite_multipliers():
     series = make_series(12)
     for multipliers in ((0.0,), (-1.0,), (float("nan"),), (float("inf"),)):

@@ -26,15 +26,15 @@
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Tests: `193 passed`, `0 failed`
+- Tests: `194 passed`, `0 failed`
 - Network-data calls in this work unit: `0`
 
 ## Evaluation improvements
 
 - Added explicit gross PnL and cost attribution by strategy and regime.
-- Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. The fixture produced test windows `[22,31]` and `[33,35]`; the final window is short because the fixture ends at snapshot `35`.
-- Walk-forward net PnL was `-23.77089741000005` for `[22,31]` and `-5.303734452999988` for `[33,35]`; both windows were negative.
-- Added per-window strategy attribution. In this fixture, all 13 walk-forward closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
+- Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. Only complete test windows are reported; the fixture produced one complete window `[22,31]`, while the trailing 3-snapshot remainder is excluded rather than presented as a comparable result.
+- Walk-forward net PnL was `-23.77089741000005` for the complete window `[22,31]`.
+- Added per-window strategy attribution. In this fixture, all 10 complete-window closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
 - Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction. Net PnL was `-42.19703728600011` at `1.0x`, `-44.8658073935001` at `1.5x`, and `-47.53474514400002` at `2.0x` cost assumptions; funding was `1.2428000000000003`, `1.8641999999999999`, and `2.4856000000000007` respectively.
 - Corrected net funding attribution so funding received offsets funding paid rather than being incorrectly added to costs. The existing synthetic baseline is long-only and therefore unchanged; a regression test now verifies the signed funding arithmetic directly.
 - Added strict walk-forward parameter validation (`0 < train_fraction < 1`, non-negative embargo, and positive test window) so malformed evaluation requests fail closed instead of silently changing the evaluation shape.

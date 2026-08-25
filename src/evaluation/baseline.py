@@ -136,8 +136,8 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
     window = config.test_window
     rows = []
     test_start = cut + config.embargo
-    while test_start < len(snapshots):
-        test_end = min(len(snapshots) - 1, test_start + window - 1)
+    while test_start + window <= len(snapshots):
+        test_end = test_start + window - 1
         # Keep all pre-test snapshots available as feature context, but only
         # execute and flatten positions inside this test window. This avoids
         # cold-start indicators and prevents future test windows leaking into
