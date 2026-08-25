@@ -5,7 +5,7 @@ import argparse, json, sys
 from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
-from src.evaluation.baseline import BaselineConfig, run_baseline
+from src.evaluation.baseline import BaselineConfig, run_baseline, run_walk_forward, run_cost_stress
 from src.market.models import Candle, MarketSnapshot
 
 def make_series(count: int = 36):
@@ -23,10 +23,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, default=Path("reports/phase-5/baseline.json"))
     args = parser.parse_args()
-    result = run_baseline(make_series())
+    series = make_series()
+    result = run_baseline(series)
+    payload = dict(result.__dict__)
+    payload["walk_forward_evaluation"] = run_walk_forward(series)
+    payload["cost_stress"] = run_cost_stress(series)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result.__dict__, indent=2, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x) + "\n")
-    print(json.dumps(result.__dict__, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x))
+    args.output.write_text(json.dumps(payload, indent=2, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x) + "\n")
+    print(json.dumps(payload, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x))
     return 0
 
 if __name__ == "__main__": raise SystemExit(main())

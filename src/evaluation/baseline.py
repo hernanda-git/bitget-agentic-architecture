@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field, asdict, replace
 from typing import Iterable
 from src.execution.fake_exchange import CloseReason, FakeExchange, OrderRequest
 from src.simulation.events import MarketEvent
@@ -17,6 +17,7 @@ class BaselineConfig:
     slippage_bps: float = 2.0
     train_fraction: float = 0.6
     embargo: int = 1
+    test_window: int = 10
 
 @dataclass(frozen=True)
 class BaselineResult:
@@ -30,6 +31,7 @@ class BaselineResult:
     fees: float
     slippage: float
     funding: float
+    gross_pnl: float
     net_pnl: float
     strategy_breakdown: dict[str, dict]
     regime_breakdown: dict[str, dict]
@@ -44,14 +46,14 @@ def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
     if cut >= n: return ()
     return ({"train_start": 0, "train_end": cut - 1, "test_start": min(n, cut + embargo), "test_end": n - 1},)
 
-def _empty(): return {"closed_trades": 0, "fees": 0.0, "slippage": 0.0, "funding": 0.0, "net_pnl": 0.0}
+def _empty(): return {"closed_trades": 0, "gross_pnl": 0.0, "fees": 0.0, "slippage": 0.0, "funding": 0.0, "net_pnl": 0.0}
 
 def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig()) -> BaselineResult:
     snapshots = tuple(snapshots)
     costs = CostAssumptions(config.fee_bps, config.funding_bps, config.slippage_bps)
     generators = (("trend_continuation", generate_trend_continuation), ("mean_reversion", generate_mean_reversion), ("volatility_breakout", generate_volatility_breakout))
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
-    total_fees = total_slippage = total_funding = total_net = 0.0; closed = orders = end_of_replay_closes = 0
+    total_fees = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = 0
     replay_parts = []
     for index, snapshot in enumerate(snapshots):
         replay_parts.append(snapshot.snapshot_hash or snapshot.computed_hash())
@@ -84,14 +86,49 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig())
             funding = venue.read_balance()["funding_paid"] + venue.read_balance()["funding_received"]
             slippage = sum(fill.slippage_cost for fill in venue.fills)
             total_fees += trade["entry_fee"] + trade["exit_fee"]; total_slippage += slippage; total_funding += funding
-            total_net += trade["net_pnl"] - funding; closed += 1
-            row = strategy[name]; row["closed_trades"] += 1; row["fees"] += trade["entry_fee"] + trade["exit_fee"]; row["slippage"] += slippage; row["funding"] += funding; row["net_pnl"] += trade["net_pnl"] - funding
-            regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["slippage"] += slippage; rr["net_pnl"] += trade["net_pnl"] - funding
+            total_gross += trade["gross_pnl"]; closed += 1
+            row = strategy[name]; row["closed_trades"] += 1; row["gross_pnl"] += trade["gross_pnl"]; row["fees"] += trade["entry_fee"] + trade["exit_fee"]; row["slippage"] += slippage; row["funding"] += funding
+            row["net_pnl"] = row["gross_pnl"] - row["fees"] - row["funding"]
+            regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["gross_pnl"] += trade["gross_pnl"]; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["slippage"] += slippage; rr["funding"] += funding; rr["net_pnl"] = rr["gross_pnl"] - rr["fees"] - rr["funding"]
     import hashlib, json
     replay_hash = hashlib.sha256(json.dumps(replay_parts, separators=(",", ":")).encode()).hexdigest()
     splits = _splits(len(snapshots), config.train_fraction, config.embargo)
+    total_net = total_gross - total_fees - total_funding
     reason = "POSITIVE_EVIDENCE_REQUIRED"
     if closed == 0: reason = "INCONCLUSIVE_NO_CLOSED_TRADES"
     elif total_net < 0: reason = "NEGATIVE_NET_PNL"
-    return BaselineResult(len(snapshots), 0, 0, orders, closed, 0, end_of_replay_closes, total_fees, total_slippage, total_funding, total_net,
+    return BaselineResult(len(snapshots), 0, 0, orders, closed, 0, end_of_replay_closes, total_fees, total_slippage, total_funding, total_gross, total_net,
                           strategy, regime, splits, False, reason, replay_hash)
+
+
+def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfig()) -> tuple[dict, ...]:
+    """Evaluate non-overlapping test windows after an expanding train period and embargo."""
+    snapshots = tuple(snapshots)
+    cut = max(1, int(len(snapshots) * config.train_fraction))
+    window = max(1, config.test_window)
+    rows = []
+    test_start = cut + config.embargo
+    while test_start < len(snapshots):
+        test_end = min(len(snapshots) - 1, test_start + window - 1)
+        result = run_baseline(snapshots[test_start:test_end + 1], replace(config, train_fraction=0.5))
+        rows.append({"train_start": 0, "train_end": test_start - config.embargo - 1,
+                     "test_start": test_start, "test_end": test_end,
+                     "closed_trades": result.closed_trades, "gross_pnl": result.gross_pnl,
+                     "fees": result.fees, "funding": result.funding, "net_pnl": result.net_pnl})
+        test_start = test_end + 1 + config.embargo
+    return tuple(rows)
+
+
+def run_cost_stress(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), multipliers=(1.0, 1.5, 2.0)) -> tuple[dict, ...]:
+    """Run the same replay under increasingly adverse fee, funding, and slippage assumptions."""
+    rows = []
+    for multiplier in multipliers:
+        result = run_baseline(snapshots, replace(config, fee_bps=config.fee_bps * multiplier,
+                                                 funding_bps=config.funding_bps * multiplier,
+                                                 slippage_bps=config.slippage_bps * multiplier))
+        rows.append({"multiplier": multiplier, "fee_bps": config.fee_bps * multiplier,
+                     "funding_bps": config.funding_bps * multiplier,
+                     "slippage_bps": config.slippage_bps * multiplier,
+                     "gross_pnl": result.gross_pnl, "fees": result.fees,
+                     "funding": result.funding, "net_pnl": result.net_pnl})
+    return tuple(rows)

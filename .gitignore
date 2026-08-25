@@ -6,6 +6,7 @@ __pycache__/
 *.pem
 data/*.sqlite3
 logs/
+.hermes/
 reports/*.json
 reports/*.md
 *.egg-info/

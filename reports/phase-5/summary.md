@@ -2,40 +2,57 @@
 
 ## Gate verdict
 
-`BLOCKED`: the deterministic baseline is negative after fees, funding, and simulated slippage. Promotion is disabled, and Phase 6 must not begin.
+`BLOCKED`: the deterministic baseline remains negative after fees, funding, and simulated slippage. Promotion is disabled, and Phase 6 must not begin.
 
-## Raw run metrics
+## Raw verified run metrics
 
 - Mode: `offline-paper-replay`
 - Snapshots replayed: `36`
 - Network calls: `0`
 - Signed calls: `0`
-- Orders: `37` (36 entries, 1 typed end-of-replay reduce-only close)
+- Orders: `37` (`36` entries, `1` typed end-of-replay reduce-only close)
 - Open positions at replay end: `0`
 - Closed trades: `36`
 - End-of-replay closes: `1`
+- Protection attachments: `36` paper positions configured with stop and target
+- Reconciliation checks: `0` venue reconciliation checks; this is an offline simulator, not an exchange adapter
+- Gross PnL: `-37.55597200000011`
 - Fees: `3.398265286`
 - Simulated slippage: `1.0559720000001107`
-- Funding: `1.2428`
-- Net PnL on closed trades: `-42.197037286000125`
+- Funding: `1.2428000000000003`
+- Net PnL: `-42.19703728600011`
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Walk-forward split: train `[0,20]`, embargo `[21]`, test `[22,35]`
+- Tests: `189 passed`, `0 failed`
+- Network-data calls in this work unit: `0`
 
-The machine-readable raw result is in `reports/phase-5/baseline.json`. The durable gate artifact is `reports/phase-5/summary.json`.
+## Evaluation improvements
+
+- Added explicit gross PnL and cost attribution by strategy and regime.
+- Added expanding walk-forward test windows with an embargo. The fixture produced test windows `[22,31]` and `[33,35]`; the final window is short because the fixture ends at snapshot `35`.
+- Added a cost-stress matrix. Net PnL was `-42.19703728600011` at `1.0x`, `-44.244407393500104` at `1.5x`, and `-46.291945144000024` at `2.0x` cost assumptions.
+- The stress result is not tuned for profitability. It confirms the negative gate becomes worse under adverse costs.
 
 ## Implemented
 
-- Versioned feature values with name, version, source snapshot hash, source timestamp, parameters, and value.
-- Deterministic technical features: SMA, momentum, volatility, range high, and range low.
-- Candidate generators for trend continuation, mean reversion, and volatility breakout.
-- Candidate cost gate requiring expected move to exceed fees, funding, spread, and slippage.
-- Complete candidate identity and execution fields, including expiry and feature snapshot hash.
-- Deterministic regimes: `TRENDING`, `RANGING`, `HIGH_VOLATILITY`, `LOW_VOLATILITY`, `LIQUIDATION_EVENT`, and `DATA_DEGRADED`.
-- Baseline runner using the existing offline `FakeExchange` paper simulator, typed reduce-only `END_OF_REPLAY` closure at the final observed mark, closed-trade fee/slippage/funding accounting, and deterministic replay hashes.
-- Strategy and regime breakdowns, fee/funding fields, and walk-forward-compatible split metadata.
+- Versioned feature values with source snapshot identity and timestamp.
+- Deterministic technical features and candidate generators.
+- Candidate cost gate requiring expected move to exceed expected cost.
+- Deterministic regime classification.
+- Offline `FakeExchange` replay with typed `END_OF_REPLAY` flattening and fee, funding, and slippage accounting.
+- Strategy/regime attribution, robust walk-forward evaluation, and cost stress reporting.
+
+## Verification commands
+
+```text
+python3 scripts/resource_guard.py --json
+python3 -m pytest tests/test_phase5_engine.py -q  # 7 passed
+python3 -m pytest -q                             # 189 passed
+python3 -m compileall -q src scripts tests
+python3 scripts/run_strategy_baseline.py --output reports/phase-5/baseline.json
+```
 
 ## Limitations and safety
 
-The adverse replay fixture is synthetic and is not evidence of live profitability or loss rates. The bounded replay now explicitly closes its final paper position with `END_OF_REPLAY`, so no position is silently excluded. The close uses the final observed mark, and its fee/slippage/funding effects are included in the result. No network, signed, demo, or live exchange calls were made. The negative result is reported as-is, with no profitability claim. Phase 6 is explicitly blocked.
+The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Phase 6 bounded LLM selection remains explicitly blocked.

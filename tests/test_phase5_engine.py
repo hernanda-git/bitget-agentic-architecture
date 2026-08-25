@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from src.evaluation.baseline import BaselineConfig, run_baseline
+from src.evaluation.baseline import BaselineConfig, run_baseline, run_walk_forward, run_cost_stress
 from src.features.registry import FeatureValue
 from src.features.technical import build_features
 from src.market.models import Candle, MarketSnapshot
@@ -77,3 +77,26 @@ def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
     assert result.promotion_allowed is False
     assert result.promotion_reason in {"NEGATIVE_NET_PNL", "INCONCLUSIVE_NO_CLOSED_TRADES"}
     assert all(split["train_end"] < split["test_start"] for split in result.walk_forward_splits)
+
+
+def test_baseline_exposes_gross_pnl_and_explicit_cost_attribution():
+    result = run_baseline(make_series())
+    assert result.gross_pnl == sum(row["gross_pnl"] for row in result.strategy_breakdown.values())
+    assert result.net_pnl == result.gross_pnl - result.fees - result.funding
+    assert all("gross_pnl" in row for row in result.strategy_breakdown.values())
+
+
+def test_walk_forward_evaluation_has_disjoint_embargoed_test_windows():
+    evaluation = run_walk_forward(make_series(48), BaselineConfig(train_fraction=0.5, embargo=2, test_window=10))
+    assert len(evaluation) >= 2
+    assert all(item["train_end"] < item["test_start"] for item in evaluation)
+    assert all(item["test_end"] - item["test_start"] + 1 == 10 for item in evaluation)
+    assert all(evaluation[i]["test_end"] < evaluation[i + 1]["test_start"] for i in range(len(evaluation) - 1))
+
+
+def test_cost_stress_reports_degradation_without_changing_baseline():
+    base = run_baseline(make_series())
+    stress = run_cost_stress(make_series(), BaselineConfig(), (1.0, 2.0))
+    assert stress[0]["net_pnl"] == base.net_pnl
+    assert stress[1]["net_pnl"] <= stress[0]["net_pnl"]
+    assert stress[1]["fee_bps"] == 10.0

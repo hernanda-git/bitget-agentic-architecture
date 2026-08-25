@@ -1,115 +1,39 @@
 {
+  "phase": "5",
+  "mode": "offline-paper-replay",
+  "source_revision_before_commit": "c43efd0e88b49880adce8ff78243a54d667b2a8b",
+  "tests": {"command": "python3 -m pytest -q", "passed": 189, "failed": 0},
+  "compileall_ok": true,
+  "network_calls": 0,
+  "signed_calls": 0,
+  "orders": 37,
+  "open_positions": 0,
   "closed_trades": 36,
   "end_of_replay_closes": 1,
+  "protection_attachments": 36,
+  "reconciliation_checks": 0,
+  "gross_pnl": -37.55597200000011,
   "fees": 3.398265286,
+  "slippage": 1.0559720000001107,
   "funding": 1.2428000000000003,
-  "limitations": [
-    "The adverse deterministic fixture is synthetic and is not evidence of live profitability or loss rates.",
-    "The bounded replay closes the final paper position with a typed END_OF_REPLAY reduce-only order at the final observed mark.",
-    "The runner is offline and makes no exchange or network calls.",
-    "This is a Phase 5 baseline gate only. AI selection and later phases are not started."
-  ],
-  "mode": "offline-paper-replay",
-  "net_pnl": -42.197037286000125,
-  "network_calls": 0,
-  "next_gate": "Do not promote or begin Phase 6: the fee-inclusive baseline is negative and promotion is blocked.",
-  "open_positions": 0,
-  "orders": 37,
-  "phase": "5",
+  "net_pnl": -42.19703728600011,
   "promotion_allowed": false,
   "promotion_reason": "NEGATIVE_NET_PNL",
-  "raw_metrics": {
-    "closed_trades": 36,
-    "end_of_replay_closes": 1,
-    "fees": 3.398265286,
-    "funding": 1.2428000000000003,
-    "net_pnl": -42.197037286000125,
-    "network_calls": 0,
-    "open_positions": 0,
-    "orders": 37,
-    "promotion_allowed": false,
-    "promotion_reason": "NEGATIVE_NET_PNL",
-    "regime_breakdown": {
-      "DATA_DEGRADED": {
-        "closed_trades": 0,
-        "fees": 0.0,
-        "funding": 0.0,
-        "net_pnl": 0.0,
-        "slippage": 0.0
-      },
-      "HIGH_VOLATILITY": {
-        "closed_trades": 0,
-        "fees": 0.0,
-        "funding": 0.0,
-        "net_pnl": 0.0,
-        "slippage": 0.0
-      },
-      "LIQUIDATION_EVENT": {
-        "closed_trades": 0,
-        "fees": 0.0,
-        "funding": 0.0,
-        "net_pnl": 0.0,
-        "slippage": 0.0
-      },
-      "LOW_VOLATILITY": {
-        "closed_trades": 34,
-        "fees": 3.269998684,
-        "funding": 0.0,
-        "net_pnl": -39.49746668400013,
-        "slippage": 0.9973680000001224
-      },
-      "RANGING": {
-        "closed_trades": 0,
-        "fees": 0.0,
-        "funding": 0.0,
-        "net_pnl": 0.0,
-        "slippage": 0.0
-      },
-      "TRENDING": {
-        "closed_trades": 2,
-        "fees": 0.128266602,
-        "funding": 0.0,
-        "net_pnl": -2.699570601999989,
-        "slippage": 0.05860399999998833
-      }
-    },
-    "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
-    "signed_calls": 0,
-    "slippage": 1.0559720000001107,
-    "snapshots": 36,
-    "strategy_breakdown": {
-      "mean_reversion": {
-        "closed_trades": 0,
-        "fees": 0.0,
-        "funding": 0.0,
-        "net_pnl": 0.0,
-        "slippage": 0.0
-      },
-      "trend_continuation": {
-        "closed_trades": 36,
-        "fees": 3.398265286,
-        "funding": 1.2428000000000003,
-        "net_pnl": -42.197037286000125,
-        "slippage": 1.0559720000001107
-      },
-      "volatility_breakout": {
-        "closed_trades": 0,
-        "fees": 0.0,
-        "funding": 0.0,
-        "net_pnl": 0.0,
-        "slippage": 0.0
-      }
-    },
-    "walk_forward_splits": [
-      {
-        "test_end": 35,
-        "test_start": 22,
-        "train_end": 20,
-        "train_start": 0
-      }
-    ]
-  },
-  "signed_calls": 0,
-  "slippage": 1.0559720000001107,
-  "source_revision_before_commit": "1450586"
+  "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
+  "walk_forward_evaluation": [
+    {"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 31, "closed_trades": 10, "gross_pnl": -22.784220000000047, "fees": 0.8363774100000001, "funding": 0.1503, "net_pnl": -23.77089741000005},
+    {"train_start": 0, "train_end": 31, "test_start": 33, "test_end": 35, "closed_trades": 3, "gross_pnl": -5.082305999999988, "fees": 0.19552845300000002, "funding": 0.0259, "net_pnl": -5.303734452999988}
+  ],
+  "cost_stress": [
+    {"multiplier": 1.0, "fee_bps": 5.0, "funding_bps": 2.0, "slippage_bps": 2.0, "gross_pnl": -37.55597200000011, "fees": 3.398265286, "funding": 1.2428000000000003, "net_pnl": -42.19703728600011},
+    {"multiplier": 1.5, "fee_bps": 7.5, "funding_bps": 3.0, "slippage_bps": 3.0, "gross_pnl": -37.9039580000001, "fees": 5.0976493935, "funding": 1.2428000000000003, "net_pnl": -44.244407393500104},
+    {"multiplier": 2.0, "fee_bps": 10.0, "funding_bps": 4.0, "slippage_bps": 4.0, "gross_pnl": -38.25194400000002, "fees": 6.797201143999998, "funding": 1.2428000000000003, "net_pnl": -46.291945144000024}
+  ],
+  "limitations": [
+    "Synthetic offline fixture; not evidence of live profitability or loss rates.",
+    "No network, signed exchange, demo, live, funded, transfer, withdrawal, or credential access.",
+    "Walk-forward windows are replay-only and do not fit parameters or validate independent market data.",
+    "No venue reconciliation checks were possible in the offline simulator.",
+    "Phase 6 bounded LLM selection is blocked by the negative cost-inclusive gate."
+  ]
 }
