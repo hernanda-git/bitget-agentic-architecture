@@ -8,3 +8,4 @@ data/*.sqlite3
 logs/
 reports/*.json
 reports/*.md
+*.egg-info/
