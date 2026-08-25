@@ -1,8 +1,8 @@
 {
   "phase": "5",
   "mode": "offline-paper-replay",
-  "source_revision_before_commit": "33f76a3c742bae821e6a0dc5203422e742affbe0",
-  "tests": {"command": "python3 -m pytest -q", "passed": 194, "failed": 0},
+  "source_revision_before_commit": "e45906f7d17f60d93c638cba3c8cdd14f79a8972",
+  "tests": {"command": "python3 -m pytest -q", "passed": 201, "failed": 0},
   "compileall_ok": true,
   "network_calls": 0,
   "signed_calls": 0,
@@ -37,6 +37,8 @@
     "Funding stress uses a configured deterministic rate proxy, not venue funding history.",
     "No venue reconciliation checks were possible in the offline simulator.",
     "Walk-forward parameter validation is deterministic and fail-closed; no parameter tuning was performed.",
+    "Replay-input validation rejects stale hashes, mixed symbols, and timestamp regressions without sorting or repairing malformed data.",
+    "The synthetic fixture contains repeated warm-up snapshots; equal timestamps are retained and not silently deduplicated.",
     "Phase 6 bounded LLM selection is blocked by the negative cost-inclusive gate."
   ]
 }

@@ -2,8 +2,11 @@ __pycache__/
 .pytest_cache/
 .venv/
 .env
+.secrets/
 *.key
 *.pem
+accounts.json
+config.json
 data/*.sqlite3
 logs/
 .hermes/

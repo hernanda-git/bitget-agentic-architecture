@@ -1,4 +1,4 @@
-from dataclasses import asdict
+from dataclasses import asdict, replace
 
 import pytest
 
@@ -160,3 +160,27 @@ def test_cost_stress_rejects_non_positive_or_non_finite_multipliers():
     for multipliers in ((0.0,), (-1.0,), (float("nan"),), (float("inf"),)):
         with pytest.raises(ValueError, match="cost-stress"):
             run_cost_stress(series, multipliers=multipliers)
+
+
+def test_baseline_rejects_snapshot_hash_mismatch_before_replay():
+    series = make_series(12)
+    tampered = replace(series[5], mark_price=series[5].mark_price + 1.0)
+
+    with pytest.raises(ValueError, match="evaluation data.*snapshot hash"):
+        run_baseline(series[:5] + (tampered,) + series[6:])
+
+
+def test_baseline_rejects_timestamp_regression_in_input_order():
+    series = make_series(12)
+    reordered = series[:8] + (series[9], series[8]) + series[10:]
+
+    with pytest.raises(ValueError, match="evaluation data.*timestamp"):
+        run_baseline(reordered)
+
+
+def test_baseline_rejects_mixed_symbol_replay_data_even_when_rehashed():
+    series = make_series(12)
+    mixed = replace(series[5], symbol="ETHUSDT").with_hash()
+
+    with pytest.raises(ValueError, match="evaluation data.*symbol"):
+        run_baseline(series[:5] + (mixed,) + series[6:])

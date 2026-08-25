@@ -62,9 +62,28 @@ def _funding_cost(balance: dict) -> float:
     """Return net funding paid, with funding received treated as a credit."""
     return balance["funding_paid"] - balance["funding_received"]
 
+def _validate_replay_snapshots(snapshots: tuple) -> None:
+    """Reject replay data whose identity or ordering cannot be trusted."""
+    if not snapshots:
+        return
+    symbol = snapshots[0].symbol
+    previous_observed = previous_source = None
+    for index, snapshot in enumerate(snapshots):
+        if not snapshot.snapshot_hash or snapshot.snapshot_hash != snapshot.computed_hash():
+            raise ValueError(f"evaluation data snapshot hash mismatch at index {index}")
+        if snapshot.symbol != symbol:
+            raise ValueError(f"evaluation data symbol mismatch at index {index}")
+        if previous_observed is not None and snapshot.observed_ts_ms < previous_observed:
+            raise ValueError(f"evaluation data timestamp regression at index {index}")
+        if previous_source is not None and snapshot.source_ts_ms < previous_source:
+            raise ValueError(f"evaluation data timestamp regression at index {index}")
+        previous_observed = snapshot.observed_ts_ms
+        previous_source = snapshot.source_ts_ms
+
 def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), *,
                  evaluation_start: int = 0, evaluation_end: int | None = None) -> BaselineResult:
     snapshots = tuple(snapshots)
+    _validate_replay_snapshots(snapshots)
     if evaluation_end is None:
         evaluation_end = len(snapshots) - 1
     if not snapshots or not 0 <= evaluation_start <= evaluation_end < len(snapshots):
@@ -130,6 +149,7 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
     if not 0 < config.train_fraction < 1 or config.embargo < 0 or config.test_window < 1:
         raise ValueError("walk-forward parameters must have 0 < train_fraction < 1, embargo >= 0, and test_window >= 1")
     snapshots = tuple(snapshots)
+    _validate_replay_snapshots(snapshots)
     if not snapshots:
         raise ValueError("walk-forward requires snapshots")
     cut = max(1, int(len(snapshots) * config.train_fraction))

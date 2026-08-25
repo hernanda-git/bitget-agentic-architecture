@@ -26,7 +26,7 @@
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Tests: `194 passed`, `0 failed`
+- Tests: `201 passed`, `0 failed`
 - Network-data calls in this work unit: `0`
 
 ## Evaluation improvements
@@ -42,6 +42,7 @@
 - Added finite, positive cost-stress multiplier validation so zero, negative, NaN, infinity, and empty stress requests are rejected before replay.
 - Corrected net PnL accounting to subtract simulated slippage, and exposed slippage in cost-stress and walk-forward reports. Replayed net PnL is `-43.25300928600022`; cost-stress net PnL is `-43.25300928600022`, `-46.2697653935002`, and `-49.28668914400004` at `1.0x`, `1.5x`, and `2.0x`.
 - Added a fail-closed Phase 5 artifact validator that compares the detailed baseline JSON with compact summary fields and all checked-in Markdown numerical claims.
+- Added replay-input data-quality validation: missing or stale snapshot hashes, mixed symbols, and regressing observed or source timestamps fail closed before evaluation; malformed input is never sorted, deduplicated, or repaired.
 
 ## Implemented
 
@@ -65,4 +66,4 @@ python3 scripts/verify_phase5_report.py --root .
 
 ## Limitations and safety
 
-The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history. Phase 6 bounded LLM selection remains explicitly blocked.
+The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Phase 6 bounded LLM selection remains explicitly blocked.
