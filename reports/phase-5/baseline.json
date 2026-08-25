@@ -1,0 +1,79 @@
+{
+  "closed_trades": 35,
+  "fees": 3.3347602849999998,
+  "funding": 1.2428000000000003,
+  "net_pnl": -42.09813028500013,
+  "network_calls": 0,
+  "orders": 36,
+  "promotion_allowed": false,
+  "promotion_reason": "NEGATIVE_NET_PNL",
+  "regime_breakdown": {
+    "DATA_DEGRADED": {
+      "closed_trades": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "net_pnl": 0.0
+    },
+    "HIGH_VOLATILITY": {
+      "closed_trades": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "net_pnl": 0.0
+    },
+    "LIQUIDATION_EVENT": {
+      "closed_trades": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "net_pnl": 0.0
+    },
+    "LOW_VOLATILITY": {
+      "closed_trades": 34,
+      "fees": 3.269998684,
+      "funding": 0.0,
+      "net_pnl": -39.49746668400013
+    },
+    "RANGING": {
+      "closed_trades": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "net_pnl": 0.0
+    },
+    "TRENDING": {
+      "closed_trades": 1,
+      "fees": 0.064761601,
+      "funding": 0.0,
+      "net_pnl": -2.600663600999998
+    }
+  },
+  "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
+  "signed_calls": 0,
+  "snapshots": 36,
+  "strategy_breakdown": {
+    "mean_reversion": {
+      "closed_trades": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "net_pnl": 0.0
+    },
+    "trend_continuation": {
+      "closed_trades": 35,
+      "fees": 3.3347602849999998,
+      "funding": 1.2428000000000003,
+      "net_pnl": -42.09813028500013
+    },
+    "volatility_breakout": {
+      "closed_trades": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "net_pnl": 0.0
+    }
+  },
+  "walk_forward_splits": [
+    {
+      "test_end": 35,
+      "test_start": 22,
+      "train_end": 20,
+      "train_start": 0
+    }
+  ]
+}

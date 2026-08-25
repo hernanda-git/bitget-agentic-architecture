@@ -1,0 +1,40 @@
+{
+  "phase": "5",
+  "source_revision_before_commit": "7f0ab941fc181705d9cef040c57eea2d007f6389",
+  "mode": "offline-paper-replay",
+  "network_calls": 0,
+  "signed_calls": 0,
+  "orders": 36,
+  "open_positions": 1,
+  "closed_trades": 35,
+  "fees": 3.334760285,
+  "funding": 1.2428,
+  "net_pnl": -42.09813028500013,
+  "promotion_allowed": false,
+  "promotion_reason": "NEGATIVE_NET_PNL",
+  "raw_metrics": {
+    "snapshots": 36,
+    "replay_hash": "7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c",
+    "strategy_breakdown": {
+      "trend_continuation": {"closed_trades": 35, "fees": 3.334760285, "funding": 1.2428, "net_pnl": -42.09813028500013},
+      "mean_reversion": {"closed_trades": 0, "fees": 0.0, "funding": 0.0, "net_pnl": 0.0},
+      "volatility_breakout": {"closed_trades": 0, "fees": 0.0, "funding": 0.0, "net_pnl": 0.0}
+    },
+    "regime_breakdown": {
+      "TRENDING": {"closed_trades": 1, "fees": 0.064761601, "funding": 0.0, "net_pnl": -2.600663600999998},
+      "RANGING": {"closed_trades": 0, "fees": 0.0, "funding": 0.0, "net_pnl": 0.0},
+      "HIGH_VOLATILITY": {"closed_trades": 0, "fees": 0.0, "funding": 0.0, "net_pnl": 0.0},
+      "LOW_VOLATILITY": {"closed_trades": 34, "fees": 3.269998684, "funding": 0.0, "net_pnl": -39.49746668400013},
+      "LIQUIDATION_EVENT": {"closed_trades": 0, "fees": 0.0, "funding": 0.0, "net_pnl": 0.0},
+      "DATA_DEGRADED": {"closed_trades": 0, "fees": 0.0, "funding": 0.0, "net_pnl": 0.0}
+    },
+    "walk_forward_splits": [{"train_start": 0, "train_end": 20, "test_start": 22, "test_end": 35}]
+  },
+  "limitations": [
+    "The adverse deterministic fixture is synthetic and is not evidence of live profitability or loss rates.",
+    "One position remained open at replay end and is excluded from closed-trade net PnL.",
+    "The runner is offline and makes no exchange or network calls.",
+    "This is a Phase 5 baseline gate only. AI selection and later phases are not started."
+  ],
+  "next_gate": "Do not promote or begin Phase 6: the fee-inclusive baseline is negative and promotion is blocked."
+}

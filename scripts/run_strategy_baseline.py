@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Run the offline Phase 5 deterministic baseline. No network or signed calls."""
+from __future__ import annotations
+import argparse, json, sys
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
+from src.evaluation.baseline import BaselineConfig, run_baseline
+from src.market.models import Candle, MarketSnapshot
+
+def make_series(count: int = 36):
+    out = []
+    start = 1_700_000_000_000
+    for i in range(count):
+        closes = [100 + j * 0.5 for j in range(max(8, i + 1))]
+        if i >= 18: closes = [c - (i - 17) * 3 for c in closes]
+        candles = tuple(Candle("1m", c - .5, c + 1, c - 1, c, 10, start + j * 60_000) for j, c in enumerate(closes))
+        ts = start + (len(closes) - 1) * 60_000
+        out.append(MarketSnapshot("BTCUSDT", closes[-1], closes[-1] - .01, closes[-1] + .01, .0002, 100, ts, ts, candles=candles).with_hash())
+    return tuple(out)
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=Path, default=Path("reports/phase-5/baseline.json"))
+    args = parser.parse_args()
+    result = run_baseline(make_series())
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(result.__dict__, indent=2, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x) + "\n")
+    print(json.dumps(result.__dict__, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x))
+    return 0
+
+if __name__ == "__main__": raise SystemExit(main())
