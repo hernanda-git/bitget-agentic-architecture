@@ -2,7 +2,7 @@
   "phase": "5",
   "mode": "offline-paper-replay",
   "source_revision_before_commit": "684c5b3f28a2aa746a7f2518b6e060f7d4c77c3f",
-  "tests": {"command": "python3 -m pytest -q", "passed": 190, "failed": 0},
+  "tests": {"command": "python3 -m pytest -q", "passed": 191, "failed": 0},
   "compileall_ok": true,
   "network_calls": 0,
   "signed_calls": 0,
@@ -37,6 +37,7 @@
     "Walk-forward windows are replay-only and do not fit parameters or validate independent market data.",
     "Funding stress uses a configured deterministic rate proxy, not venue funding history.",
     "No venue reconciliation checks were possible in the offline simulator.",
+    "Walk-forward parameter validation is deterministic and fail-closed; no parameter tuning was performed.",
     "Phase 6 bounded LLM selection is blocked by the negative cost-inclusive gate."
   ]
 }

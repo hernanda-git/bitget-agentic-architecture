@@ -126,9 +126,11 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
 
 def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfig()) -> tuple[dict, ...]:
     """Evaluate non-overlapping test windows after an expanding train period and embargo."""
+    if not 0 < config.train_fraction < 1 or config.embargo < 0 or config.test_window < 1:
+        raise ValueError("walk-forward parameters must have 0 < train_fraction < 1, embargo >= 0, and test_window >= 1")
     snapshots = tuple(snapshots)
     cut = max(1, int(len(snapshots) * config.train_fraction))
-    window = max(1, config.test_window)
+    window = config.test_window
     rows = []
     test_start = cut + config.embargo
     while test_start < len(snapshots):

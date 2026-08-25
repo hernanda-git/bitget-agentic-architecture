@@ -1,5 +1,7 @@
 from dataclasses import asdict
 
+import pytest
+
 from src.evaluation.baseline import BaselineConfig, run_baseline, run_walk_forward, run_cost_stress
 from src.features.registry import FeatureValue
 from src.features.technical import build_features
@@ -115,3 +117,15 @@ def test_cost_stress_reports_degradation_without_changing_baseline():
     assert stress[1]["fee_bps"] == 10.0
     assert stress[1]["funding"] > stress[0]["funding"]
     assert stress[1]["funding"] == 2 * stress[0]["funding"]
+
+
+def test_walk_forward_rejects_invalid_evaluation_parameters():
+    series = make_series(12)
+    for config in (
+        BaselineConfig(train_fraction=0),
+        BaselineConfig(train_fraction=1),
+        BaselineConfig(embargo=-1),
+        BaselineConfig(test_window=0),
+    ):
+        with pytest.raises(ValueError, match="walk-forward"):
+            run_walk_forward(series, config)
