@@ -98,6 +98,39 @@ def test_protection_gap_through_stop_fires_exactly_once():
     assert exchange.apply_market_event(MarketEvent("BTCUSDT", bid=79, ask=80, mark=79, sequence=2)) == []
 
 
+def test_negative_funding_rate_reverses_payment_direction():
+    long_exchange = FakeExchange(fee_bps=0)
+    long_exchange.submit_order(OrderRequest("long-open", "BTCUSDT", "BUY", 1.0, None))
+    long_exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=100.0, sequence=1, funding_rate=-0.001)
+    )
+
+    short_exchange = FakeExchange(fee_bps=0)
+    short_exchange.submit_order(OrderRequest("short-open", "BTCUSDT", "SELL", 1.0, None))
+    short_exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=100.0, sequence=1, funding_rate=-0.001)
+    )
+
+    assert long_exchange.read_balance()["funding_paid"] == pytest.approx(0.0)
+    assert long_exchange.read_balance()["funding_received"] == pytest.approx(0.1)
+    assert short_exchange.read_balance()["funding_paid"] == pytest.approx(0.1)
+    assert short_exchange.read_balance()["funding_received"] == pytest.approx(0.0)
+
+
+def test_closed_trade_includes_funding_accrued_while_position_was_open():
+    exchange = FakeExchange(fee_bps=0)
+    exchange.submit_order(OrderRequest("open", "BTCUSDT", "BUY", 1.0, None))
+    exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=100.0, sequence=1, funding_rate=0.001)
+    )
+    exchange.market_prices["BTCUSDT"] = (110.0, 110.0, 110.0)
+    exchange.submit_order(OrderRequest("close", "BTCUSDT", "SELL", 1.0, None, reduce_only=True))
+
+    trade = exchange.closed_trades[-1]
+    assert trade["funding"] == pytest.approx(0.1)
+    assert trade["net_pnl"] == pytest.approx(9.9)
+
+
 def test_accounting_includes_fees_funding_slippage_and_return_on_margin():
     result = calculate_trade(side="BUY", quantity=1, entry_price=100, exit_price=110,
                              entry_fee=0.05, exit_fee=0.055, funding_paid=0.1,

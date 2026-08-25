@@ -27,7 +27,7 @@
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Tests: `203 passed`, `0 failed`
+- Tests: `205 passed`, `0 failed`
 - Network-data calls in this work unit: `0`
 
 ## Evaluation improvements
@@ -45,6 +45,8 @@
 - Added per-window strategy attribution. In this fixture, all 10 complete-window closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
 - Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction.
 - Corrected net funding attribution so funding received offsets funding paid rather than being incorrectly added to costs.
+- Corrected paper funding settlement for negative rates: long positions receive and short positions pay, with a regression test covering both directions.
+- Attributed accrued paid or received funding to the closed trade and net PnL, so paper reports and ledger replay agree on fee-inclusive outcomes.
 - Added strict walk-forward parameter validation and a fail-closed minimum-data guard requiring at least one complete test window.
 - Added finite, positive cost-stress multiplier validation.
 - Added a fail-closed Phase 5 artifact validator that compares detailed baseline JSON with compact summary fields and checked-in Markdown numerical claims, including separate spread attribution.
@@ -73,4 +75,4 @@ python3 scripts/verify_phase5_report.py --root .
 
 ## Limitations and safety
 
-The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history. Spread is derived from the fixture's bid/ask versus mark, and execution slippage is derived from the configured fill impact beyond the quoted side. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Phase 6 bounded LLM selection remains explicitly blocked.
+The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history; the paper exchange handles positive and negative funding directions and attributes them to closed trades. Spread is derived from the fixture's bid/ask versus mark, and execution slippage is derived from the configured fill impact beyond the quoted side. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Phase 6 bounded LLM selection remains explicitly blocked.

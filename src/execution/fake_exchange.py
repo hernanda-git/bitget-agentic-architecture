@@ -61,6 +61,8 @@ class FakePosition:
     entry_reference_price: float | None = None
     entry_spread_cost: float = 0.0
     entry_slippage_cost: float = 0.0
+    funding_paid: float = 0.0
+    funding_received: float = 0.0
 
 @dataclass(frozen=True)
 class ExchangeEvent:
@@ -143,14 +145,19 @@ class FakeExchange:
             entry_fee = old.entry_price * close_qty * self.fee_bps / 10000
             fill = self.fills[-1]
             ratio = close_qty / old.quantity
+            funding_paid = old.funding_paid * ratio
+            funding_received = old.funding_received * ratio
+            funding = funding_paid - funding_received
             spread_cost = old.entry_spread_cost * ratio + fill.spread_cost
             slippage_cost = old.entry_slippage_cost * ratio + fill.slippage_cost
-            self.closed_trades.append({"symbol": order.symbol, "status": "CLOSED", "gross_pnl": gross, "entry_fee": entry_fee, "exit_fee": fee, "funding": 0.0, "spread_cost": spread_cost, "slippage_cost": slippage_cost, "net_pnl": gross-entry_fee-fee-spread_cost-slippage_cost, "close_reason": order.close_reason.value if order.close_reason else None, "reduce_only": order.reduce_only})
+            self.closed_trades.append({"symbol": order.symbol, "status": "CLOSED", "gross_pnl": gross, "entry_fee": entry_fee, "exit_fee": fee, "funding": funding, "spread_cost": spread_cost, "slippage_cost": slippage_cost, "net_pnl": gross-entry_fee-fee-funding-spread_cost-slippage_cost, "close_reason": order.close_reason.value if order.close_reason else None, "reduce_only": order.reduce_only})
             rem = old.quantity - close_qty
             if rem <= 1e-12: self.positions.pop(order.symbol, None)
             else: self.positions[order.symbol] = replace(old, quantity=rem,
                                                          entry_spread_cost=old.entry_spread_cost * (1 - ratio),
-                                                         entry_slippage_cost=old.entry_slippage_cost * (1 - ratio))
+                                                         entry_slippage_cost=old.entry_slippage_cost * (1 - ratio),
+                                                         funding_paid=old.funding_paid * (1 - ratio),
+                                                         funding_received=old.funding_received * (1 - ratio))
             if quantity <= old.quantity: return
             quantity -= old.quantity
         if old and old.side == order.side:
@@ -205,8 +212,19 @@ class FakeExchange:
         if event.funding_rate:
             for p in self.read_positions(event.symbol):
                 value = p.quantity * event.mark * event.funding_rate
-                self._funding_paid += value if p.side == "BUY" and event.funding_rate > 0 else 0
-                self._funding_received += value if p.side == "SELL" and event.funding_rate > 0 else 0
+                if p.side == "BUY":
+                    paid = max(value, 0.0)
+                    received = max(-value, 0.0)
+                else:
+                    received = max(value, 0.0)
+                    paid = max(-value, 0.0)
+                self._funding_paid += paid
+                self._funding_received += received
+                self.positions[event.symbol] = replace(
+                    p,
+                    funding_paid=p.funding_paid + paid,
+                    funding_received=p.funding_received + received,
+                )
         events = []
         for oid, order in list(self.orders.items()):
             if order.symbol != event.symbol or order.status not in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}: continue
