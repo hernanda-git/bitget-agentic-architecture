@@ -98,6 +98,23 @@ def test_protection_gap_through_stop_fires_exactly_once():
     assert exchange.apply_market_event(MarketEvent("BTCUSDT", bid=79, ask=80, mark=79, sequence=2)) == []
 
 
+def test_protection_fill_uses_executable_quote_without_inventing_slippage():
+    exchange = FakeExchange(venue=venue(), initial_balance=1000, fee_bps=0, slippage_bps=0)
+    exchange.market_prices["BTCUSDT"] = (99.0, 101.0, 100.0)
+    exchange.submit_order(OrderRequest("entry", "BTCUSDT", "BUY", 1, None))
+    exchange.set_protection("BTCUSDT", stop_loss=95, take_profit=110)
+
+    exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=89.0, ask=91.0, mark=90.0, sequence=1)
+    )
+
+    trade = exchange.closed_trades[-1]
+    assert exchange.read_fills()[-1].price == pytest.approx(89.0)
+    assert trade["spread_cost"] == pytest.approx(2.0)
+    assert trade["slippage_cost"] == pytest.approx(0.0)
+    assert trade["net_pnl"] == pytest.approx(-12.0)
+
+
 def test_negative_funding_rate_reverses_payment_direction():
     long_exchange = FakeExchange(fee_bps=0)
     long_exchange.submit_order(OrderRequest("long-open", "BTCUSDT", "BUY", 1.0, None))

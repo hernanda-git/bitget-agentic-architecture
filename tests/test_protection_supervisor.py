@@ -16,6 +16,21 @@ def test_missing_intended_levels_are_never_protected():
     assert supervisor.verify("BTCUSDT", venue={"stop_loss": None, "take_profit": None}).state is ProtectionState.DEGRADED
 
 
+def test_fresh_bot_monitor_cannot_protect_without_intended_levels():
+    supervisor = ProtectionSupervisor(InMemoryProtectionStore())
+    supervisor.register_position("BTCUSDT", "LONG", 1, None, None)
+
+    record = supervisor.verify(
+        "BTCUSDT",
+        venue={"stop_loss": None, "take_profit": None},
+        bot_monitor_armed=True,
+        bot_monitor_fresh=True,
+    )
+
+    assert record.state is ProtectionState.DEGRADED
+    assert supervisor.entries_parked
+
+
 def test_only_verified_venue_or_fresh_bot_monitor_can_protect():
     supervisor = ProtectionSupervisor(InMemoryProtectionStore())
     supervisor.register_position("BTCUSDT", "LONG", 1, 95, 110)

@@ -33,7 +33,8 @@ class ProtectionSupervisor:
         venue = venue or {}
         venue_ok = (venue.get("stop_loss") is not None and venue.get("take_profit") is not None and
                     venue.get("stop_loss") == record.stop_loss and venue.get("take_profit") == record.take_profit)
-        bot_ok = bot_monitor_armed and bot_monitor_fresh
+        bot_ok = (record.stop_loss is not None and record.take_profit is not None and
+                  bot_monitor_armed and bot_monitor_fresh)
         if venue_ok or bot_ok:
             state = ProtectionState.PROTECTED
         elif venue.get("stop_loss") is None or venue.get("take_profit") is None:

@@ -195,11 +195,12 @@ class FakeExchange:
         self.positions[symbol] = replace(position, stop_loss=stop_loss, take_profit=take_profit)
 
     def close_position_at_end_of_replay(self, symbol: str, final_mark: float, client_order_id: str) -> FakeOrder:
-        """Close the remaining paper position at the final observed mark."""
+        """Close the remaining paper position at the final executable quote."""
         position = self.positions.get(symbol)
         if position is None:
             return self.submit_order(OrderRequest(client_order_id, symbol, "BUY", 0.0, None, reduce_only=True, close_reason=CloseReason.END_OF_REPLAY))
-        self.market_prices[symbol] = (final_mark, final_mark, final_mark)
+        bid, ask, _ = self.market_prices.get(symbol, (final_mark, final_mark, final_mark))
+        self.market_prices[symbol] = (bid, ask, final_mark)
         side = "SELL" if position.side == "BUY" else "BUY"
         return self.submit_order(OrderRequest(client_order_id, symbol, side, position.quantity, None,
                                               reduce_only=True, close_reason=CloseReason.END_OF_REPLAY))
@@ -243,9 +244,12 @@ class FakeExchange:
             breach = event.mark >= (p.stop_loss if p.stop_loss is not None else float("inf")) or event.mark <= (p.take_profit if p.take_profit is not None else float("-inf"))
         if p and breach:
             oid = f"protection-{event.symbol}-{event.sequence}"
-            self._fill(FakeOrder(oid, event.symbol, "SELL" if p.side == "BUY" else "BUY", p.quantity, event.mark, OrderStatus.FILLED, p.quantity), p.quantity, event.mark)
-            self.orders[oid] = FakeOrder(oid, event.symbol, "SELL" if p.side == "BUY" else "BUY", p.quantity, event.mark, OrderStatus.FILLED, p.quantity)
-            events.append(ExchangeEvent("PROTECTION_TRIGGERED", event.symbol, oid, event.mark))
+            side = "SELL" if p.side == "BUY" else "BUY"
+            price = self._price(event.symbol, side)
+            order = FakeOrder(oid, event.symbol, side, p.quantity, price, OrderStatus.FILLED, p.quantity)
+            self._fill(order, p.quantity, price)
+            self.orders[oid] = order
+            events.append(ExchangeEvent("PROTECTION_TRIGGERED", event.symbol, oid, price))
         return events
 
     def read_state(self): return {"orders": dict(self.orders), "fills": list(self.fills), "positions": dict(self.positions)}

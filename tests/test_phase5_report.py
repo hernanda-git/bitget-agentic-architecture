@@ -17,8 +17,10 @@ def test_phase5_report_validator_rejects_stale_markdown(tmp_path):
     reports.mkdir(parents=True)
     for name in ("baseline.json", "summary.json", "summary.md"):
         shutil.copy(ROOT / "reports/phase-5" / name, reports / name)
+    baseline = json.loads((reports / "baseline.json").read_text())
+    value = str(baseline["walk_forward_evaluation"][0]["net_pnl"])
     markdown = (reports / "summary.md").read_text()
-    (reports / "summary.md").write_text(markdown.replace("-23.95089741000014", "-23.77089741000005"))
+    (reports / "summary.md").write_text(markdown.replace(value, "0", 1))
 
     errors = validate_phase5_report(tmp_path)
 
@@ -45,8 +47,10 @@ def test_phase5_report_validator_rejects_missing_spread_attribution(tmp_path):
     reports.mkdir(parents=True)
     for name in ("baseline.json", "summary.json", "summary.md"):
         shutil.copy(ROOT / "reports/phase-5" / name, reports / name)
+    baseline = json.loads((reports / "baseline.json").read_text())
+    claim = f"- Spread: `{baseline['spread']}`"
     markdown = (reports / "summary.md").read_text()
-    (reports / "summary.md").write_text(markdown.replace("- Spread: `0.710000000000349`", ""))
+    (reports / "summary.md").write_text(markdown.replace(claim, "", 1))
 
     errors = validate_phase5_report(tmp_path)
 

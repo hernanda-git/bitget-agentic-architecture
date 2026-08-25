@@ -83,6 +83,16 @@ def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
     assert all(split["train_end"] < split["test_start"] for split in result.walk_forward_splits)
 
 
+def test_baseline_charges_final_spread_on_end_of_replay_close():
+    result = run_baseline(
+        make_series(),
+        BaselineConfig(quantity=1.0, fee_bps=0, funding_bps=0, slippage_bps=0),
+    )
+
+    assert result.end_of_replay_closes == 1
+    assert result.spread == pytest.approx(0.72)
+
+
 def test_baseline_exposes_gross_pnl_and_explicit_cost_attribution():
     result = run_baseline(make_series())
     assert result.gross_pnl == sum(row["gross_pnl"] for row in result.strategy_breakdown.values())
