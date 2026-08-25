@@ -1,0 +1,68 @@
+{
+  "candidate_rate": 0.0,
+  "closed_trades": 0,
+  "cycles": 100,
+  "cycles_completed": 14,
+  "cycles_requested": 100,
+  "decision_latency": {
+    "count": 100,
+    "max": 711.8758400902152,
+    "mean": 272.4672650452703,
+    "min": 152.80786994844675,
+    "p50": 208.8857819326222
+  },
+  "failure_samples": [
+    "TICKER_IMPOSSIBLE_PRICES",
+    "TICKER_IMPOSSIBLE_PRICES",
+    "TICKER_IMPOSSIBLE_PRICES",
+    "TICKER_IMPOSSIBLE_PRICES",
+    "TICKER_IMPOSSIBLE_PRICES"
+  ],
+  "failures": 86,
+  "freshness_distribution": {
+    "count": 14,
+    "max": 226,
+    "mean": 211.14285714285714,
+    "min": 190,
+    "p50": 211
+  },
+  "hold_rate": 1.0,
+  "limitations": [
+    "public market observations only",
+    "no provider selection or execution",
+    "PnL is zero because no simulated positions were opened"
+  ],
+  "mode": "public-shadow",
+  "net_pnl_after_costs": 0.0,
+  "network_calls": 142,
+  "open_positions": 0,
+  "orders_placed": 0,
+  "policy_rejections": 86,
+  "provider": {
+    "calls": 0,
+    "failures": 0
+  },
+  "provider_calls": 0,
+  "provider_failures": 0,
+  "run_id": "2c98afbe1085",
+  "schema_rejections": 0,
+  "signed_calls": 0,
+  "simulated_entries": 0,
+  "simulated_exits": 0,
+  "source_labels": [
+    "bitget-public"
+  ],
+  "source_timestamp_ms": {
+    "count": 14,
+    "max": 1787632951698,
+    "min": 1787632932423
+  },
+  "spread_distribution": {
+    "count": 14,
+    "max": 0.012464165524843671,
+    "mean": 0.012462977274001596,
+    "min": 0.012460888385488653,
+    "p50": 0.01246279854525103
+  },
+  "status": "PUBLIC_SHADOW_DEGRADED"
+}
