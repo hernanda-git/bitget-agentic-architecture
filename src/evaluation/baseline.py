@@ -48,6 +48,13 @@ def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
 
 def _empty(): return {"closed_trades": 0, "gross_pnl": 0.0, "fees": 0.0, "slippage": 0.0, "funding": 0.0, "net_pnl": 0.0}
 
+def _replay_funding_rate(snapshot, funding_bps: float) -> float:
+    """Apply the configured stress rate while preserving fixture funding direction."""
+    raw_rate = snapshot.funding_rate or 0.0
+    if not raw_rate:
+        return 0.0
+    return (1 if raw_rate > 0 else -1) * funding_bps / 10_000
+
 def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), *,
                  evaluation_start: int = 0, evaluation_end: int | None = None) -> BaselineResult:
     snapshots = tuple(snapshots)
@@ -76,7 +83,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             orders += 1
             venue.set_protection(snapshot.symbol, candidate.stop_loss, candidate.take_profit)
             for future_index, future in enumerate(snapshots[index + 1:evaluation_end + 1], index + 1):
-                venue.apply_market_event(MarketEvent(future.symbol, future.bid, future.ask, future.mark_price, future_index, future.source_ts_ms, future.funding_rate or 0.0))
+                venue.apply_market_event(MarketEvent(future.symbol, future.bid, future.ask, future.mark_price, future_index, future.source_ts_ms, _replay_funding_rate(future, config.funding_bps)))
                 if not venue.read_positions(snapshot.symbol): break
             if venue.read_positions(snapshot.symbol):
                 final = snapshots[evaluation_end]

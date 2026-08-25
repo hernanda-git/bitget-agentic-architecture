@@ -105,3 +105,5 @@ def test_cost_stress_reports_degradation_without_changing_baseline():
     assert stress[0]["net_pnl"] == base.net_pnl
     assert stress[1]["net_pnl"] <= stress[0]["net_pnl"]
     assert stress[1]["fee_bps"] == 10.0
+    assert stress[1]["funding"] > stress[0]["funding"]
+    assert stress[1]["funding"] == 2 * stress[0]["funding"]

@@ -1,7 +1,7 @@
 {
   "phase": "5",
   "mode": "offline-paper-replay",
-  "source_revision_before_commit": "c43efd0e88b49880adce8ff78243a54d667b2a8b",
+  "source_revision_before_commit": "97bdae8420ca7f61e1877e6e3c18c08a9626580df",
   "tests": {"command": "python3 -m pytest -q", "passed": 189, "failed": 0},
   "compileall_ok": true,
   "network_calls": 0,
@@ -26,13 +26,14 @@
   ],
   "cost_stress": [
     {"multiplier": 1.0, "fee_bps": 5.0, "funding_bps": 2.0, "slippage_bps": 2.0, "gross_pnl": -37.55597200000011, "fees": 3.398265286, "funding": 1.2428000000000003, "net_pnl": -42.19703728600011},
-    {"multiplier": 1.5, "fee_bps": 7.5, "funding_bps": 3.0, "slippage_bps": 3.0, "gross_pnl": -37.9039580000001, "fees": 5.0976493935, "funding": 1.2428000000000003, "net_pnl": -44.244407393500104},
-    {"multiplier": 2.0, "fee_bps": 10.0, "funding_bps": 4.0, "slippage_bps": 4.0, "gross_pnl": -38.25194400000002, "fees": 6.797201143999998, "funding": 1.2428000000000003, "net_pnl": -46.291945144000024}
+    {"multiplier": 1.5, "fee_bps": 7.5, "funding_bps": 3.0, "slippage_bps": 3.0, "gross_pnl": -37.9039580000001, "fees": 5.0976493935, "funding": 1.8641999999999999, "net_pnl": -44.8658073935001},
+    {"multiplier": 2.0, "fee_bps": 10.0, "funding_bps": 4.0, "slippage_bps": 4.0, "gross_pnl": -38.25194400000002, "fees": 6.797201143999998, "funding": 2.4856000000000007, "net_pnl": -47.53474514400002}
   ],
   "limitations": [
     "Synthetic offline fixture; not evidence of live profitability or loss rates.",
     "No network, signed exchange, demo, live, funded, transfer, withdrawal, or credential access.",
     "Walk-forward windows are replay-only and do not fit parameters or validate independent market data.",
+    "Funding stress uses a configured deterministic rate proxy, not venue funding history.",
     "No venue reconciliation checks were possible in the offline simulator.",
     "Phase 6 bounded LLM selection is blocked by the negative cost-inclusive gate."
   ]

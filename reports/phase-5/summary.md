@@ -33,7 +33,7 @@
 - Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. The fixture produced test windows `[22,31]` and `[33,35]`; the final window is short because the fixture ends at snapshot `35`.
 - Walk-forward net PnL was `-23.77089741000005` for `[22,31]` and `-5.303734452999988` for `[33,35]`; both windows were negative.
 - Added per-window strategy attribution. In this fixture, all 13 walk-forward closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
-- Added a cost-stress matrix. Net PnL was `-42.19703728600011` at `1.0x`, `-44.244407393500104` at `1.5x`, and `-46.291945144000024` at `2.0x` cost assumptions.
+- Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction. Net PnL was `-42.19703728600011` at `1.0x`, `-44.8658073935001` at `1.5x`, and `-47.53474514400002` at `2.0x` cost assumptions; funding was `1.2428000000000003`, `1.8641999999999999`, and `2.4856000000000007` respectively.
 - The stress result is not tuned for profitability. It confirms the negative gate becomes worse under adverse costs.
 
 ## Implemented
@@ -57,4 +57,4 @@ python3 scripts/run_strategy_baseline.py --output reports/phase-5/baseline.json
 
 ## Limitations and safety
 
-The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Phase 6 bounded LLM selection remains explicitly blocked.
+The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history. Phase 6 bounded LLM selection remains explicitly blocked.
