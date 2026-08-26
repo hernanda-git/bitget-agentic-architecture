@@ -79,6 +79,143 @@ def test_candle_history_paginates_backward_dedupes_and_stops_on_empty_page():
     assert len(client.calls) >= 2
 
 
+# ---------------------------------------------------------------------------
+# Data-quality reporting for historical datasets (Phase 5 research hardening)
+# ---------------------------------------------------------------------------
+
+def _mk_candle(ts, close=100.0, open_=99.5, high=101.0, low=99.0, volume=5.0):
+    return Candle("1m", open_, high, low, close, volume, ts)
+
+
+def _mk_dataset(candles, funding=()):
+    from src.market.history import HistoryDataset, FundingRecord
+    return HistoryDataset(
+        symbol="BTCUSDT", product_type="SUSDT-FUTURES", granularity="1m",
+        fetched_at_ms=max(c.source_ts_ms for c in candles),
+        candles=tuple(candles),
+        funding=tuple(FundingRecord(ft, rate) for ft, rate in funding),
+        assumed_half_spread_bps=0.5,
+    )
+
+
+def test_expected_interval_ms_parses_supported_granularities():
+    from src.market.history import expected_interval_ms
+
+    assert expected_interval_ms("1m") == 60_000
+    assert expected_interval_ms("5m") == 300_000
+    assert expected_interval_ms("15m") == 900_000
+    assert expected_interval_ms("1h") == 3_600_000
+    assert expected_interval_ms("4h") == 14_400_000
+    assert expected_interval_ms("1d") == 86_400_000
+    with pytest.raises(ValueError):
+        expected_interval_ms("7x")
+
+
+def test_data_quality_report_is_ok_on_clean_contiguous_dataset():
+    from src.market.history import data_quality_report
+
+    candles = [_mk_candle(60_000 * i) for i in range(1, 11)]
+    report = data_quality_report(_mk_dataset(candles))
+    assert report.candle_count == 10
+    assert report.duplicate_timestamps == 0
+    assert report.non_chronological == 0
+    assert report.gaps == ()
+    assert report.ok is True
+
+
+def test_data_quality_report_flags_duplicate_and_regressing_timestamps():
+    from src.market.history import data_quality_report
+
+    candles = [_mk_candle(60_000), _mk_candle(120_000), _mk_candle(120_000), _mk_candle(90_000)]
+    report = data_quality_report(_mk_dataset(candles))
+    assert report.duplicate_timestamps == 1
+    assert report.non_chronological == 1
+    assert report.ok is False
+
+
+def test_data_quality_report_reports_missing_bar_gaps():
+    from src.market.history import data_quality_report
+
+    # 1m bars with a 4-minute hole between 120000 and 360000 (two missing bars).
+    candles = [_mk_candle(60_000), _mk_candle(120_000), _mk_candle(360_000), _mk_candle(420_000)]
+    report = data_quality_report(_mk_dataset(candles))
+    assert len(report.gaps) == 1
+    gap = report.gaps[0]
+    assert gap["start_ms"] == 120_000
+    assert gap["end_ms"] == 360_000
+    assert gap["missing_bars"] == 3  # 240000ms / 60000ms - 1
+    assert report.max_missing_bars == 3
+
+
+def test_data_quality_report_counts_zero_volume_bars():
+    from src.market.history import data_quality_report
+
+    candles = [_mk_candle(60_000, volume=5.0), _mk_candle(120_000, volume=0.0), _mk_candle(180_000, volume=1.0)]
+    report = data_quality_report(_mk_dataset(candles))
+    assert report.zero_volume_bars == 1
+
+
+def test_data_quality_report_compares_funding_coverage_to_eight_hour_cadence():
+    from src.market.history import data_quality_report
+
+    # ~25h span: first bar at 00:00 UTC day 1, last bar at 01:00 UTC day 2.
+    start = 1_787_616_000_000  # arbitrary aligned epoch minute
+    candles = [_mk_candle(start + i * 60_000) for i in range(25 * 60)]
+    # Two settlements recorded inside the span -> one 8h slot uncovered.
+    funding = [(start + 8 * 3_600_000, 0.0001), (start + 16 * 3_600_000, 0.0002)]
+    report = data_quality_report(_mk_dataset(candles, funding=funding))
+    span_ms = candles[-1].source_ts_ms - candles[0].source_ts_ms
+    assert report.funding_expected_settlements == span_ms // (8 * 3_600_000)  # 3
+    assert report.funding_records_in_range == 2
+    assert report.funding_missing == 1
+
+
+# ---------------------------------------------------------------------------
+# Evaluator CLI wiring: data-quality gate and payload embedding
+# ---------------------------------------------------------------------------
+
+def _write_dataset(path, candles):
+    from src.market.history import HistoryDataset
+    dataset = _mk_dataset(candles)
+    path.write_text(json.dumps(dataset.to_dict(), indent=2, sort_keys=True) + "\n")
+    return path
+
+
+def test_evaluator_cli_embeds_data_quality_and_passes_clean_dataset(tmp_path):
+    import subprocess
+    import sys
+
+    dataset_path = _write_dataset(
+        tmp_path / "clean.json", [_mk_candle(60_000 * i) for i in range(1, 41)])
+    output_path = tmp_path / "out.json"
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "evaluate_real_history.py"),
+         "--dataset", str(dataset_path), "--output", str(output_path)],
+        capture_output=True, text=True,
+    )
+    assert proc.returncode == 0, proc.stderr
+    payload = json.loads(output_path.read_text())
+    assert payload["data_quality"]["ok"] is True
+    assert payload["data_quality"]["candle_count"] == 40
+
+
+def test_evaluator_cli_fails_closed_on_structurally_bad_dataset(tmp_path):
+    import subprocess
+    import sys
+
+    candles = [_mk_candle(60_000), _mk_candle(120_000), _mk_candle(120_000)]
+    dataset_path = _write_dataset(tmp_path / "dupes.json", candles)
+    output_path = tmp_path / "out.json"
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "evaluate_real_history.py"),
+         "--dataset", str(dataset_path), "--output", str(output_path)],
+        capture_output=True, text=True,
+    )
+    assert proc.returncode != 0
+    assert "duplicate_timestamps=1" in (proc.stdout + proc.stderr)
+    assert not output_path.exists()
+
+
 def test_candle_history_stops_at_max_candles():
     from src.market.history import fetch_candle_history
 

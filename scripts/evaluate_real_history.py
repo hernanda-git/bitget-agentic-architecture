@@ -27,7 +27,7 @@ import sys
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.market.history import acquire_dataset, load_dataset, snapshots_from_dataset
+from src.market.history import acquire_dataset, data_quality_report, load_dataset, snapshots_from_dataset
 from src.market.bitget_public import BitgetPublicClient
 from src.evaluation.baseline import run_baseline, run_walk_forward, run_cost_stress, BaselineConfig
 
@@ -79,6 +79,21 @@ def main() -> int:
         dataset = load_dataset(args.dataset)
         print(f"loaded {len(dataset.candles)} candles + {len(dataset.funding)} funding records from {args.dataset}")
 
+    # Fail closed on structurally unsound datasets before any evaluation.
+    dq = data_quality_report(dataset)
+    if not dq.ok:
+        message = (
+            f"DATA_QUALITY_REJECTED: duplicate_timestamps={dq.duplicate_timestamps} "
+            f"non_chronological={dq.non_chronological}"
+        )
+        print(message, file=sys.stderr)
+        return 2
+    print(
+        f"data quality ok: candles={dq.candle_count} gaps={len(dq.gaps)} "
+        f"max_missing_bars={dq.max_missing_bars} zero_volume_bars={dq.zero_volume_bars} "
+        f"funding_missing={dq.funding_missing}"
+    )
+
     snapshots = snapshots_from_dataset(dataset)
     config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps, slippage_bps=args.slippage_bps, real_funding=True)
     baseline = run_baseline(snapshots, config)
@@ -91,6 +106,7 @@ def main() -> int:
         "fetched_at_ms": dataset.fetched_at_ms, "assumed_half_spread_bps": dataset.assumed_half_spread_bps,
         "funding_records": len(dataset.funding), "candles": len(dataset.candles),
         "config": {"fee_bps": args.fee_bps, "funding_bps": args.funding_bps, "slippage_bps": args.slippage_bps},
+        "data_quality": dq.as_dict(),
         "baseline": {k: list(v) if isinstance(v, tuple) else v for k, v in baseline.__dict__.items()},
         "walk_forward": [dict(r) for r in walk_forward],
         "cost_stress": [dict(r) for r in cost_stress],

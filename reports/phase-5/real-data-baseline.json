@@ -157,6 +157,20 @@
       "spread": 237.3093450001761
     }
   ],
+  "data_quality": {
+    "candle_count": 1500,
+    "duplicate_timestamps": 0,
+    "funding_expected_settlements": 3,
+    "funding_missing": 0,
+    "funding_records_in_range": 3,
+    "gaps": [],
+    "granularity": "1m",
+    "max_missing_bars": 0,
+    "non_chronological": 0,
+    "ok": true,
+    "symbol": "BTCUSDT",
+    "zero_volume_bars": 0
+  },
   "fetched_at_ms": 1787725012599,
   "funding_records": 20,
   "granularity": "1m",

@@ -133,6 +133,98 @@ def _nearest_funding_rate(funding: tuple[FundingRecord, ...], observed_ms: int) 
     return chosen.funding_rate if chosen is not None else None
 
 
+_GRANULARITY_UNIT_MS = {"m": 60_000, "h": 3_600_000, "d": 86_400_000}
+_FUNDING_INTERVAL_MS = 8 * 3_600_000
+
+
+def expected_interval_ms(granularity: str) -> int:
+    """Map a candle granularity like ``1m``/``5m``/``1h``/``1d`` to milliseconds."""
+    if len(granularity) >= 2 and granularity[-1] in _GRANULARITY_UNIT_MS and granularity[:-1].isdigit():
+        return int(granularity[:-1]) * _GRANULARITY_UNIT_MS[granularity[-1]]
+    raise ValueError(f"unsupported granularity: {granularity!r}")
+
+
+@dataclass(frozen=True)
+class DataQualityReport:
+    """Structural data-quality facts about a :class:`HistoryDataset`.
+
+    ``ok`` is structural soundness only (chronology). Gaps, zero-volume bars,
+    and funding coverage are reported as measured facts, never silently dropped.
+    """
+
+    symbol: str
+    granularity: str
+    candle_count: int
+    duplicate_timestamps: int
+    non_chronological: int
+    gaps: tuple[dict, ...]
+    max_missing_bars: int
+    zero_volume_bars: int
+    funding_expected_settlements: int
+    funding_records_in_range: int
+    funding_missing: int
+
+    @property
+    def ok(self) -> bool:
+        return self.duplicate_timestamps == 0 and self.non_chronological == 0
+
+    def as_dict(self) -> dict:
+        return {
+            "symbol": self.symbol, "granularity": self.granularity, "ok": self.ok,
+            "candle_count": self.candle_count, "duplicate_timestamps": self.duplicate_timestamps,
+            "non_chronological": self.non_chronological, "gaps": list(self.gaps),
+            "max_missing_bars": self.max_missing_bars, "zero_volume_bars": self.zero_volume_bars,
+            "funding_expected_settlements": self.funding_expected_settlements,
+            "funding_records_in_range": self.funding_records_in_range,
+            "funding_missing": self.funding_missing,
+        }
+
+
+def data_quality_report(dataset: HistoryDataset) -> DataQualityReport:
+    """Measure structural quality of a stored dataset without mutating it."""
+    candles = dataset.candles
+    if not candles:
+        raise ValueError("cannot assess data quality of an empty dataset")
+    step = expected_interval_ms(dataset.granularity)
+
+    seen: set[int] = set()
+    duplicates = 0
+    for ts in (c.source_ts_ms for c in candles):
+        if ts in seen:
+            duplicates += 1
+        seen.add(ts)
+
+    non_chronological = sum(
+        1 for a, b in zip(candles, candles[1:]) if b.source_ts_ms < a.source_ts_ms
+    )
+
+    gaps: list[dict] = []
+    max_missing = 0
+    for a, b in zip(candles, candles[1:]):
+        delta = b.source_ts_ms - a.source_ts_ms
+        if delta > step:
+            missing = round(delta / step) - 1
+            gaps.append({"start_ms": a.source_ts_ms, "end_ms": b.source_ts_ms,
+                         "gap_ms": delta, "missing_bars": missing})
+            max_missing = max(max_missing, missing)
+
+    zero_volume = sum(1 for c in candles if c.volume == 0.0)
+
+    first_ts = min(c.source_ts_ms for c in candles)
+    last_ts = max(c.source_ts_ms for c in candles)
+    expected_settlements = int((last_ts - first_ts) // _FUNDING_INTERVAL_MS)
+    in_range = sum(1 for f in dataset.funding if first_ts < f.funding_time_ms <= last_ts)
+    funding_missing = max(0, expected_settlements - in_range)
+
+    return DataQualityReport(
+        symbol=dataset.symbol, granularity=dataset.granularity, candle_count=len(candles),
+        duplicate_timestamps=duplicates, non_chronological=non_chronological,
+        gaps=tuple(gaps), max_missing_bars=max_missing, zero_volume_bars=zero_volume,
+        funding_expected_settlements=expected_settlements,
+        funding_records_in_range=in_range, funding_missing=funding_missing,
+    )
+
+
 def snapshots_from_dataset(dataset: HistoryDataset, window: int = 30,
                            candle_window: str = "1m") -> tuple[MarketSnapshot, ...]:
     """Build evaluation snapshots from a historical dataset.
