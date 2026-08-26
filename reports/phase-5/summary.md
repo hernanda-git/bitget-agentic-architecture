@@ -27,8 +27,21 @@
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Tests: `216 passed`, `0 failed`
+- Tests: `222 passed`, `0 failed`
 - Public market-data or exchange network calls in this work unit: `0`
+
+## Runtime health verification
+
+- Command: `python3 scripts/run_autonomous_paper.py --mode paper --cycles 3 --symbols BTCUSDT`
+- Result: execution integrity `PASS`, runtime health `DEGRADED`
+- Market-data variation: `FLATLINE` (`3` identical mark samples)
+- Decision variation: `FLATLINE` (`3` identical `HOLD` outcomes)
+- Orders: `0`; open positions: `0`; closed trades: `0`
+- Fees: `0.0`; funding: `0.0`; gross PnL: `0.0`; net PnL: `0.0`
+- Protection attachments: `0`; reconciliation checks: `0`
+- Network calls: `0`; signed calls: `0`
+- Limitation: the fixed offline HOLD fixture intentionally proves the detector and is not live market-data health evidence.
+- Clean enter composition smoke: `1` cycle, `2` paper orders, `1` closed trade, `0` open positions, fees `0.020999999999999998`, funding `0.022`, gross PnL `2.0`, net PnL `1.957`, protection `1`, reconciliation `1`, network calls `0`, signed calls `0`, integrity `true`.
 
 ## Evaluation improvements
 

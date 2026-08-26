@@ -23,6 +23,7 @@ from src.providers.ports import ProviderResponse
 from src.paper_loop import PaperLoop
 from src.reporting import write_run_report
 from src.simulation.events import MarketEvent
+from src.health.variation import assess_runtime_health
 
 
 def _response(symbol: str, scenario: str, now: int) -> ProviderResponse:
@@ -48,13 +49,17 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
     policy = Policy(frozenset(symbols), 3, 1_000, 50, 10, kill_switch=False)
     events_before = len(ledger.all())
     results = []
+    market_marks = []
+    decision_statuses = []
     now = int(time.time() * 1000)
     for index in range(cycles):
         for symbol in symbols:
             snapshot = MarketSnapshot(symbol, 100, 99.99, 100.01, 0, 1, now + index, now + index).with_hash()
+            market_marks.append(snapshot.mark_price)
             provider = FakeProvider([_response(symbol, scenario, now + index)])
             result = asyncio.run(PaperLoop(provider, policy, ledger, venue).process(
                 snapshot, PortfolioView(), now + index))
+            decision_statuses.append(result.get("status", "UNKNOWN"))
             # A bounded paper cycle includes the market path to a terminal exit.
             # This is deliberately deterministic and remains entirely offline.
             if scenario == "enter" and symbol in venue.positions:
@@ -84,6 +89,7 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
     integrity_ok = not anomalies and counts["CYCLE_TERMINAL"] == cycles * len(symbols)
     fees = sum(fill.fee for fill in venue.fills)
     net_pnl = sum(float(trade["net_pnl"]) for trade in venue.closed_trades)
+    runtime_health = assess_runtime_health({"market_data": market_marks, "decisions": decision_statuses})
     report = {"run_id": uuid.uuid4().hex[:12], "mode": "paper", "status": "PASS" if integrity_ok else "FAIL",
               "integrity_ok": integrity_ok, "cycles_requested": cycles * len(symbols),
               "cycles_completed": len(results), "orders_placed": len(venue.orders), "signed_calls": 0,
@@ -94,7 +100,7 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
               "provider": {"name": "fake", "calls": len(results), "failures": 0, "latency_ms": 0},
               "open_positions": [p.__dict__ for p in venue.read_positions()],
               "closed_trades": venue.closed_trades, "fees": fees, "funding": venue.read_balance()["funding_paid"] - venue.read_balance()["funding_received"],
-              "net_pnl": net_pnl,
+              "net_pnl": net_pnl, "runtime_health": runtime_health,
               "fee_inclusive_outcome": {"fees_paid": fees, "realized_pnl": net_pnl},
               "anomalies": anomalies, "ledger_events_before": events_before, "ledger_events_after": len(events)}
     write_run_report(report, reports_dir)

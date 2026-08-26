@@ -54,3 +54,15 @@ def test_paper_cli_accepts_space_separated_symbols(tmp_path):
     summary = json.loads(result.stdout)
     assert summary["cycles_requested"] == 2
     assert summary["cycles_completed"] == 2
+
+
+def test_paper_cli_reports_flatline_runtime_health_without_hiding_integrity(tmp_path):
+    result = run_cli(tmp_path, "--mode", "paper", "--cycles", "3", "--symbols", "BTCUSDT",
+                     "--ledger", str(tmp_path / "ledger.sqlite3"), "--reports-dir", str(tmp_path / "reports"))
+
+    assert result.returncode == 0, result.stderr
+    summary = json.loads(result.stdout)
+    assert summary["integrity_ok"] is True
+    assert summary["runtime_health"]["status"] == "DEGRADED"
+    assert summary["runtime_health"]["metrics"]["market_data"]["status"] == "FLATLINE"
+    assert summary["runtime_health"]["metrics"]["decisions"]["status"] == "FLATLINE"

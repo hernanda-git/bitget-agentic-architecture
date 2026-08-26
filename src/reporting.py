@@ -24,6 +24,7 @@ def write_run_report(report: dict, reports_dir: Path) -> tuple[Path, Path]:
               f"- Duplicate prevention: `{report.get('duplicate_prevention', {})}`",
               f"- Protection/reconciliation: `{report.get('protection_reconciliation', {})}`",
               f"- Provider: `{report.get('provider', {})}`",
+              f"- Runtime health: `{report.get('runtime_health', {})}`",
               f"- Fee-inclusive paper outcome: `{report.get('fee_inclusive_outcome', {})}`",
               f"- Anomalies: `{report.get('anomalies', [])}`", ""]
     md_path.write_text("\n".join(lines))
