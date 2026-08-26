@@ -103,12 +103,18 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
     total_fees = total_spread = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = protection_attachments = 0
     reconciliation_checks = 0
+    # One open position per strategy: a real bot cannot stack overlapping
+    # entries, so a strategy is blocked from re-entering until its previous
+    # position has actually closed (including the bar the exit filled on).
+    busy_until: dict[str, int] = {}
     replay_parts = []
     for index, snapshot in enumerate(snapshots):
         if index < evaluation_start or index > evaluation_end:
             continue
         replay_parts.append(snapshot.snapshot_hash or snapshot.computed_hash())
         for name, generator in generators:
+            if index <= busy_until.get(name, -1):
+                continue
             venue = FakeExchange(fee_bps=config.fee_bps, slippage_bps=config.slippage_bps)
             candidates = generator(snapshot, costs)
             if not candidates: continue
@@ -120,10 +126,14 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             orders += 1
             venue.set_protection(snapshot.symbol, candidate.stop_loss, candidate.take_profit)
             protection_attachments += 1
+            close_index = evaluation_end
             for future_index, future in enumerate(snapshots[index + 1:evaluation_end + 1], index + 1):
                 future_funding = future.funding_rate if (config.real_funding and future.funding_rate is not None) else _replay_funding_rate(future, config.funding_bps)
                 venue.apply_market_event(MarketEvent(future.symbol, future.bid, future.ask, future.mark_price, future_index, future.source_ts_ms, future_funding))
-                if not venue.read_positions(snapshot.symbol): break
+                if not venue.read_positions(snapshot.symbol):
+                    close_index = future_index
+                    break
+            busy_until[name] = max(close_index, index)
             if venue.read_positions(snapshot.symbol):
                 final = snapshots[evaluation_end]
                 close = venue.close_position_at_end_of_replay(snapshot.symbol, final.mark_price,

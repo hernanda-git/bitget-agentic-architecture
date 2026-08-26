@@ -64,13 +64,27 @@ def test_regime_classification_is_deterministic_and_fail_closed():
     assert classify_regime(liquidation) == Regime.LIQUIDATION_EVENT
 
 
+def test_baseline_never_stacks_overlapping_entries_for_one_strategy():
+    # Every snapshot shows a persistent breakout condition (flat price at a
+    # range high) and the resulting stop/target band is never touched, so each
+    # simulated position stays open until end of replay. A real bot holds one
+    # position per strategy: later signals while a position is open must not
+    # stack additional overlapping entries.
+    seqs = [[206] * (i + 1) for i in range(12)]
+    series = tuple(snapshot(s, spread=0.02) for s in seqs)
+    result = run_baseline(series, BaselineConfig(quantity=1.0, fee_bps=5, funding_bps=2, slippage_bps=2))
+    assert result.strategy_breakdown["volatility_breakout"]["closed_trades"] == 1
+    assert result.closed_trades == 1
+    assert result.open_positions == 0
+
+
 def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
     series = make_series()
     result = run_baseline(series, BaselineConfig(quantity=1.0, fee_bps=5, funding_bps=2, slippage_bps=2))
     again = run_baseline(series, BaselineConfig(quantity=1.0, fee_bps=5, funding_bps=2, slippage_bps=2))
     assert result == again
     assert result.network_calls == result.signed_calls == 0
-    assert result.orders == 37
+    assert result.orders == 16
     assert result.closed_trades >= 0
     assert result.open_positions == 0
     assert result.end_of_replay_closes == 1
@@ -90,7 +104,7 @@ def test_baseline_charges_final_spread_on_end_of_replay_close():
     )
 
     assert result.end_of_replay_closes == 1
-    assert result.spread == pytest.approx(0.72)
+    assert result.spread == pytest.approx(0.30)
 
 
 def test_baseline_exposes_gross_pnl_and_explicit_cost_attribution():
