@@ -61,7 +61,53 @@ def test_fetch_history_funding_rate_normalizes_to_chronological_records():
                                 transport=httpx.MockTransport(handler), min_interval_seconds=0)
     records = asyncio.run(client.fetch_history_funding_rate("BTCUSDT", limit=100))
     assert records == [(1787644800000, 0.0001), (1787702400000, 0.000018)]
-    assert seen_params[0]["limit"] == "100"
+    # The real Bitget v2 endpoint reads pageSize, never limit; sending limit
+    # would silently cap results at the venue default page size.
+    assert seen_params[0]["pageSize"] == "100"
+    assert "limit" not in seen_params[0]
+
+
+def test_fetch_funding_history_paginates_backward_until_limit_covered():
+    from src.market.history import fetch_funding_history
+
+    # Simulate a venue that returns at most 3 records per page regardless of limit.
+    universe = [(base_ts, 0.0001 * (i + 1)) for i, base_ts in enumerate(
+        range(1_700_000_000_000, 1_700_000_000_000 + 9 * 8 * 3_600_000, 8 * 3_600_000))]
+    pages: list[list | None] = []
+
+    class StubClient:
+        product_type = "SUSDT-FUTURES"
+
+        async def fetch_history_funding_rate(self, symbol, limit=100, end_time_ms=None):
+            rows = [r for r in universe if end_time_ms is None or r[0] <= end_time_ms]
+            page = rows[-min(limit, 3):]  # venue caps every page at 3 records
+            pages.append(page)
+            return page
+
+    records = asyncio.run(fetch_funding_history(StubClient(), "BTCUSDT", limit=9))
+    assert [r.funding_time_ms for r in records] == [ts for ts, _ in universe]
+    # More than one page was needed and the cursor moved backward between pages.
+    assert len(pages) >= 2
+    assert max(r[0] for r in pages[0]) > min(r[0] for r in pages[1])
+
+
+def test_fetch_funding_history_stops_on_empty_or_duplicate_page():
+    from src.market.history import fetch_funding_history
+
+    calls: list[int | None] = []
+
+    class StubClient:
+        product_type = "SUSDT-FUTURES"
+
+        async def fetch_history_funding_rate(self, symbol, limit=100, end_time_ms=None):
+            calls.append(end_time_ms)
+            if end_time_ms is None:
+                return [(1_700_000_000_000, 0.0001)]
+            return []  # exhausted history
+
+    records = asyncio.run(fetch_funding_history(StubClient(), "BTCUSDT", limit=10))
+    assert [r.funding_time_ms for r in records] == [1_700_000_000_000]
+    assert len(calls) == 2
 
 
 def test_candle_history_paginates_backward_dedupes_and_stops_on_empty_page():
@@ -315,6 +361,23 @@ def test_evaluate_real_history_on_stored_dataset(tmp_path, monkeypatch):
     result = json.loads(out.read_text())
     assert result["baseline"]["closed_trades"] >= 0
     assert result["walk_forward"]
+
+
+def test_evaluate_real_history_embeds_walk_forward_summary(tmp_path, monkeypatch):
+    import importlib.util
+    from src.evaluation.baseline import summarize_walk_forward
+    dataset = _sample_dataset()
+    store = tmp_path / "ds.json"
+    store.write_text(json.dumps(dataset.to_dict(), indent=2, sort_keys=True))
+    out = tmp_path / "out.json"
+    spec = importlib.util.spec_from_file_location("eval_real", ROOT / "scripts" / "evaluate_real_history.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store), "--output", str(out)])
+    assert mod.main() == 0
+    result = json.loads(out.read_text())
+    expected = summarize_walk_forward(result["walk_forward"])
+    assert result["walk_forward_summary"] == expected
 
 
 def test_real_funding_flag_uses_settlement_rates_not_proxy():

@@ -2,14 +2,20 @@
   "boundary_ok": true,
   "compile_ok": true,
   "git_status": [
-    " M pyproject.toml",
-    "?? .hermes/",
-    "?? reports/baseline/",
-    "?? requirements-lock.txt",
-    "?? scripts/baseline_check.py",
-    "?? tests/test_baseline_check.py"
+    " M reports/baseline/latest.json",
+    " M scripts/baseline_check.py",
+    " M scripts/evaluate_real_history.py",
+    " M src/evaluation/baseline.py",
+    " M src/market/bitget_public.py",
+    " M src/market/history.py",
+    " M tests/test_baseline_check.py",
+    " M tests/test_phase5_engine.py",
+    " M tests/test_public_history.py",
+    "?? reports/phase-5/expanded-history-evaluation.md",
+    "?? reports/phase-5/real-data-5m-ethusdt.json",
+    "?? reports/phase-5/real-data-5m-expanded.json"
   ],
-  "revision": "f5eac10f17cc80a5f0305eabf3907abf56fabdd8",
+  "revision": "fddc5799182b16f6ca635cf45fa5635d0cbe8fec",
   "secrets_found": [],
-  "test_count": 153
+  "test_count": 251
 }

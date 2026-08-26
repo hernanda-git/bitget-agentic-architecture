@@ -147,7 +147,7 @@ class BitgetPublicClient:
 
     async def fetch_history_funding_rate(self, symbol: str, limit: int = 100, end_time_ms: int | None = None) -> list[tuple[int, float]]:
         if limit < 1 or limit > 1000: raise PublicMarketError("FUNDING_LIMIT")
-        params = {"symbol": symbol, "productType": self.product_type, "limit": str(limit)}
+        params = {"symbol": symbol, "productType": self.product_type, "pageSize": str(limit)}
         if end_time_ms is not None:
             if end_time_ms <= 0:
                 raise PublicMarketError("FUNDING_END_TIME")

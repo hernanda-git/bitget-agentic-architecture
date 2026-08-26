@@ -2,7 +2,13 @@ from dataclasses import asdict, replace
 
 import pytest
 
-from src.evaluation.baseline import BaselineConfig, run_baseline, run_walk_forward, run_cost_stress
+from src.evaluation.baseline import (
+    BaselineConfig,
+    run_baseline,
+    run_walk_forward,
+    run_cost_stress,
+    summarize_walk_forward,
+)
 from src.features.registry import FeatureValue
 from src.features.technical import build_features
 from src.market.models import Candle, MarketSnapshot
@@ -186,6 +192,23 @@ def test_cost_stress_rejects_non_positive_or_non_finite_multipliers():
     for multipliers in ((0.0,), (-1.0,), (float("nan"),), (float("inf"),)):
         with pytest.raises(ValueError, match="cost-stress"):
             run_cost_stress(series, multipliers=multipliers)
+
+
+def test_summarize_walk_forward_reports_window_robustness_facts():
+    evaluation = run_walk_forward(make_series(48), BaselineConfig(train_fraction=0.5, embargo=2, test_window=10))
+    summary = summarize_walk_forward(evaluation)
+    assert summary["windows"] == len(evaluation) >= 2
+    assert summary["windows_with_trades"] == sum(1 for r in evaluation if r["closed_trades"] > 0)
+    assert summary["profitable_windows"] == sum(1 for r in evaluation if r["net_pnl"] > 0)
+    assert summary["closed_trades"] == sum(r["closed_trades"] for r in evaluation)
+    assert summary["total_net_pnl"] == pytest.approx(sum(r["net_pnl"] for r in evaluation))
+    assert summary["worst_window_net_pnl"] == min(r["net_pnl"] for r in evaluation)
+    assert summary["best_window_net_pnl"] == max(r["net_pnl"] for r in evaluation)
+
+
+def test_summarize_walk_forward_rejects_empty_rows_fail_closed():
+    with pytest.raises(ValueError, match="walk-forward summary"):
+        summarize_walk_forward(())
 
 
 def test_baseline_rejects_snapshot_hash_mismatch_before_replay():

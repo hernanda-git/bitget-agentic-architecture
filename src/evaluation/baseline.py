@@ -202,6 +202,23 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
     return tuple(rows)
 
 
+def summarize_walk_forward(rows: Iterable[dict]) -> dict:
+    """Aggregate walk-forward windows into robustness facts (fail closed on empty input)."""
+    rows = tuple(rows)
+    if not rows:
+        raise ValueError("walk-forward summary requires at least one window row")
+    net_values = [row["net_pnl"] for row in rows]
+    return {
+        "windows": len(rows),
+        "windows_with_trades": sum(1 for row in rows if row["closed_trades"] > 0),
+        "profitable_windows": sum(1 for value in net_values if value > 0),
+        "closed_trades": sum(row["closed_trades"] for row in rows),
+        "total_net_pnl": sum(net_values),
+        "worst_window_net_pnl": min(net_values),
+        "best_window_net_pnl": max(net_values),
+    }
+
+
 def run_cost_stress(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), multipliers=(1.0, 1.5, 2.0)) -> tuple[dict, ...]:
     """Run the same replay under increasingly adverse fee, funding, and slippage assumptions."""
     multipliers = tuple(multipliers)

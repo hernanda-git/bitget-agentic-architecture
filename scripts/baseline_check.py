@@ -24,10 +24,17 @@ def _test_count(root: Path) -> int:
     code, output = _run([sys.executable, "-m", "pytest", "--collect-only", "-q"], root)
     if code not in (0, 5):
         return 0
-    match = re.search(r"collected\s+(\d+)\s+items?", output)
-    if match:
-        return int(match.group(1))
-    return sum(1 for line in output.splitlines() if "::" in line and line.strip().startswith("tests/"))
+    return parse_collected_count(output) or 0
+
+
+def parse_collected_count(output: str) -> int | None:
+    """Parse the collected-test count from pytest output, both summary styles."""
+    for pattern in (r"collected\s+(\d+)\s+items?", r"(\d+)\s+tests?\s+collected"):
+        match = re.search(pattern, output)
+        if match:
+            return int(match.group(1))
+    counted = sum(1 for line in output.splitlines() if "::" in line and line.strip().startswith("tests/"))
+    return counted or None
 
 
 def _boundary_findings(root: Path) -> list[str]:

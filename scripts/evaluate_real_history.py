@@ -29,7 +29,13 @@ if str(ROOT) not in sys.path:
 
 from src.market.history import acquire_dataset, data_quality_report, load_dataset, snapshots_from_dataset
 from src.market.bitget_public import BitgetPublicClient
-from src.evaluation.baseline import run_baseline, run_walk_forward, run_cost_stress, BaselineConfig
+from src.evaluation.baseline import (
+    BaselineConfig,
+    run_baseline,
+    run_cost_stress,
+    run_walk_forward,
+    summarize_walk_forward,
+)
 
 
 async def fetch_dataset(args: argparse.Namespace):
@@ -109,6 +115,7 @@ def main() -> int:
         "data_quality": dq.as_dict(),
         "baseline": {k: list(v) if isinstance(v, tuple) else v for k, v in baseline.__dict__.items()},
         "walk_forward": [dict(r) for r in walk_forward],
+        "walk_forward_summary": summarize_walk_forward(walk_forward),
         "cost_stress": [dict(r) for r in cost_stress],
         "snapshot_time_range": {
             "first_ms": snapshots[0].source_ts_ms, "last_ms": snapshots[-1].source_ts_ms,

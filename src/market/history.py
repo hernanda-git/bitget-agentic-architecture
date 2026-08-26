@@ -105,8 +105,30 @@ async def fetch_candle_history(client: BitgetPublicClient, symbol: str, granular
 
 async def fetch_funding_history(client: BitgetPublicClient, symbol: str, *, limit: int = 100,
                                 end_time_ms: int | None = None) -> tuple[FundingRecord, ...]:
-    records = await client.fetch_history_funding_rate(symbol, limit=limit, end_time_ms=end_time_ms)
-    return tuple(FundingRecord(ft, rate) for ft, rate in records)
+    """Paginate the public funding history backward from `end_time_ms`, deduping overlaps.
+    Some venue responses cap the page size well below `limit`, so a single request
+    can under-cover long candle windows. Loop backward until `limit` unique
+    settlements are collected or history is exhausted.
+    """
+    if limit < 1:
+        raise ValueError("funding limit must be >= 1")
+    collected: dict[int, FundingRecord] = {}
+    cursor = end_time_ms
+    while len(collected) < limit:
+        page = await client.fetch_history_funding_rate(symbol, limit=min(limit - len(collected), 1000),
+                                                       end_time_ms=cursor)
+        if not page:
+            break
+        added = 0
+        for funding_time_ms, rate in page:
+            if funding_time_ms not in collected:
+                collected[funding_time_ms] = FundingRecord(funding_time_ms, rate)
+                added += 1
+        earliest = min(ts for ts, _ in page)
+        cursor = earliest - 1
+        if added == 0 or cursor <= 0:
+            break
+    return tuple(sorted(collected.values(), key=lambda r: r.funding_time_ms))
 
 
 async def acquire_dataset(client: BitgetPublicClient, symbol: str, granularity: str = "1m",
