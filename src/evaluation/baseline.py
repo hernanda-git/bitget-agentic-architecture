@@ -253,7 +253,7 @@ def summarize_walk_forward(rows: Iterable[dict]) -> dict:
 
 def gate_walk_forward_robustness(rows: Iterable[dict], *, trade_pnls=None,
                                  min_closed_trades: int = 30, confidence: float = 0.95,
-                                 seed: int = 0) -> dict:
+                                 seed: int = 0, n_tests: int = 1) -> dict:
     """Measurement-only robustness facts over walk-forward windows.
 
     Reports the two promotion gates that Phase 7 marked NOT_EVIDENCED -- an
@@ -267,18 +267,32 @@ def gate_walk_forward_robustness(rows: Iterable[dict], *, trade_pnls=None,
     confidence-interval lower bound strictly above zero. A point estimate above
     zero with a CI straddling zero does not count, and an inadequate sample fails
     closed regardless of how profitable it looks.
+
+    Multiple-testing correction: when this gate is one of ``n_tests``
+    simultaneous candidate-edge tests (for example, the pipeline scans several
+    strategies and datasets), the confidence level is Bonferroni-adjusted to
+    ``1 - (1 - confidence) / n_tests``. That widens the CI so its lower bound
+    must be even more strictly above zero, which makes a lone spuriously-positive
+    window fail closed instead of masquerading as edge. ``n_tests == 1`` (the
+    default) reproduces the original, uncorrected behavior.
     """
     rows = tuple(rows)
     if not rows:
         raise ValueError("walk-forward robustness gate requires at least one window row")
     if not isinstance(min_closed_trades, int) or min_closed_trades < 1:
         raise ValueError("min_closed_trades must be a positive integer")
+    if not isinstance(n_tests, int) or n_tests < 1:
+        raise ValueError("n_tests must be a positive integer")
+    # Bonferroni-adjusted confidence level: one of ``n_tests`` simultaneous tests
+    # keeps the family-wise error rate at (1 - confidence). This widens the CI so
+    # a lone lucky positive window can no longer clear the lower bound.
+    effective_confidence = 1.0 - (1.0 - confidence) / n_tests
     summary = summarize_walk_forward(rows)
     total_closed = summary["closed_trades"]
     adequate_sample = total_closed >= min_closed_trades
 
     window_net = [float(r["net_pnl"]) for r in rows]
-    window_ci = bootstrap_ci(window_net, confidence=confidence, seed=seed)
+    window_ci = bootstrap_ci(window_net, confidence=effective_confidence, seed=seed)
 
     trade_ci = None
     trade_expectancy = None
@@ -286,7 +300,7 @@ def gate_walk_forward_robustness(rows: Iterable[dict], *, trade_pnls=None,
         tp = tuple(float(v) for v in trade_pnls)
         if tp and len(tp) >= min_closed_trades:
             trade_expectancy = mean(tp)
-            trade_ci = bootstrap_ci(tp, confidence=confidence, seed=seed)
+            trade_ci = bootstrap_ci(tp, confidence=effective_confidence, seed=seed)
 
     if trade_ci is not None:
         expectancy_ci = trade_ci
@@ -307,9 +321,67 @@ def gate_walk_forward_robustness(rows: Iterable[dict], *, trade_pnls=None,
         "total_closed_trades": total_closed,
         "min_closed_trades": min_closed_trades,
         "adequate_sample": adequate_sample,
+        "confidence": confidence,
+        "n_tests": n_tests,
+        "effective_confidence": effective_confidence,
         "expectancy_mean": expectancy_mean,
         "expectancy_ci": expectancy_ci,
         "expectancy_positive_with_ci": expectancy_positive_with_ci,
+        "selection_blocked": True,
+    }
+
+
+def family_wise_robustness(tests: Iterable[dict], *, alpha: float = 0.05) -> dict:
+    """Bonferroni multiple-testing correction across simultaneous candidate-edge tests.
+
+    The walk-forward pipeline implicitly scans many candidate edges (3 strategies
+    x 4 datasets = 12 families, often more when coverage/cost variants are added),
+    so judging every candidate at the same naive 0.95 level lets a single
+    spuriously-positive window masquerade as proven edge. This aggregator reports
+    how many candidates would look positive under (a) the naive per-test level and
+    (b) a Bonferroni-corrected family-wise level, so a lone lucky survivor cannot
+    hide among a sea of negatives.
+
+    Each candidate dict must carry ``rows`` (walk-forward window rows) and may
+    carry ``trade_pnls``. A candidate is "positive" when its gate returns
+    ``expectancy_positive_with_ci``. The naive verdict uses ``n_tests=1`` at the
+    individual level ``1 - alpha``; the corrected verdict uses ``n_tests=len(tests)``
+    at the per-test level ``1 - alpha/len(tests)``, which is exactly the
+    Bonferroni adjustment implemented inside ``gate_walk_forward_robustness``.
+
+    This is MEASUREMENT ONLY. It never changes the deterministic promotion gate
+    (``NEGATIVE_NET_PNL``) and never emits a promoted/selected/winner flag, so it
+    stays compatible with the always-blocked Phase 6 selection policy.
+    """
+    tests = tuple(tests)
+    if not tests:
+        raise ValueError("family-wise robustness requires at least one test")
+    if not isinstance(alpha, (int, float)) or not math.isfinite(alpha) or not 0 < alpha < 1:
+        raise ValueError("alpha must be a finite number strictly between 0 and 1")
+    k = len(tests)
+    uncorrected_positives = 0
+    corrected_positives = 0
+    for test in tests:
+        rows = test["rows"]
+        trade_pnls = test.get("trade_pnls")
+        naive = gate_walk_forward_robustness(
+            rows, trade_pnls=trade_pnls, n_tests=1, confidence=1.0 - alpha
+        )
+        corrected = gate_walk_forward_robustness(
+            rows, trade_pnls=trade_pnls, n_tests=k, confidence=1.0 - alpha
+        )
+        if naive["expectancy_positive_with_ci"]:
+            uncorrected_positives += 1
+        if corrected["expectancy_positive_with_ci"]:
+            corrected_positives += 1
+    return {
+        "tests": k,
+        "correction": "bonferroni",
+        "family_wise_alpha": alpha,
+        "any_uncorrected_positive": uncorrected_positives > 0,
+        "uncorrected_positives": uncorrected_positives,
+        "any_corrected_positive": corrected_positives > 0,
+        "corrected_positives": corrected_positives,
         "selection_blocked": True,
     }
 
