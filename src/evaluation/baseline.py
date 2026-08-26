@@ -55,6 +55,14 @@ def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
 
 def _empty(): return {"closed_trades": 0, "gross_pnl": 0.0, "fees": 0.0, "spread": 0.0, "slippage": 0.0, "funding": 0.0, "net_pnl": 0.0}
 
+# Canonical strategy registry. Kept explicit so attribution, walk-forward, and
+# the combined baseline always enumerate strategies in the same order.
+ALL_STRATEGIES = (
+    ("trend_continuation", generate_trend_continuation),
+    ("mean_reversion", generate_mean_reversion),
+    ("volatility_breakout", generate_volatility_breakout),
+)
+
 def _replay_funding_rate(snapshot, funding_bps: float) -> float:
     """Apply the configured stress rate while preserving fixture funding direction."""
     raw_rate = snapshot.funding_rate or 0.0
@@ -93,7 +101,8 @@ def _validate_replay_snapshots(snapshots: tuple) -> None:
         previous_source = snapshot.source_ts_ms
 
 def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), *,
-                 evaluation_start: int = 0, evaluation_end: int | None = None) -> BaselineResult:
+                 evaluation_start: int = 0, evaluation_end: int | None = None,
+                 strategies=None) -> BaselineResult:
     snapshots = tuple(snapshots)
     _validate_replay_snapshots(snapshots)
     if not isinstance(config.min_edge_coverage, (int, float)) or not math.isfinite(config.min_edge_coverage) or config.min_edge_coverage < 1.0:
@@ -103,7 +112,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     if not snapshots or not 0 <= evaluation_start <= evaluation_end < len(snapshots):
         raise ValueError("evaluation window must be within snapshots")
     costs = CostAssumptions(config.fee_bps, config.funding_bps, config.slippage_bps)
-    generators = (("trend_continuation", generate_trend_continuation), ("mean_reversion", generate_mean_reversion), ("volatility_breakout", generate_volatility_breakout))
+    generators = strategies if strategies is not None else ALL_STRATEGIES
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
     total_fees = total_spread = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = protection_attachments = 0
     reconciliation_checks = 0
@@ -176,8 +185,14 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
                           promotion_allowed=False, promotion_reason=reason, replay_hash=replay_hash)
 
 
-def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfig()) -> tuple[dict, ...]:
-    """Evaluate non-overlapping test windows after an expanding train period and embargo."""
+def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
+                     *, strategies=None) -> tuple[dict, ...]:
+    """Evaluate non-overlapping test windows after an expanding train period and embargo.
+
+    When ``strategies`` is given (a sequence of ``(name, generator)`` pairs), only
+    those strategies are replayed, so the result isolates their signal. Defaults
+    to all canonical strategies.
+    """
     if not 0 < config.train_fraction < 1 or config.embargo < 0 or config.test_window < 1:
         raise ValueError("walk-forward parameters must have 0 < train_fraction < 1, embargo >= 0, and test_window >= 1")
     snapshots = tuple(snapshots)
@@ -195,7 +210,8 @@ def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfi
         # cold-start indicators and prevents future test windows leaking into
         # the current result.
         result = run_baseline(snapshots, replace(config, train_fraction=0.5),
-                              evaluation_start=test_start, evaluation_end=test_end)
+                              evaluation_start=test_start, evaluation_end=test_end,
+                              strategies=strategies)
         rows.append({"train_start": 0, "train_end": test_start - config.embargo - 1,
                      "test_start": test_start, "test_end": test_end,
                      "context_start": 0, "context_end": test_start - 1,
@@ -268,3 +284,41 @@ def run_coverage_variants(snapshots: Iterable, config: BaselineConfig = Baseline
                      "net_pnl": result.net_pnl, "cost_gate_skipped": result.cost_gate_skipped,
                      "promotion_reason": result.promotion_reason})
     return tuple(rows)
+
+
+def run_strategy_attribution(snapshots: Iterable, config: BaselineConfig = BaselineConfig()) -> dict:
+    """Independent per-strategy walk-forward attribution (measurement only).
+
+    Each canonical strategy is replayed ALONE across the same walk-forward
+    windows so its signal can be attributed without the other strategies' trades
+    masking or inflating it. This is measurement, never selection:
+
+    - No strategy is selected, ranked, or promoted to a "winner" role.
+    - The test set is never used to pick a strategy (no walk-forward peeking).
+    - ``selection_blocked`` is always True and no ``best``/``selected``/
+      ``promoted`` key is emitted.
+
+    The deterministic promotion gate (NEGATIVE_NET_PNL) remains the only thing
+    that may unblock Phase 6; this function never influences it.
+    """
+    snapshots = tuple(snapshots)
+    if not snapshots:
+        raise ValueError("strategy attribution requires snapshots")
+    _validate_replay_snapshots(snapshots)
+    out: dict = {}
+    for name, generator in ALL_STRATEGIES:
+        wf = run_walk_forward(snapshots, config, strategies=((name, generator),))
+        summary = summarize_walk_forward(wf)
+        out[name] = {
+            "windows": summary["windows"],
+            "windows_with_trades": summary["windows_with_trades"],
+            "profitable_windows": summary["profitable_windows"],
+            "closed_trades": summary["closed_trades"],
+            "total_net_pnl": summary["total_net_pnl"],
+            "worst_window_net_pnl": summary["worst_window_net_pnl"],
+            "best_window_net_pnl": summary["best_window_net_pnl"],
+            "windows_net_pnl": [round(row["net_pnl"], 6) for row in wf],
+        }
+    out["selection_blocked"] = True
+    out["strategies_evaluated"] = [name for name, _ in ALL_STRATEGIES]
+    return out

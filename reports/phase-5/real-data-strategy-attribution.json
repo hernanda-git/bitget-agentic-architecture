@@ -1,0 +1,2985 @@
+{
+  "assumed_half_spread_bps": 0.5,
+  "baseline": {
+    "closed_trades": 35,
+    "cost_gate_skipped": 0,
+    "end_of_replay_closes": 1,
+    "fees": 2769.781460847813,
+    "funding": 4.5102782999999995,
+    "gross_pnl": -1065.199999999997,
+    "net_pnl": -5224.382399799813,
+    "network_calls": 0,
+    "open_positions": 0,
+    "orders": 36,
+    "promotion_allowed": false,
+    "promotion_reason": "NEGATIVE_NET_PNL",
+    "protection_attachments": 35,
+    "reconciliation_checks": 0,
+    "regime_breakdown": {
+      "DATA_DEGRADED": {
+        "closed_trades": 1,
+        "fees": 80.630259981303,
+        "funding": 0.0,
+        "gross_pnl": 326.6000000000058,
+        "net_pnl": 205.65459328471067,
+        "slippage": 32.25211673398735,
+        "spread": 8.063030000004801
+      },
+      "HIGH_VOLATILITY": {
+        "closed_trades": 0,
+        "fees": 0.0,
+        "funding": 0.0,
+        "gross_pnl": 0.0,
+        "net_pnl": 0.0,
+        "slippage": 0.0,
+        "spread": 0.0
+      },
+      "LIQUIDATION_EVENT": {
+        "closed_trades": 0,
+        "fees": 0.0,
+        "funding": 0.0,
+        "gross_pnl": 0.0,
+        "net_pnl": 0.0,
+        "slippage": 0.0,
+        "spread": 0.0
+      },
+      "LOW_VOLATILITY": {
+        "closed_trades": 28,
+        "fees": 2214.2513653800106,
+        "funding": 4.5102782999999995,
+        "gross_pnl": -2345.9000000000233,
+        "net_pnl": -5671.787192139027,
+        "slippage": 885.7004434588307,
+        "spread": 221.42510500016215
+      },
+      "RANGING": {
+        "closed_trades": 6,
+        "fees": 474.8998354864995,
+        "funding": 0.0,
+        "gross_pnl": 954.1000000000204,
+        "net_pnl": 241.75019905450273,
+        "slippage": 189.95997045896365,
+        "spread": 47.48999500005448
+      },
+      "TRENDING": {
+        "closed_trades": 0,
+        "fees": 0.0,
+        "funding": 0.0,
+        "gross_pnl": 0.0,
+        "net_pnl": 0.0,
+        "slippage": 0.0,
+        "spread": 0.0
+      }
+    },
+    "replay_hash": "3d2cbc17671d7ac78d63f88cc1f0f6b17ec7edd5d91aac6c1bd83c2b2d1415e4",
+    "signed_calls": 0,
+    "slippage": 1107.9125306517817,
+    "snapshots": 1500,
+    "spread": 276.9781300002214,
+    "strategy_breakdown": {
+      "mean_reversion": {
+        "closed_trades": 3,
+        "fees": 238.636645136366,
+        "funding": 0.0,
+        "gross_pnl": -341.99999999998545,
+        "net_pnl": -699.9549485563562,
+        "slippage": 95.45464341997285,
+        "spread": 23.863660000031814
+      },
+      "trend_continuation": {
+        "closed_trades": 2,
+        "fees": 158.05121661801252,
+        "funding": 0.0,
+        "gross_pnl": 279.6999999999971,
+        "net_pnl": 42.62316117898433,
+        "slippage": 63.220497202986735,
+        "spread": 15.805125000013504
+      },
+      "volatility_breakout": {
+        "closed_trades": 30,
+        "fees": 2373.093599093435,
+        "funding": 4.5102782999999995,
+        "gross_pnl": -1002.9000000000087,
+        "net_pnl": -4567.050612422442,
+        "slippage": 949.2373900288221,
+        "spread": 237.3093450001761
+      }
+    },
+    "walk_forward_splits": [
+      {
+        "test_end": 1499,
+        "test_start": 901,
+        "train_end": 899,
+        "train_start": 0
+      }
+    ]
+  },
+  "candles": 1500,
+  "config": {
+    "fee_bps": 5.0,
+    "funding_bps": 2.0,
+    "slippage_bps": 2.0
+  },
+  "cost_coverage_variants": [
+    {
+      "closed_trades": 35,
+      "cost_gate_skipped": 0,
+      "fees": 2769.781460847813,
+      "funding": 4.5102782999999995,
+      "gross_pnl": -1065.199999999997,
+      "min_edge_coverage": 1.0,
+      "net_pnl": -5224.382399799813,
+      "orders": 36,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 1107.9125306517817,
+      "spread": 276.9781300002214
+    },
+    {
+      "closed_trades": 30,
+      "cost_gate_skipped": 7,
+      "fees": 2373.093599093435,
+      "funding": 4.5102782999999995,
+      "gross_pnl": -1002.9000000000087,
+      "min_edge_coverage": 2.0,
+      "net_pnl": -4567.050612422442,
+      "orders": 31,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 949.2373900288221,
+      "spread": 237.3093450001761
+    },
+    {
+      "closed_trades": 0,
+      "cost_gate_skipped": 1335,
+      "fees": 0.0,
+      "funding": 0.0,
+      "gross_pnl": 0.0,
+      "min_edge_coverage": 3.0,
+      "net_pnl": 0.0,
+      "orders": 0,
+      "promotion_reason": "INCONCLUSIVE_NO_CLOSED_TRADES",
+      "slippage": 0.0,
+      "spread": 0.0
+    }
+  ],
+  "cost_stress": [
+    {
+      "fee_bps": 5.0,
+      "fees": 2769.781460847813,
+      "funding": 4.5102782999999995,
+      "funding_bps": 2.0,
+      "gross_pnl": -1065.199999999997,
+      "multiplier": 1.0,
+      "net_pnl": -5224.382399799813,
+      "slippage": 1107.9125306517817,
+      "slippage_bps": 2.0,
+      "spread": 276.9781300002214
+    },
+    {
+      "fee_bps": 7.5,
+      "fees": 3559.640491655852,
+      "funding": 4.5102782999999995,
+      "funding_bps": 3.0,
+      "gross_pnl": -1002.9000000000087,
+      "multiplier": 1.5,
+      "net_pnl": -6228.216199999409,
+      "slippage": 1423.8560850433714,
+      "slippage_bps": 3.0,
+      "spread": 237.3093450001761
+    },
+    {
+      "fee_bps": 10.0,
+      "fees": 4746.187446228739,
+      "funding": 4.5102782999999995,
+      "funding_bps": 4.0,
+      "gross_pnl": -1002.9000000000087,
+      "multiplier": 2.0,
+      "net_pnl": -7889.3818495867135,
+      "slippage": 1898.4747800577898,
+      "slippage_bps": 4.0,
+      "spread": 237.3093450001761
+    }
+  ],
+  "data_quality": {
+    "bad_prices": 0,
+    "candle_count": 1500,
+    "data_age_ms": 52599,
+    "duplicate_timestamps": 0,
+    "freshness_ok": true,
+    "funding_anomalies": 0,
+    "funding_expected_settlements": 3,
+    "funding_missing": 0,
+    "funding_records_in_range": 3,
+    "gaps": [],
+    "granularity": "1m",
+    "max_data_age_ms": null,
+    "max_missing_bars": 0,
+    "max_single_bar_return_bps": 39.12182998112947,
+    "non_chronological": 0,
+    "ok": true,
+    "price_integrity_ok": true,
+    "symbol": "BTCUSDT",
+    "zero_volume_bars": 0
+  },
+  "fetched_at_ms": 1787725012599,
+  "funding_records": 20,
+  "granularity": "1m",
+  "product_type": "SUSDT-FUTURES",
+  "snapshot_time_range": {
+    "first_ms": 1787635020000,
+    "last_ms": 1787724960000
+  },
+  "source": "bitget-public-history",
+  "strategy_attribution": {
+    "mean_reversion": {
+      "best_window_net_pnl": 0.0,
+      "closed_trades": 0,
+      "profitable_windows": 0,
+      "total_net_pnl": 0.0,
+      "windows": 54,
+      "windows_net_pnl": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "windows_with_trades": 0,
+      "worst_window_net_pnl": 0.0
+    },
+    "selection_blocked": true,
+    "strategies_evaluated": [
+      "trend_continuation",
+      "mean_reversion",
+      "volatility_breakout"
+    ],
+    "trend_continuation": {
+      "best_window_net_pnl": 0.0,
+      "closed_trades": 0,
+      "profitable_windows": 0,
+      "total_net_pnl": 0.0,
+      "windows": 54,
+      "windows_net_pnl": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "windows_with_trades": 0,
+      "worst_window_net_pnl": 0.0
+    },
+    "volatility_breakout": {
+      "best_window_net_pnl": 89.4460522254642,
+      "closed_trades": 55,
+      "profitable_windows": 11,
+      "total_net_pnl": -5868.757786234781,
+      "windows": 54,
+      "windows_net_pnl": [
+        -246.621168,
+        -218.119639,
+        0.0,
+        0.0,
+        -117.202351,
+        -64.922919,
+        -90.221772,
+        -66.888169,
+        -148.443155,
+        57.007473,
+        -55.748067,
+        -416.216866,
+        34.055945,
+        -67.725569,
+        -55.829517,
+        -235.491217,
+        -481.658435,
+        -14.213837,
+        -334.956455,
+        -41.725091,
+        -183.983613,
+        84.868452,
+        -71.791545,
+        -449.07143,
+        72.621375,
+        -74.990745,
+        -210.988488,
+        -92.246822,
+        85.710902,
+        -235.626567,
+        -184.95696,
+        -170.929208,
+        16.513892,
+        26.324634,
+        -143.706104,
+        -163.333282,
+        -108.151299,
+        -166.547257,
+        -36.94154,
+        -112.065025,
+        -224.96529,
+        3.585841,
+        11.719842,
+        -158.230531,
+        -107.713049,
+        -78.89417,
+        -224.121965,
+        -184.54256,
+        89.446052,
+        27.850294,
+        -27.089638,
+        -131.544103,
+        -74.83682,
+        -105.210249
+      ],
+      "windows_with_trades": 52,
+      "worst_window_net_pnl": -481.65843470404354
+    }
+  },
+  "symbol": "BTCUSDT",
+  "walk_forward": [
+    {
+      "closed_trades": 1,
+      "context_end": 900,
+      "context_start": 0,
+      "fees": 78.81411683814099,
+      "funding": 0.0,
+      "gross_pnl": -128.40000000000873,
+      "net_pnl": -246.6211681221614,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.525641283995355,
+      "spread": 7.881410000016331,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.81411683814099,
+          "funding": 0.0,
+          "gross_pnl": -128.40000000000873,
+          "net_pnl": -246.6211681221614,
+          "slippage": 31.525641283995355,
+          "spread": 7.881410000016331
+        }
+      },
+      "test_end": 910,
+      "test_snapshots": 10,
+      "test_start": 901,
+      "train_end": 899,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 911,
+      "context_start": 0,
+      "fees": 78.67976329929749,
+      "funding": 0.0,
+      "gross_pnl": -100.10000000000582,
+      "net_pnl": -218.11963930029103,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.47190100098669,
+      "spread": 7.8679750000010245,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.67976329929749,
+          "funding": 0.0,
+          "gross_pnl": -100.10000000000582,
+          "net_pnl": -218.11963930029103,
+          "slippage": 31.47190100098669,
+          "spread": 7.8679750000010245
+        }
+      },
+      "test_end": 921,
+      "test_snapshots": 10,
+      "test_start": 912,
+      "train_end": 910,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 0,
+      "context_end": 922,
+      "context_start": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "gross_pnl": 0.0,
+      "net_pnl": 0.0,
+      "protection_attachments": 0,
+      "reconciliation_checks": 0,
+      "slippage": 0.0,
+      "spread": 0.0,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        }
+      },
+      "test_end": 932,
+      "test_snapshots": 10,
+      "test_start": 923,
+      "train_end": 921,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 0,
+      "context_end": 933,
+      "context_start": 0,
+      "fees": 0.0,
+      "funding": 0.0,
+      "gross_pnl": 0.0,
+      "net_pnl": 0.0,
+      "protection_attachments": 0,
+      "reconciliation_checks": 0,
+      "slippage": 0.0,
+      "spread": 0.0,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        }
+      },
+      "test_end": 943,
+      "test_snapshots": 10,
+      "test_start": 934,
+      "train_end": 932,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 944,
+      "context_start": 0,
+      "fees": 78.134900781349,
+      "funding": 0.0,
+      "gross_pnl": 0.0,
+      "net_pnl": -117.20235078135129,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.253959999987273,
+      "spread": 7.813490000015008,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.134900781349,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": -117.20235078135129,
+          "slippage": 31.253959999987273,
+          "spread": 7.813490000015008
+        }
+      },
+      "test_end": 954,
+      "test_snapshots": 10,
+      "test_start": 945,
+      "train_end": 943,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 955,
+      "context_start": 0,
+      "fees": 78.2819442203195,
+      "funding": 0.0,
+      "gross_pnl": 52.5,
+      "net_pnl": -64.92291869531758,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.31277947498893,
+      "spread": 7.828195000009146,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.2819442203195,
+          "funding": 0.0,
+          "gross_pnl": 52.5,
+          "net_pnl": -64.92291869531758,
+          "slippage": 31.31277947498893,
+          "spread": 7.828195000009146
+        }
+      },
+      "test_end": 965,
+      "test_snapshots": 10,
+      "test_start": 956,
+      "train_end": 954,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 966,
+      "context_start": 0,
+      "fees": 78.34784737097851,
+      "funding": 0.0,
+      "gross_pnl": 27.30000000000291,
+      "net_pnl": -90.22177209797718,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.339139727002475,
+      "spread": 7.834784999999101,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.34784737097851,
+          "funding": 0.0,
+          "gross_pnl": 27.30000000000291,
+          "net_pnl": -90.22177209797718,
+          "slippage": 31.339139727002475,
+          "spread": 7.834784999999101
+        }
+      },
+      "test_end": 976,
+      "test_snapshots": 10,
+      "test_start": 967,
+      "train_end": 965,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 977,
+      "context_start": 0,
+      "fees": 78.52544442275449,
+      "funding": 0.0,
+      "gross_pnl": 50.89999999999418,
+      "net_pnl": -66.88816891375664,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.41017949099478,
+      "spread": 7.852545000001555,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.52544442275449,
+          "funding": 0.0,
+          "gross_pnl": 50.89999999999418,
+          "net_pnl": -66.88816891375664,
+          "slippage": 31.41017949099478,
+          "spread": 7.852545000001555
+        }
+      },
+      "test_end": 987,
+      "test_snapshots": 10,
+      "test_start": 978,
+      "train_end": 976,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 988,
+      "context_start": 0,
+      "fees": 78.562104610621,
+      "funding": 0.0,
+      "gross_pnl": -30.59999999999127,
+      "net_pnl": -148.44315491660046,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.424840305990074,
+      "spread": 7.8562099999981,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.562104610621,
+          "funding": 0.0,
+          "gross_pnl": -30.59999999999127,
+          "net_pnl": -148.44315491660046,
+          "slippage": 31.424840305990074,
+          "spread": 7.8562099999981
+        }
+      },
+      "test_end": 998,
+      "test_snapshots": 10,
+      "test_start": 989,
+      "train_end": 987,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 999,
+      "context_start": 0,
+      "fees": 78.661678911617,
+      "funding": 0.0,
+      "gross_pnl": 175.0,
+      "net_pnl": 57.00747283838331,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.464678249991266,
+      "spread": 7.866170000008424,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.661678911617,
+          "funding": 0.0,
+          "gross_pnl": 175.0,
+          "net_pnl": 57.00747283838331,
+          "slippage": 31.464678249991266,
+          "spread": 7.866170000008424
+        }
+      },
+      "test_end": 1009,
+      "test_snapshots": 10,
+      "test_start": 1000,
+      "train_end": 998,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1010,
+      "context_start": 0,
+      "fees": 78.8320429758205,
+      "funding": 0.0,
+      "gross_pnl": 62.5,
+      "net_pnl": -55.74806735082892,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.532819375002873,
+      "spread": 7.883205000005546,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.8320429758205,
+          "funding": 0.0,
+          "gross_pnl": 62.5,
+          "net_pnl": -55.74806735082892,
+          "slippage": 31.532819375002873,
+          "spread": 7.883205000005546
+        }
+      },
+      "test_end": 1020,
+      "test_snapshots": 10,
+      "test_start": 1011,
+      "train_end": 1009,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1021,
+      "context_start": 0,
+      "fees": 78.74458804994552,
+      "funding": 0.0,
+      "gross_pnl": -298.1000000000058,
+      "net_pnl": -416.21686603095634,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.497822980993078,
+      "spread": 7.874455000011949,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.74458804994552,
+          "funding": 0.0,
+          "gross_pnl": -298.1000000000058,
+          "net_pnl": -416.21686603095634,
+          "slippage": 31.497822980993078,
+          "spread": 7.874455000011949
+        }
+      },
+      "test_end": 1031,
+      "test_snapshots": 10,
+      "test_start": 1022,
+      "train_end": 1020,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1032,
+      "context_start": 0,
+      "fees": 78.69603177446051,
+      "funding": 0.0,
+      "gross_pnl": 152.10000000000582,
+      "net_pnl": 34.05594474654127,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.478418478989624,
+      "spread": 7.869605000014417,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.69603177446051,
+          "funding": 0.0,
+          "gross_pnl": 152.10000000000582,
+          "net_pnl": 34.05594474654127,
+          "slippage": 31.478418478989624,
+          "spread": 7.869605000014417
+        }
+      },
+      "test_end": 1042,
+      "test_snapshots": 10,
+      "test_start": 1033,
+      "train_end": 1031,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1043,
+      "context_start": 0,
+      "fees": 78.81704447567051,
+      "funding": 0.0,
+      "gross_pnl": 50.5,
+      "net_pnl": -67.72556897066704,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.526819494989468,
+      "spread": 7.881705000007059,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.81704447567051,
+          "funding": 0.0,
+          "gross_pnl": 50.5,
+          "net_pnl": -67.72556897066704,
+          "slippage": 31.526819494989468,
+          "spread": 7.881705000007059
+        }
+      },
+      "test_end": 1053,
+      "test_snapshots": 10,
+      "test_start": 1044,
+      "train_end": 1042,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1054,
+      "context_start": 0,
+      "fees": 78.88634297636351,
+      "funding": 0.0,
+      "gross_pnl": 62.5,
+      "net_pnl": -55.82951735136636,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.5545393749926,
+      "spread": 7.888635000010254,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.88634297636351,
+          "funding": 0.0,
+          "gross_pnl": 62.5,
+          "net_pnl": -55.82951735136636,
+          "slippage": 31.5545393749926,
+          "spread": 7.888635000010254
+        }
+      },
+      "test_end": 1064,
+      "test_snapshots": 10,
+      "test_start": 1055,
+      "train_end": 1053,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1065,
+      "context_start": 0,
+      "fees": 78.860815438608,
+      "funding": 0.0,
+      "gross_pnl": -117.19999999999709,
+      "net_pnl": -235.4912166106138,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.54432117199758,
+      "spread": 7.886080000011134,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.860815438608,
+          "funding": 0.0,
+          "gross_pnl": -117.19999999999709,
+          "net_pnl": -235.4912166106138,
+          "slippage": 31.54432117199758,
+          "spread": 7.886080000011134
+        }
+      },
+      "test_end": 1075,
+      "test_snapshots": 10,
+      "test_start": 1066,
+      "train_end": 1064,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 2,
+      "context_end": 1076,
+      "context_start": 0,
+      "fees": 157.505632250056,
+      "funding": 0.0,
+      "gross_pnl": -245.39999999997963,
+      "net_pnl": -481.65843470404354,
+      "protection_attachments": 2,
+      "reconciliation_checks": 0,
+      "slippage": 63.0022424540075,
+      "spread": 15.750560000000405,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 2,
+          "fees": 157.505632250056,
+          "funding": 0.0,
+          "gross_pnl": -245.39999999997963,
+          "net_pnl": -481.65843470404354,
+          "slippage": 63.0022424540075,
+          "spread": 15.750560000000405
+        }
+      },
+      "test_end": 1086,
+      "test_snapshots": 10,
+      "test_start": 1077,
+      "train_end": 1075,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1087,
+      "context_start": 0,
+      "fees": 78.675887811759,
+      "funding": 0.0,
+      "gross_pnl": 103.80000000000291,
+      "net_pnl": -14.213836773768975,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.470358962003957,
+      "spread": 7.867590000008931,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.675887811759,
+          "funding": 0.0,
+          "gross_pnl": 103.80000000000291,
+          "net_pnl": -14.213836773768975,
+          "slippage": 31.470358962003957,
+          "spread": 7.867590000008931
+        }
+      },
+      "test_end": 1097,
+      "test_snapshots": 10,
+      "test_start": 1088,
+      "train_end": 1086,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1098,
+      "context_start": 0,
+      "fees": 78.57097792320951,
+      "funding": 0.0,
+      "gross_pnl": -217.10000000000582,
+      "net_pnl": -334.95645509422707,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.428382170997793,
+      "spread": 7.857095000013942,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.57097792320951,
+          "funding": 0.0,
+          "gross_pnl": -217.10000000000582,
+          "net_pnl": -334.95645509422707,
+          "slippage": 31.428382170997793,
+          "spread": 7.857095000013942
+        }
+      },
+      "test_end": 1108,
+      "test_snapshots": 10,
+      "test_start": 1099,
+      "train_end": 1097,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1109,
+      "context_start": 0,
+      "fees": 78.483391284834,
+      "funding": 0.0,
+      "gross_pnl": 76.0,
+      "net_pnl": -41.72509052484435,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.393359239998972,
+      "spread": 7.848340000011376,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.483391284834,
+          "funding": 0.0,
+          "gross_pnl": 76.0,
+          "net_pnl": -41.72509052484435,
+          "slippage": 31.393359239998972,
+          "spread": 7.848340000011376
+        }
+      },
+      "test_end": 1119,
+      "test_snapshots": 10,
+      "test_start": 1110,
+      "train_end": 1108,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1120,
+      "context_start": 0,
+      "fees": 78.44755889697552,
+      "funding": 1.4122782,
+      "gross_pnl": -64.89999999999418,
+      "net_pnl": -183.98361274597642,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.3790206489939,
+      "spread": 7.84475500001281,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.44755889697552,
+          "funding": 1.4122782,
+          "gross_pnl": -64.89999999999418,
+          "net_pnl": -183.98361274597642,
+          "slippage": 31.3790206489939,
+          "spread": 7.84475500001281
+        }
+      },
+      "test_end": 1130,
+      "test_snapshots": 10,
+      "test_start": 1121,
+      "train_end": 1119,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1131,
+      "context_start": 0,
+      "fees": 78.42102547171051,
+      "funding": 0.0,
+      "gross_pnl": 202.5,
+      "net_pnl": 84.86845155328812,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.36841797499801,
+      "spread": 7.842105000003357,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.42102547171051,
+          "funding": 0.0,
+          "gross_pnl": 202.5,
+          "net_pnl": 84.86845155328812,
+          "slippage": 31.36841797499801,
+          "spread": 7.842105000003357
+        }
+      },
+      "test_end": 1141,
+      "test_snapshots": 10,
+      "test_start": 1132,
+      "train_end": 1130,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1142,
+      "context_start": 0,
+      "fees": 78.52769503527699,
+      "funding": 0.0,
+      "gross_pnl": 46.0,
+      "net_pnl": -71.79154457526485,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.41107953999017,
+      "spread": 7.85276999999769,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.52769503527699,
+          "funding": 0.0,
+          "gross_pnl": 46.0,
+          "net_pnl": -71.79154457526485,
+          "slippage": 31.41107953999017,
+          "spread": 7.85276999999769
+        }
+      },
+      "test_end": 1152,
+      "test_snapshots": 10,
+      "test_start": 1143,
+      "train_end": 1141,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 2,
+      "context_end": 1153,
+      "context_start": 0,
+      "fees": 156.847628293476,
+      "funding": 0.0,
+      "gross_pnl": -213.8000000000029,
+      "net_pnl": -449.07143043149404,
+      "protection_attachments": 2,
+      "reconciliation_checks": 0,
+      "slippage": 62.739042137996876,
+      "spread": 15.684760000018287,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 2,
+          "fees": 156.847628293476,
+          "funding": 0.0,
+          "gross_pnl": -213.8000000000029,
+          "net_pnl": -449.07143043149404,
+          "slippage": 62.739042137996876,
+          "spread": 15.684760000018287
+        }
+      },
+      "test_end": 1163,
+      "test_snapshots": 10,
+      "test_start": 1154,
+      "train_end": 1152,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1164,
+      "context_start": 0,
+      "fees": 78.51907698519099,
+      "funding": 0.0,
+      "gross_pnl": 190.40000000000873,
+      "net_pnl": 72.62137491881694,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.40763809600321,
+      "spread": 7.851909999997588,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.51907698519099,
+          "funding": 0.0,
+          "gross_pnl": 190.40000000000873,
+          "net_pnl": 72.62137491881694,
+          "slippage": 31.40763809600321,
+          "spread": 7.851909999997588
+        }
+      },
+      "test_end": 1174,
+      "test_snapshots": 10,
+      "test_start": 1165,
+      "train_end": 1163,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1175,
+      "context_start": 0,
+      "fees": 78.66049541160501,
+      "funding": 0.0,
+      "gross_pnl": 43.0,
+      "net_pnl": -74.99074498162409,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.464199570007622,
+      "spread": 7.866050000011455,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.66049541160501,
+          "funding": 0.0,
+          "gross_pnl": 43.0,
+          "net_pnl": -74.99074498162409,
+          "slippage": 31.464199570007622,
+          "spread": 7.866050000011455
+        }
+      },
+      "test_end": 1185,
+      "test_snapshots": 10,
+      "test_start": 1176,
+      "train_end": 1174,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1186,
+      "context_start": 0,
+      "fees": 78.72566239975652,
+      "funding": 0.0,
+      "gross_pnl": -92.90000000000873,
+      "net_pnl": -210.9884883287633,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.490260929000215,
+      "spread": 7.872564999997849,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.72566239975652,
+          "funding": 0.0,
+          "gross_pnl": -92.90000000000873,
+          "net_pnl": -210.9884883287633,
+          "slippage": 31.490260929000215,
+          "spread": 7.872564999997849
+        }
+      },
+      "test_end": 1196,
+      "test_snapshots": 10,
+      "test_start": 1187,
+      "train_end": 1185,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1197,
+      "context_start": 0,
+      "fees": 78.76454755014552,
+      "funding": 0.0,
+      "gross_pnl": 25.89999999999418,
+      "net_pnl": -92.24682229115265,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.50581974099623,
+      "spread": 7.87645500000508,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.76454755014552,
+          "funding": 0.0,
+          "gross_pnl": 25.89999999999418,
+          "net_pnl": -92.24682229115265,
+          "slippage": 31.50581974099623,
+          "spread": 7.87645500000508
+        }
+      },
+      "test_end": 1207,
+      "test_snapshots": 10,
+      "test_start": 1198,
+      "train_end": 1196,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1208,
+      "context_start": 0,
+      "fees": 78.79272530042749,
+      "funding": 0.0,
+      "gross_pnl": 203.89999999999418,
+      "net_pnl": 85.71090173856987,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.51709796099749,
+      "spread": 7.879274999999325,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.79272530042749,
+          "funding": 0.0,
+          "gross_pnl": 203.89999999999418,
+          "net_pnl": 85.71090173856987,
+          "slippage": 31.51709796099749,
+          "spread": 7.879274999999325
+        }
+      },
+      "test_end": 1218,
+      "test_snapshots": 10,
+      "test_start": 1209,
+      "train_end": 1207,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1219,
+      "context_start": 0,
+      "fees": 78.817715463177,
+      "funding": 0.0,
+      "gross_pnl": -117.39999999999418,
+      "net_pnl": -235.62656663718312,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.527081173990155,
+      "spread": 7.881770000021788,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.817715463177,
+          "funding": 0.0,
+          "gross_pnl": -117.39999999999418,
+          "net_pnl": -235.62656663718312,
+          "slippage": 31.527081173990155,
+          "spread": 7.881770000021788
+        }
+      },
+      "test_end": 1229,
+      "test_snapshots": 10,
+      "test_start": 1220,
+      "train_end": 1218,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1230,
+      "context_start": 0,
+      "fees": 78.77130913771299,
+      "funding": 0.0,
+      "gross_pnl": -66.80000000000291,
+      "net_pnl": -184.9569598057181,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.508520667994162,
+      "spread": 7.877130000008037,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.77130913771299,
+          "funding": 0.0,
+          "gross_pnl": -66.80000000000291,
+          "net_pnl": -184.9569598057181,
+          "slippage": 31.508520667994162,
+          "spread": 7.877130000008037
+        }
+      },
+      "test_end": 1240,
+      "test_snapshots": 10,
+      "test_start": 1231,
+      "train_end": 1229,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1241,
+      "context_start": 0,
+      "fees": 78.75280738752801,
+      "funding": 0.0,
+      "gross_pnl": -52.80000000000291,
+      "net_pnl": -170.9292079155409,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.501120528002502,
+      "spread": 7.8752800000074785,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.75280738752801,
+          "funding": 0.0,
+          "gross_pnl": -52.80000000000291,
+          "net_pnl": -170.9292079155409,
+          "slippage": 31.501120528002502,
+          "spread": 7.8752800000074785
+        }
+      },
+      "test_end": 1251,
+      "test_snapshots": 10,
+      "test_start": 1242,
+      "train_end": 1240,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1252,
+      "context_start": 0,
+      "fees": 78.79073395040751,
+      "funding": 0.0,
+      "gross_pnl": 134.70000000001164,
+      "net_pnl": 16.513892396594827,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.516298652990372,
+      "spread": 7.879075000018929,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.79073395040751,
+          "funding": 0.0,
+          "gross_pnl": 134.70000000001164,
+          "net_pnl": 16.513892396594827,
+          "slippage": 31.516298652990372,
+          "spread": 7.879075000018929
+        }
+      },
+      "test_end": 1262,
+      "test_snapshots": 10,
+      "test_start": 1253,
+      "train_end": 1251,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 2,
+      "context_end": 1263,
+      "context_start": 0,
+      "fees": 158.183568631836,
+      "funding": 0.0,
+      "gross_pnl": 263.6000000000058,
+      "net_pnl": 26.3246340041527,
+      "protection_attachments": 2,
+      "reconciliation_checks": 0,
+      "slippage": 63.2734373639978,
+      "spread": 15.818360000019311,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 2,
+          "fees": 158.183568631836,
+          "funding": 0.0,
+          "gross_pnl": 263.6000000000058,
+          "net_pnl": 26.3246340041527,
+          "slippage": 63.2734373639978,
+          "spread": 15.818360000019311
+        }
+      },
+      "test_end": 1273,
+      "test_snapshots": 10,
+      "test_start": 1264,
+      "train_end": 1262,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1274,
+      "context_start": 0,
+      "fees": 79.13740391637401,
+      "funding": 0.0,
+      "gross_pnl": -25.0,
+      "net_pnl": -143.7061041663648,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.654960249987198,
+      "spread": 7.9137400000036,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.13740391637401,
+          "funding": 0.0,
+          "gross_pnl": -25.0,
+          "net_pnl": -143.7061041663648,
+          "slippage": 31.654960249987198,
+          "spread": 7.9137400000036
+        }
+      },
+      "test_end": 1284,
+      "test_snapshots": 10,
+      "test_start": 1275,
+      "train_end": 1273,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1285,
+      "context_start": 0,
+      "fees": 79.0888563783885,
+      "funding": 0.0,
+      "gross_pnl": -44.69999999999709,
+      "net_pnl": -163.33328182537682,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.635540446994128,
+      "spread": 7.908884999997099,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.0888563783885,
+          "funding": 0.0,
+          "gross_pnl": -44.69999999999709,
+          "net_pnl": -163.33328182537682,
+          "slippage": 31.635540446994128,
+          "spread": 7.908884999997099
+        }
+      },
+      "test_end": 1295,
+      "test_snapshots": 10,
+      "test_start": 1286,
+      "train_end": 1284,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1296,
+      "context_start": 0,
+      "fees": 79.034199490342,
+      "funding": 0.0,
+      "gross_pnl": 10.39999999999418,
+      "net_pnl": -108.15129938634259,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.61367989599239,
+      "spread": 7.90342000000237,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.034199490342,
+          "funding": 0.0,
+          "gross_pnl": 10.39999999999418,
+          "net_pnl": -108.15129938634259,
+          "slippage": 31.61367989599239,
+          "spread": 7.90342000000237
+        }
+      },
+      "test_end": 1306,
+      "test_snapshots": 10,
+      "test_start": 1297,
+      "train_end": 1295,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1307,
+      "context_start": 0,
+      "fees": 79.031506790315,
+      "funding": 0.0,
+      "gross_pnl": -48.0,
+      "net_pnl": -166.54725727031587,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.612600479988032,
+      "spread": 7.903150000012829,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.031506790315,
+          "funding": 0.0,
+          "gross_pnl": -48.0,
+          "net_pnl": -166.54725727031587,
+          "slippage": 31.612600479988032,
+          "spread": 7.903150000012829
+        }
+      },
+      "test_end": 1317,
+      "test_snapshots": 10,
+      "test_start": 1308,
+      "train_end": 1306,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1318,
+      "context_start": 0,
+      "fees": 79.02769059027699,
+      "funding": 0.0,
+      "gross_pnl": 81.60000000000582,
+      "net_pnl": -36.94153977429008,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.611079184003756,
+      "spread": 7.902770000015153,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.02769059027699,
+          "funding": 0.0,
+          "gross_pnl": 81.60000000000582,
+          "net_pnl": -36.94153977429008,
+          "slippage": 31.611079184003756,
+          "spread": 7.902770000015153
+        }
+      },
+      "test_end": 1328,
+      "test_snapshots": 10,
+      "test_start": 1319,
+      "train_end": 1317,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1329,
+      "context_start": 0,
+      "fees": 79.0433499779335,
+      "funding": 0.0,
+      "gross_pnl": 6.5,
+      "net_pnl": -112.06502491294097,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.61733993499365,
+      "spread": 7.904335000013816,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.0433499779335,
+          "funding": 0.0,
+          "gross_pnl": 6.5,
+          "net_pnl": -112.06502491294097,
+          "slippage": 31.61733993499365,
+          "spread": 7.904335000013816
+        }
+      },
+      "test_end": 1339,
+      "test_snapshots": 10,
+      "test_start": 1330,
+      "train_end": 1328,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1340,
+      "context_start": 0,
+      "fees": 78.97686410226851,
+      "funding": 0.0,
+      "gross_pnl": -106.5,
+      "net_pnl": -224.96529016726817,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.59074106499611,
+      "spread": 7.897685000003548,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.97686410226851,
+          "funding": 0.0,
+          "gross_pnl": -106.5,
+          "net_pnl": -224.96529016726817,
+          "slippage": 31.59074106499611,
+          "spread": 7.897685000003548
+        }
+      },
+      "test_end": 1350,
+      "test_snapshots": 10,
+      "test_start": 1341,
+      "train_end": 1339,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1351,
+      "context_start": 0,
+      "fees": 79.00943552759449,
+      "funding": 0.0,
+      "gross_pnl": 122.10000000000582,
+      "net_pnl": 3.5858406933981826,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.603778778997366,
+      "spread": 7.900945000015781,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.00943552759449,
+          "funding": 0.0,
+          "gross_pnl": 122.10000000000582,
+          "net_pnl": 3.5858406933981826,
+          "slippage": 31.603778778997366,
+          "spread": 7.900945000015781
+        }
+      },
+      "test_end": 1361,
+      "test_snapshots": 10,
+      "test_start": 1352,
+      "train_end": 1350,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1362,
+      "context_start": 0,
+      "fees": 79.05343450303451,
+      "funding": 0.0,
+      "gross_pnl": 130.3000000000029,
+      "net_pnl": 11.71984179995809,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.62137869700382,
+      "spread": 7.905345000006491,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.05343450303451,
+          "funding": 0.0,
+          "gross_pnl": 130.3000000000029,
+          "net_pnl": 11.71984179995809,
+          "slippage": 31.62137869700382,
+          "spread": 7.905345000006491
+        }
+      },
+      "test_end": 1372,
+      "test_snapshots": 10,
+      "test_start": 1363,
+      "train_end": 1361,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1373,
+      "context_start": 0,
+      "fees": 79.0203557527035,
+      "funding": 0.0,
+      "gross_pnl": -39.69999999999709,
+      "net_pnl": -158.23053114969446,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.608140396987437,
+      "spread": 7.902035000006435,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.0203557527035,
+          "funding": 0.0,
+          "gross_pnl": -39.69999999999709,
+          "net_pnl": -158.23053114969446,
+          "slippage": 31.608140396987437,
+          "spread": 7.902035000006435
+        }
+      },
+      "test_end": 1383,
+      "test_snapshots": 10,
+      "test_start": 1374,
+      "train_end": 1372,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1384,
+      "context_start": 0,
+      "fees": 79.00869944008701,
+      "funding": 0.0,
+      "gross_pnl": 10.80000000000291,
+      "net_pnl": -107.71304933208268,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.603479892000905,
+      "spread": 7.900869999997667,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.00869944008701,
+          "funding": 0.0,
+          "gross_pnl": 10.80000000000291,
+          "net_pnl": -107.71304933208268,
+          "slippage": 31.603479892000905,
+          "spread": 7.900869999997667
+        }
+      },
+      "test_end": 1394,
+      "test_snapshots": 10,
+      "test_start": 1385,
+      "train_end": 1383,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1395,
+      "context_start": 0,
+      "fees": 78.9294458517945,
+      "funding": 0.0,
+      "gross_pnl": 39.5,
+      "net_pnl": -78.89417045679531,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.57177960500121,
+      "spread": 7.8929449999995995,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.9294458517945,
+          "funding": 0.0,
+          "gross_pnl": 39.5,
+          "net_pnl": -78.89417045679531,
+          "slippage": 31.57177960500121,
+          "spread": 7.8929449999995995
+        }
+      },
+      "test_end": 1405,
+      "test_snapshots": 10,
+      "test_start": 1396,
+      "train_end": 1394,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1406,
+      "context_start": 0,
+      "fees": 78.881314013813,
+      "funding": 0.0,
+      "gross_pnl": -105.80000000000291,
+      "net_pnl": -224.121965071817,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.552521057994454,
+      "spread": 7.88813000000664,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.881314013813,
+          "funding": 0.0,
+          "gross_pnl": -105.80000000000291,
+          "net_pnl": -224.121965071817,
+          "slippage": 31.552521057994454,
+          "spread": 7.88813000000664
+        }
+      },
+      "test_end": 1416,
+      "test_snapshots": 10,
+      "test_start": 1407,
+      "train_end": 1405,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1417,
+      "context_start": 0,
+      "fees": 78.76170908761699,
+      "funding": 0.0,
+      "gross_pnl": -66.39999999999418,
+      "net_pnl": -184.54255975161644,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.50468066400208,
+      "spread": 7.876170000003185,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.76170908761699,
+          "funding": 0.0,
+          "gross_pnl": -66.39999999999418,
+          "net_pnl": -184.54255975161644,
+          "slippage": 31.50468066400208,
+          "spread": 7.876170000003185
+        }
+      },
+      "test_end": 1427,
+      "test_snapshots": 10,
+      "test_start": 1418,
+      "train_end": 1416,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1428,
+      "context_start": 0,
+      "fees": 78.7026248495265,
+      "funding": 0.0,
+      "gross_pnl": 207.5,
+      "net_pnl": 89.4460522254642,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.48105792500428,
+      "spread": 7.87026500000502,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.7026248495265,
+          "funding": 0.0,
+          "gross_pnl": 207.5,
+          "net_pnl": 89.4460522254642,
+          "slippage": 31.48105792500428,
+          "spread": 7.87026500000502
+        }
+      },
+      "test_end": 1438,
+      "test_snapshots": 10,
+      "test_start": 1429,
+      "train_end": 1427,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1439,
+      "context_start": 0,
+      "fees": 78.8331325258315,
+      "funding": 0.0,
+      "gross_pnl": 146.09999999999127,
+      "net_pnl": 27.85029393517641,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.533258538984228,
+      "spread": 7.883314999999129,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.8331325258315,
+          "funding": 0.0,
+          "gross_pnl": 146.09999999999127,
+          "net_pnl": 27.85029393517641,
+          "slippage": 31.533258538984228,
+          "spread": 7.883314999999129
+        }
+      },
+      "test_end": 1449,
+      "test_snapshots": 10,
+      "test_start": 1440,
+      "train_end": 1438,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1450,
+      "context_start": 0,
+      "fees": 78.99308936493101,
+      "funding": 0.0,
+      "gross_pnl": 91.40000000000873,
+      "net_pnl": -27.08963845092724,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.59723908599699,
+      "spread": 7.899310000007972,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 78.99308936493101,
+          "funding": 0.0,
+          "gross_pnl": 91.40000000000873,
+          "net_pnl": -27.08963845092724,
+          "slippage": 31.59723908599699,
+          "spread": 7.899310000007972
+        }
+      },
+      "test_end": 1460,
+      "test_snapshots": 10,
+      "test_start": 1451,
+      "train_end": 1449,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1461,
+      "context_start": 0,
+      "fees": 79.029402415294,
+      "funding": 0.0,
+      "gross_pnl": -13.0,
+      "net_pnl": -131.54410254531507,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.611760130006587,
+      "spread": 7.902940000014496,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.029402415294,
+          "funding": 0.0,
+          "gross_pnl": -13.0,
+          "net_pnl": -131.54410254531507,
+          "slippage": 31.611760130006587,
+          "spread": 7.902940000014496
+        }
+      },
+      "test_end": 1471,
+      "test_snapshots": 10,
+      "test_start": 1462,
+      "train_end": 1460,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1472,
+      "context_start": 0,
+      "fees": 79.0245453277455,
+      "funding": 0.0,
+      "gross_pnl": 43.69999999999709,
+      "net_pnl": -74.8368198907408,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.609819562989287,
+      "spread": 7.902455000003101,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.0245453277455,
+          "funding": 0.0,
+          "gross_pnl": 43.69999999999709,
+          "net_pnl": -74.8368198907408,
+          "slippage": 31.609819562989287,
+          "spread": 7.902455000003101
+        }
+      },
+      "test_end": 1482,
+      "test_snapshots": 10,
+      "test_start": 1473,
+      "train_end": 1471,
+      "train_start": 0
+    },
+    {
+      "closed_trades": 1,
+      "context_end": 1483,
+      "context_start": 0,
+      "fees": 79.073499115735,
+      "funding": 0.0,
+      "gross_pnl": 13.39999999999418,
+      "net_pnl": -105.21024898174609,
+      "protection_attachments": 1,
+      "reconciliation_checks": 0,
+      "slippage": 31.629399865996675,
+      "spread": 7.9073500000085915,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "fees": 0.0,
+          "funding": 0.0,
+          "gross_pnl": 0.0,
+          "net_pnl": 0.0,
+          "slippage": 0.0,
+          "spread": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "fees": 79.073499115735,
+          "funding": 0.0,
+          "gross_pnl": 13.39999999999418,
+          "net_pnl": -105.21024898174609,
+          "slippage": 31.629399865996675,
+          "spread": 7.9073500000085915
+        }
+      },
+      "test_end": 1493,
+      "test_snapshots": 10,
+      "test_start": 1484,
+      "train_end": 1482,
+      "train_start": 0
+    }
+  ],
+  "walk_forward_summary": {
+    "best_window_net_pnl": 89.4460522254642,
+    "closed_trades": 55,
+    "profitable_windows": 11,
+    "total_net_pnl": -5868.757786234781,
+    "windows": 54,
+    "windows_with_trades": 52,
+    "worst_window_net_pnl": -481.65843470404354
+  }
+}

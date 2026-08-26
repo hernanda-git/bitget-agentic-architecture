@@ -34,6 +34,7 @@ from src.evaluation.baseline import (
     run_baseline,
     run_cost_stress,
     run_coverage_variants,
+    run_strategy_attribution,
     run_walk_forward,
     summarize_walk_forward,
 )
@@ -115,6 +116,7 @@ def main() -> int:
     walk_forward = run_walk_forward(snapshots, config)
     cost_stress = run_cost_stress(snapshots, config)
     coverage_variants = run_coverage_variants(snapshots, config, coverages=(1.0, 2.0, 3.0))
+    strategy_attribution = run_strategy_attribution(snapshots, config)
 
     payload = {
         "source": "bitget-public-history",
@@ -128,6 +130,7 @@ def main() -> int:
         "walk_forward_summary": summarize_walk_forward(walk_forward),
         "cost_stress": [dict(r) for r in cost_stress],
         "cost_coverage_variants": [dict(r) for r in coverage_variants],
+        "strategy_attribution": strategy_attribution,
         "snapshot_time_range": {
             "first_ms": snapshots[0].source_ts_ms, "last_ms": snapshots[-1].source_ts_ms,
         },
