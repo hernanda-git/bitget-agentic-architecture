@@ -13,3 +13,4 @@ logs/
 reports/*.json
 reports/*.md
 *.egg-info/
+data/history/

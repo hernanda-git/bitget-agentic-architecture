@@ -48,10 +48,10 @@ class BitgetPublicClient:
             raise ValueError("venue must be bitget")
         if venue is None and product_type is not None:
             raise ValueError("venue is required")
-        if product_type is not None and product_type not in {"USDT-FUTURES", "COIN-FUTURES", "USDC-FUTURES"}:
+        if product_type is not None and product_type not in {"SUSDT-FUTURES"}:
             raise ValueError("incompatible product type")
         self.venue = venue or "bitget"
-        self.product_type = product_type or "USDT-FUTURES"
+        self.product_type = product_type or "SUSDT-FUTURES"
         self.base_url = base_url.rstrip("/")
         self.timeout_seconds = min(max(float(timeout_seconds), 0.1), 30.0)
         self.min_interval_seconds = max(float(min_interval_seconds), 0.0)
@@ -145,10 +145,38 @@ class BitgetPublicClient:
             self.metrics.policy_rejections += 1; raise PublicMarketError("TICKER_IMPOSSIBLE_PRICES")
         return values
 
-    async def fetch_candles(self, symbol: str, granularity: str = "1m", limit: int = 100) -> list[Candle]:
+    async def fetch_history_funding_rate(self, symbol: str, limit: int = 100, end_time_ms: int | None = None) -> list[tuple[int, float]]:
+        if limit < 1 or limit > 1000: raise PublicMarketError("FUNDING_LIMIT")
+        params = {"symbol": symbol, "productType": self.product_type, "limit": str(limit)}
+        if end_time_ms is not None:
+            if end_time_ms <= 0:
+                raise PublicMarketError("FUNDING_END_TIME")
+            params["endTime"] = str(int(end_time_ms))
+        data = await self._get("/api/v2/mix/market/history-fund-rate", params, "funding")
+        if not isinstance(data, list):
+            self.metrics.schema_rejections += 1; raise PublicMarketError("FUNDING_SCHEMA")
+        records = []
+        try:
+            for row in data:
+                if not isinstance(row, dict) or "fundingTime" not in row or "fundingRate" not in row:
+                    raise PublicMarketError("FUNDING_FIELDS")
+                records.append((int(row["fundingTime"]), float(row["fundingRate"])))
+        except (TypeError, ValueError, KeyError) as exc:
+            self.metrics.schema_rejections += 1; raise PublicMarketError("FUNDING_VALUES") from exc
+        if any(a[0] > b[0] for a, b in zip(records, records[1:])):
+            records.sort(key=lambda r: r[0])
+        return records
+
+    async def fetch_candles(self, symbol: str, granularity: str = "1m", limit: int = 100,
+                            *, end_time_ms: int | None = None, allow_partial: bool = False) -> list[Candle]:
         if limit < 1 or limit > 1000: raise PublicMarketError("CANDLE_LIMIT")
-        data = await self._get("/api/v2/mix/market/candles", {"symbol": symbol, "productType": self.product_type, "granularity": granularity, "limit": str(limit)}, "candles")
-        if not isinstance(data, list) or len(data) < limit and not self._legacy:
+        params = {"symbol": symbol, "productType": self.product_type, "granularity": granularity, "limit": str(limit)}
+        if end_time_ms is not None:
+            if end_time_ms <= 0:
+                raise PublicMarketError("CANDLE_END_TIME")
+            params["endTime"] = str(int(end_time_ms))
+        data = await self._get("/api/v2/mix/market/candles", params, "candles")
+        if not isinstance(data, list) or len(data) < limit and not allow_partial and not self._legacy:
             self.metrics.schema_rejections += 1; raise PublicMarketError("CANDLE_INCOMPLETE_WINDOW")
         candles = []
         try:

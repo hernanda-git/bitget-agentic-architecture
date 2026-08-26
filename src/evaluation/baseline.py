@@ -19,6 +19,7 @@ class BaselineConfig:
     train_fraction: float = 0.6
     embargo: int = 1
     test_window: int = 10
+    real_funding: bool = False
 
 @dataclass(frozen=True)
 class BaselineResult:
@@ -120,7 +121,8 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             venue.set_protection(snapshot.symbol, candidate.stop_loss, candidate.take_profit)
             protection_attachments += 1
             for future_index, future in enumerate(snapshots[index + 1:evaluation_end + 1], index + 1):
-                venue.apply_market_event(MarketEvent(future.symbol, future.bid, future.ask, future.mark_price, future_index, future.source_ts_ms, _replay_funding_rate(future, config.funding_bps)))
+                future_funding = future.funding_rate if (config.real_funding and future.funding_rate is not None) else _replay_funding_rate(future, config.funding_bps)
+                venue.apply_market_event(MarketEvent(future.symbol, future.bid, future.ask, future.mark_price, future_index, future.source_ts_ms, future_funding))
                 if not venue.read_positions(snapshot.symbol): break
             if venue.read_positions(snapshot.symbol):
                 final = snapshots[evaluation_end]

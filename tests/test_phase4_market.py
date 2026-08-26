@@ -11,7 +11,7 @@ from src.market.models import Candle, MarketSnapshot
 
 def test_client_requires_explicit_venue_and_product_type():
     with pytest.raises(ValueError, match="venue"):
-        BitgetPublicClient(product_type="USDT-FUTURES")
+        BitgetPublicClient(product_type="SUSDT-FUTURES")
     with pytest.raises(ValueError, match="product"):
         BitgetPublicClient(venue="bitget", product_type="SPOT")
 
@@ -23,7 +23,7 @@ def test_client_retries_bounded_and_records_metrics_without_auth():
         if len(calls) < 2:
             return httpx.Response(503)
         return httpx.Response(200, json={"code": "00000", "data": [{"lastPr": "10", "bidPr": "9.9", "askPr": "10.1", "ts": "10000", "baseVol": "2"}]})
-    client = BitgetPublicClient(venue="bitget", product_type="USDT-FUTURES", transport=httpx.MockTransport(handler),
+    client = BitgetPublicClient(venue="bitget", product_type="SUSDT-FUTURES", transport=httpx.MockTransport(handler),
                                 min_interval_seconds=0, max_retries=1, backoff_seconds=0)
     result = asyncio.run(client.fetch_ticker("BTCUSDT"))
     assert result["volume"] == 2.0

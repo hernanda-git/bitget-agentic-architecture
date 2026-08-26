@@ -22,7 +22,7 @@ async def run_public_shadow(cycles: int, symbols: list[str], ledger_path: Path, 
                             client_factory=None, provider=None) -> dict:
     if cycles < 1 or not symbols:
         raise ValueError("cycles and symbols must be non-empty")
-    client_factory = client_factory or (lambda: BitgetPublicClient(venue="bitget", product_type="USDT-FUTURES"))
+    client_factory = client_factory or (lambda: BitgetPublicClient(venue="bitget", product_type="SUSDT-FUTURES"))
     client = client_factory()
     if client is None:
         # Unit-test seam: no network is performed, and this is explicitly degraded.
@@ -38,7 +38,7 @@ async def run_public_shadow(cycles: int, symbols: list[str], ledger_path: Path, 
     for cycle in range(cycles):
         for symbol in symbols:
             cycle_id = f"public-shadow-{cycle}-{symbol}-{uuid.uuid4().hex[:8]}"
-            ledger.claim_cycle(cycle_id, trace_id=cycle_id, mode="public-shadow", product_type="USDT-FUTURES", symbol=symbol)
+            ledger.claim_cycle(cycle_id, trace_id=cycle_id, mode="public-shadow", product_type="SUSDT-FUTURES", symbol=symbol)
             started = time.perf_counter()
             try:
                 snapshot = await client.fetch_snapshot(symbol, windows=("1m",), limit=100)
@@ -46,7 +46,7 @@ async def run_public_shadow(cycles: int, symbols: list[str], ledger_path: Path, 
                 source_timestamps.append(snapshot.source_ts_ms)
                 spreads.append(snapshot.spread_bps)
                 ledger.append("SHADOW_TICK_OBSERVED", {"cycle_id": cycle_id, "trace_id": cycle_id, "mode": "public-shadow",
-                    "product_type": "USDT-FUTURES", "symbol": symbol, "source": "bitget-public",
+                    "product_type": "SUSDT-FUTURES", "symbol": symbol, "source": "bitget-public",
                     "snapshot_hash": snapshot.snapshot_hash, "source_ts_ms": snapshot.source_ts_ms,
                     "observed_ts_ms": snapshot.observed_ts_ms, "disposition": "HOLD"})
                 ledger.set_terminal(cycle_id, "HOLD")
@@ -54,7 +54,7 @@ async def run_public_shadow(cycles: int, symbols: list[str], ledger_path: Path, 
             except Exception as exc:
                 errors.append(str(exc))
                 ledger.append("SHADOW_TICK_OBSERVED", {"cycle_id": cycle_id, "trace_id": cycle_id, "mode": "public-shadow",
-                    "product_type": "USDT-FUTURES", "symbol": symbol, "source": "bitget-public",
+                    "product_type": "SUSDT-FUTURES", "symbol": symbol, "source": "bitget-public",
                     "disposition": "HOLD", "reason": str(exc)[:120]})
                 ledger.set_terminal(cycle_id, "HOLD_DATA_REJECTED")
             latencies.append((time.perf_counter() - started) * 1000)
