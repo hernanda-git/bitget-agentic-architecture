@@ -68,6 +68,9 @@ def main() -> int:
     parser.add_argument("--fee-bps", type=float, default=5.0)
     parser.add_argument("--funding-bps", type=float, default=2.0)
     parser.add_argument("--slippage-bps", type=float, default=2.0)
+    parser.add_argument("--max-data-age-ms", type=int, default=None,
+                        help="if set, reject the dataset when the newest candle is older "
+                             "than the fetch time by more than this span (freshness gate)")
     args = parser.parse_args()
 
     if args.fetch and args.dataset:
@@ -86,18 +89,23 @@ def main() -> int:
         print(f"loaded {len(dataset.candles)} candles + {len(dataset.funding)} funding records from {args.dataset}")
 
     # Fail closed on structurally unsound datasets before any evaluation.
-    dq = data_quality_report(dataset)
-    if not dq.ok:
+    dq = data_quality_report(dataset, max_data_age_ms=args.max_data_age_ms)
+    stale_rejected = args.max_data_age_ms is not None and not dq.freshness_ok
+    if not dq.ok or stale_rejected:
         message = (
             f"DATA_QUALITY_REJECTED: duplicate_timestamps={dq.duplicate_timestamps} "
-            f"non_chronological={dq.non_chronological}"
+            f"non_chronological={dq.non_chronological} bad_prices={dq.bad_prices} "
+            f"funding_anomalies={dq.funding_anomalies} data_age_ms={dq.data_age_ms} "
+            f"freshness_ok={dq.freshness_ok}"
         )
         print(message, file=sys.stderr)
         return 2
     print(
         f"data quality ok: candles={dq.candle_count} gaps={len(dq.gaps)} "
         f"max_missing_bars={dq.max_missing_bars} zero_volume_bars={dq.zero_volume_bars} "
-        f"funding_missing={dq.funding_missing}"
+        f"funding_missing={dq.funding_missing} data_age_ms={dq.data_age_ms} "
+        f"max_single_bar_return_bps={round(dq.max_single_bar_return_bps, 2)} "
+        f"funding_anomalies={dq.funding_anomalies}"
     )
 
     snapshots = snapshots_from_dataset(dataset)

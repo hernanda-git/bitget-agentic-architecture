@@ -170,8 +170,9 @@ def expected_interval_ms(granularity: str) -> int:
 class DataQualityReport:
     """Structural data-quality facts about a :class:`HistoryDataset`.
 
-    ``ok`` is structural soundness only (chronology). Gaps, zero-volume bars,
-    and funding coverage are reported as measured facts, never silently dropped.
+    ``ok`` is structural soundness (chronology + price integrity). Gaps,
+    zero-volume bars, funding coverage, staleness, single-bar outliers, and
+    funding anomalies are reported as measured facts, never silently dropped.
     """
 
     symbol: str
@@ -179,31 +180,57 @@ class DataQualityReport:
     candle_count: int
     duplicate_timestamps: int
     non_chronological: int
+    bad_prices: int
     gaps: tuple[dict, ...]
     max_missing_bars: int
     zero_volume_bars: int
     funding_expected_settlements: int
     funding_records_in_range: int
     funding_missing: int
+    data_age_ms: int
+    max_data_age_ms: int | None
+    max_single_bar_return_bps: float
+    funding_anomalies: int
+
+    @property
+    def price_integrity_ok(self) -> bool:
+        return self.bad_prices == 0
+
+    @property
+    def freshness_ok(self) -> bool:
+        return self.max_data_age_ms is None or self.data_age_ms <= self.max_data_age_ms
 
     @property
     def ok(self) -> bool:
-        return self.duplicate_timestamps == 0 and self.non_chronological == 0
+        return (self.duplicate_timestamps == 0 and self.non_chronological == 0
+                and self.bad_prices == 0)
 
     def as_dict(self) -> dict:
         return {
             "symbol": self.symbol, "granularity": self.granularity, "ok": self.ok,
             "candle_count": self.candle_count, "duplicate_timestamps": self.duplicate_timestamps,
-            "non_chronological": self.non_chronological, "gaps": list(self.gaps),
+            "non_chronological": self.non_chronological, "bad_prices": self.bad_prices,
+            "price_integrity_ok": self.price_integrity_ok, "gaps": list(self.gaps),
             "max_missing_bars": self.max_missing_bars, "zero_volume_bars": self.zero_volume_bars,
             "funding_expected_settlements": self.funding_expected_settlements,
             "funding_records_in_range": self.funding_records_in_range,
-            "funding_missing": self.funding_missing,
+            "funding_missing": self.funding_missing, "data_age_ms": self.data_age_ms,
+            "max_data_age_ms": self.max_data_age_ms, "freshness_ok": self.freshness_ok,
+            "max_single_bar_return_bps": self.max_single_bar_return_bps,
+            "funding_anomalies": self.funding_anomalies,
         }
 
 
-def data_quality_report(dataset: HistoryDataset) -> DataQualityReport:
-    """Measure structural quality of a stored dataset without mutating it."""
+def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None = None,
+                        max_funding_rate: float = 0.05) -> DataQualityReport:
+    """Measure structural quality of a stored dataset without mutating it.
+
+    ``max_data_age_ms`` enables a freshness gate: if set, ``freshness_ok`` is
+    False when the newest candle is older than the fetch time by more than that
+    span. ``max_funding_rate`` flags funding settlements whose magnitude is
+    implausible for the venue (non-finite or beyond the bound).
+    """
+    import math
     candles = dataset.candles
     if not candles:
         raise ValueError("cannot assess data quality of an empty dataset")
@@ -220,6 +247,21 @@ def data_quality_report(dataset: HistoryDataset) -> DataQualityReport:
         1 for a, b in zip(candles, candles[1:]) if b.source_ts_ms < a.source_ts_ms
     )
 
+    # Price integrity: NaN/inf survive Candle.__post_init__ because every
+    # comparison with them is False, so they must be caught explicitly here.
+    bad_prices = 0
+    prev_close: float | None = None
+    max_bar_return_bps = 0.0
+    for candle in candles:
+        if not all(math.isfinite(v) for v in
+                   (candle.open, candle.high, candle.low, candle.close, candle.volume)):
+            bad_prices += 1
+        if prev_close is not None and prev_close > 0:
+            move_bps = abs(candle.close - prev_close) / prev_close * 10_000
+            if move_bps > max_bar_return_bps:
+                max_bar_return_bps = move_bps
+        prev_close = candle.close
+
     gaps: list[dict] = []
     max_missing = 0
     for a, b in zip(candles, candles[1:]):
@@ -234,16 +276,23 @@ def data_quality_report(dataset: HistoryDataset) -> DataQualityReport:
 
     first_ts = min(c.source_ts_ms for c in candles)
     last_ts = max(c.source_ts_ms for c in candles)
+    data_age_ms = dataset.fetched_at_ms - last_ts
     expected_settlements = int((last_ts - first_ts) // _FUNDING_INTERVAL_MS)
     in_range = sum(1 for f in dataset.funding if first_ts < f.funding_time_ms <= last_ts)
     funding_missing = max(0, expected_settlements - in_range)
+    funding_anomalies = sum(
+        1 for f in dataset.funding
+        if (not math.isfinite(f.funding_rate)) or abs(f.funding_rate) > max_funding_rate
+    )
 
     return DataQualityReport(
         symbol=dataset.symbol, granularity=dataset.granularity, candle_count=len(candles),
         duplicate_timestamps=duplicates, non_chronological=non_chronological,
-        gaps=tuple(gaps), max_missing_bars=max_missing, zero_volume_bars=zero_volume,
-        funding_expected_settlements=expected_settlements,
+        bad_prices=bad_prices, gaps=tuple(gaps), max_missing_bars=max_missing,
+        zero_volume_bars=zero_volume, funding_expected_settlements=expected_settlements,
         funding_records_in_range=in_range, funding_missing=funding_missing,
+        data_age_ms=data_age_ms, max_data_age_ms=max_data_age_ms,
+        max_single_bar_return_bps=max_bar_return_bps, funding_anomalies=funding_anomalies,
     )
 
 
