@@ -296,6 +296,58 @@ def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None 
     )
 
 
+@dataclass(frozen=True)
+class FundingReadiness:
+    """Whether a dataset may be evaluated with real (observed) funding.
+
+    ``ok`` is False when the dataset spans funding settlements but carries no
+    in-range funding records (real funding would be silently unmodeled) or when
+    the missing fraction of expected settlements is too high. This is a
+    fail-closed gate: absence of coverage is treated as "do not model funding",
+    never as "funding is free".
+    """
+
+    ok: bool
+    reason: str
+    funding_records_in_range: int
+    expected_settlements: int
+    funding_missing: int
+
+    def as_dict(self) -> dict:
+        return {
+            "ok": self.ok, "reason": self.reason,
+            "funding_records_in_range": self.funding_records_in_range,
+            "expected_settlements": self.expected_settlements,
+            "funding_missing": self.funding_missing,
+        }
+
+
+def real_funding_readiness(dataset: HistoryDataset, report: DataQualityReport, *,
+                           min_funding_records_in_range: int = 1,
+                           max_funding_missing_fraction: float = 0.5) -> FundingReadiness:
+    """Decide whether ``real_funding=True`` is defensible for this dataset.
+
+    ``report`` is the :class:`DataQualityReport` already produced for the same
+    dataset (it carries the funding-coverage counts). The gate fails closed
+    when there are no in-range funding records despite the window spanning
+    funding settlements, or when too many expected settlements are missing.
+    """
+    if min_funding_records_in_range < 0:
+        raise ValueError("min_funding_records_in_range must be >= 0")
+    if not 0.0 <= max_funding_missing_fraction <= 1.0:
+        raise ValueError("max_funding_missing_fraction must be in [0, 1]")
+    in_range = report.funding_records_in_range
+    expected = report.funding_expected_settlements
+    missing = report.funding_missing
+    if expected >= 1 and in_range < min_funding_records_in_range:
+        return FundingReadiness(False, "no in-range funding records for a window that spans settlements",
+                                in_range, expected, missing)
+    if expected >= 1 and missing / expected > max_funding_missing_fraction:
+        return FundingReadiness(False, "funding coverage too sparse for real-funding modeling",
+                                in_range, expected, missing)
+    return FundingReadiness(True, "", in_range, expected, missing)
+
+
 def snapshots_from_dataset(dataset: HistoryDataset, window: int = 30,
                            candle_window: str = "1m") -> tuple[MarketSnapshot, ...]:
     """Build evaluation snapshots from a historical dataset.

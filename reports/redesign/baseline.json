@@ -1,0 +1,47 @@
+{
+  "baseline_version": 1,
+  "captured_at": "2026-08-26T23:09:04+07:00",
+  "timezone": "Asia/Jakarta",
+  "repository": "/root/bitget-agentic-architecture",
+  "source_revision": "d47ac14ebb383e85d0504f8cd2ac7e035824f86f",
+  "git_branch": "master",
+  "git_status_short": [
+    " M scripts/evaluate_real_history.py",
+    " M src/market/history.py",
+    "?? docs/FULL_STRATEGY_REDESIGN_PROMPT.md",
+    "?? reports/full-review/",
+    "?? tests/test_funding_readiness_gate.py"
+  ],
+  "pre_existing_user_changes_preserved": true,
+  "verification": {
+    "resource_guard": {"command": "python3 scripts/resource_guard.py --json", "exit_code": 0, "ok": true, "violations": []},
+    "compileall": {"command": "python3 -m compileall -q src scripts tests", "exit_code": 0, "status": "passed"},
+    "pytest_collect": {"command": "python3 -m pytest --collect-only -q", "exit_code": 0, "collected": 275},
+    "pytest_full": {"command": "python3 -m pytest -q --timeout=20 --timeout-method=thread", "exit_code": 0, "passed": 275, "failed": 0, "duration_seconds": 7.54},
+    "env_ignore": {"command": "git check-ignore .env", "ignored": true}
+  },
+  "resource_snapshot": {
+    "available_memory_bytes": 1582596096,
+    "total_memory_bytes": 3837673472,
+    "swap_used_bytes": 1449111552,
+    "swap_total_bytes": 2084564992,
+    "swap_used_percent": 69.51625675195068,
+    "disk_free_bytes": 33348571136,
+    "disk_total_bytes": 63290032128,
+    "disk_used_percent": 43.04094548239064,
+    "inode_free_percent": 52.691664097364765
+  },
+  "external_effects": {
+    "network_calls": 0,
+    "signed_calls": 0,
+    "orders": 0,
+    "open_positions": 0,
+    "closed_trades": 0,
+    "credentials_accessed": false,
+    "forbidden_external_tree_accessed": false
+  },
+  "known_limitations": [
+    "Baseline captures repository and offline test state only; it does not establish public-shadow or profitability evidence.",
+    "Uncommitted files listed above predate this baseline capture and remain out of scope for redesign edits."
+  ]
+}

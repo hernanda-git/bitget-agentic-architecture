@@ -24,6 +24,8 @@ def _load_runner(name: str):
         raise RuntimeError(f"unable to load standalone runner: {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    if not hasattr(module, "CanonicalOfflineRuntime"):
+        raise RuntimeError(f"offline runner is not wired to canonical runtime: {path}")
     return module
 
 

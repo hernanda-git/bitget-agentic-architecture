@@ -40,3 +40,14 @@ def test_monitor_restores_armed_protection_after_restart():
     restored = MarkMonitor(store, close_position=lambda symbol: None, clock=lambda: 10)
     assert restored.get("BTCUSDT").stop_loss == 95
     assert restored.get("BTCUSDT").take_profit == 110
+
+
+def test_stop_breach_has_one_idempotent_close_intent():
+    closes = []
+    monitor = MarkMonitor(InMemoryProtectionStore(), close_position=lambda symbol: closes.append(symbol), clock=lambda: 10)
+    monitor.arm("BTCUSDT", "LONG", 1, 95, 110, timestamp=10)
+    first = monitor.on_mark("BTCUSDT", 94, timestamp=10)
+    second = monitor.on_mark("BTCUSDT", 93, timestamp=10)
+    assert sum(event.kind == "EMERGENCY_EXIT_PENDING" for event in first) == 1
+    assert sum(event.kind == "EMERGENCY_EXIT_PENDING" for event in second) == 0
+    assert closes == ["BTCUSDT"]

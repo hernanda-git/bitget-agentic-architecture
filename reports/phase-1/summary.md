@@ -1,52 +1,22 @@
-# Phase 1 Summary: Ledger Trust Spine
+# Phase 1 summary
 
-## Result
+- Captured: `2026-08-26T23:17:55+07:00` (`Asia/Jakarta`)
+- Source revision: `d47ac14ebb383e85d0504f8cd2ac7e035824f86f`
+- Gate: `PROVEN` for runtime inventory and canonical offline lifecycle
 
-`PASS`. All Phase 1 gate criteria were verified in the standalone repository. No network calls or orders were made. `/opt/bots/bitget-listener` was not accessed or modified, and the existing `.hermes/` plan state was left untouched.
+## Evidence
 
-## Delivered
+- Runtime wiring inventory: `reports/redesign/runtime-wiring.md`
+- Focused runtime suite: `24 passed`, `0 failed`
+- Full suite: `284 passed`, `0 failed`
+- Compileall: `PASS`
+- Fixture-shadow smoke: `PASS`, source `fixture-shadow`, network `0`, signed `0`, orders `0`
+- Direct paper ENTER smoke: `PASS`, integrity `true`, one closed fake trade, zero open positions, network `0`, signed `0`
 
-- Added canonical `RuntimeEvent` validation with complete runtime identity, bounded canonical payload hashing, schema versioning, and immutable run metadata fields.
-- Reworked `EventLedger` to use WAL, foreign keys, a 10-second busy timeout, and explicit versioned migration evidence in `schema_migrations`.
-- Added atomic `append_event_with_projection(...)` transaction support. Fault injection verified that an exception rolls back both event and projection.
-- Added required durable ledger queries: latest cycle, disposition counts, open and closed positions/trades, realized PnL, fees, funding, protection status, reconciliation status, active breakers, recent events, and runtime status.
-- Retained old offline callers only through canonical event construction and validation. Unknown event types are rejected.
-- Repaired direct execution of `scripts/replay_ledger.py` by adding repository-root import hygiene.
-- Added `tests/test_phase1_ledger.py` with focused contract, transaction rollback, SQLite pragma/migration, query, and direct-script tests.
+`CanonicalOfflineRuntime` now provides the shared offline lifecycle boundary. Paper delegates to the existing paper runtime, while fixture-shadow records explicitly labeled fixture observations without provider or exchange execution. Duplicate snapshots are skipped without creating a second order or terminal event.
 
-## TDD evidence
+The Northline launcher correctly refused a paper invocation without its explicit confirmation token. This is a safety gate, not a runtime failure. The direct bounded paper runner was exercised separately and passed.
 
-1. Initial focused RED: `python -m pytest tests/test_phase1_ledger.py -q` returned `5 failed` because the requested metadata, transaction API, WAL, and queries were absent.
-2. Direct-script RED: `python -m pytest tests/test_phase1_ledger.py::test_replay_script_runs_directly_from_repository_root -q` returned `1 failed` with `ModuleNotFoundError: No module named 'src'`.
-3. GREEN: `python -m pytest tests/test_phase1_ledger.py -q` returned `6 passed in 0.14s`.
+## Limitations and next gate
 
-## Verification commands and raw results
-
-| Command | Exit | Result |
-|---|---:|---|
-| `python3 -m pytest tests/test_event_contracts.py tests/test_ledger.py -q` | 0 | `8 passed in 0.05s` |
-| `python3 -m pytest tests/test_ledger_schema.py tests/test_restart_recovery.py -q` | 0 | `6 passed in 0.11s` |
-| `python3 -m pytest tests/test_ledger_summary.py -q` | 0 | `2 passed in 0.07s` |
-| `python3 -m pytest tests/test_service_hygiene.py -q` | 0 | `5 passed in 0.43s` |
-| `python3 -m pytest tests/test_phase1_ledger.py -q` | 0 | `6 passed in 0.14s` |
-| `python3 -m pytest -q` | 0 | `159 passed in 4.49s` |
-| `python3 -m compileall -q src scripts tests` | 0 | no output |
-| `git diff --check` | 0 | no output |
-| `python3 scripts/replay_ledger.py /tmp/phase1-empty-ledger.sqlite3` | 0 | `{"dispositions": {}, "positions": {}, "protection": {}, "reconciliation": "UNKNOWN", "risk_breaker": "CLOSED"}` |
-| `python3 scripts/review_run.py --help` | 0 | usage displayed |
-| `python3 scripts/run_autonomous_paper.py --help` | 0 | usage displayed |
-| `python3 scripts/run_autonomous_shadow.py --help` | 0 | usage displayed |
-
-## Files changed
-
-- `src/ledger/events.py`
-- `src/ledger/models.py`
-- `src/ledger/sqlite.py`
-- `scripts/replay_ledger.py`
-- `tests/test_phase1_ledger.py`
-- `reports/phase-1/summary.json`
-- `reports/phase-1/summary.md`
-
-## Blockers
-
-None.
+The paper PnL is deterministic fake-exchange output and is not profitability evidence. Public-shadow remains distinct. Phase 2 must establish explicit event identity, atomic event/projection writes, and replay equality.

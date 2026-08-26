@@ -46,6 +46,7 @@ class BaselineResult:
     promotion_allowed: bool = False
     promotion_reason: str = ""
     replay_hash: str = ""
+    trade_pnls: tuple[float, ...] = ()
 
 
 def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
@@ -122,6 +123,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     # position has actually closed (including the bar the exit filled on).
     busy_until: dict[str, int] = {}
     replay_parts = []
+    trade_pnls: list[float] = []
     for index, snapshot in enumerate(snapshots):
         if index < evaluation_start or index > evaluation_end:
             continue
@@ -168,6 +170,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             slippage = trade["slippage_cost"]
             total_fees += trade["entry_fee"] + trade["exit_fee"]; total_spread += spread; total_slippage += slippage; total_funding += funding
             total_gross += trade["gross_pnl"]; closed += 1
+            trade_pnls.append(trade["gross_pnl"] - trade["entry_fee"] - trade["exit_fee"] - spread - slippage - funding)
             row = strategy[name]; row["closed_trades"] += 1; row["gross_pnl"] += trade["gross_pnl"]; row["fees"] += trade["entry_fee"] + trade["exit_fee"]; row["spread"] += spread; row["slippage"] += slippage; row["funding"] += funding
             row["net_pnl"] = row["gross_pnl"] - row["fees"] - row["spread"] - row["slippage"] - row["funding"]
             regime_name = classify_regime(snapshot).value; rr = regime[regime_name]; rr["closed_trades"] += 1; rr["gross_pnl"] += trade["gross_pnl"]; rr["fees"] += trade["entry_fee"] + trade["exit_fee"]; rr["spread"] += spread; rr["slippage"] += slippage; rr["funding"] += funding; rr["net_pnl"] = rr["gross_pnl"] - rr["fees"] - rr["spread"] - rr["slippage"] - rr["funding"]
@@ -182,7 +185,8 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
                           protection_attachments, reconciliation_checks, total_fees, total_spread, total_slippage, total_funding, total_gross, total_net,
                           strategy, regime, splits,
                           cost_gate_skipped=cost_gate_skipped,
-                          promotion_allowed=False, promotion_reason=reason, replay_hash=replay_hash)
+                          promotion_allowed=False, promotion_reason=reason, replay_hash=replay_hash,
+                          trade_pnls=tuple(trade_pnls))
 
 
 def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),

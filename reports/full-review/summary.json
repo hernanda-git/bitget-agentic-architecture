@@ -1,0 +1,79 @@
+{
+  "review_timestamp": "2026-08-26T22:46:22+0700",
+  "timezone": "Asia/Jakarta",
+  "repository": "/root/bitget-agentic-architecture",
+  "status": "BLOCKED_FOR_DEMO_AND_FUNDED_EXECUTION",
+  "boundary": {
+    "funded_bot_accessed": false,
+    "signed_calls": 0,
+    "orders": 0,
+    "credentials_used": 0
+  },
+  "resource_guard": {
+    "ok": true,
+    "available_memory_bytes": 1547083776,
+    "swap_used_percent": 73.4965918491257,
+    "disk_used_percent": 43.02895972137118,
+    "inode_free_percent": 52.70364985838422
+  },
+  "verification": {
+    "collected_tests": 275,
+    "passed_tests": 275,
+    "failed_tests": 0,
+    "compileall": true,
+    "paper_enter_integrity": true,
+    "paper_hold_replay": true,
+    "fixture_shadow_orders": 0,
+    "signed_calls": 0
+  },
+  "stored_real_history": [
+    {
+      "dataset": "BTCUSDT 5m / 2000 candles",
+      "closed_trades": 250,
+      "net_pnl": -13333.888582142785,
+      "promotion_allowed": false
+    },
+    {
+      "dataset": "BTCUSDT 5m / 6000 candles",
+      "closed_trades": 353,
+      "net_pnl": -25223.98332505426,
+      "promotion_allowed": false
+    },
+    {
+      "dataset": "BTCUSDT 1m / 1500 candles",
+      "closed_trades": 35,
+      "net_pnl": -5224.382399799813,
+      "promotion_allowed": false
+    }
+  ],
+  "scorecard": {
+    "architecture": 8,
+    "runtime_reliability": 7,
+    "safety_authority_boundaries": 7,
+    "execution_correctness": 6,
+    "protection": 7,
+    "reconciliation": 6,
+    "ledger_evaluability": 7,
+    "market_data_realism": 5,
+    "strategy_edge_evidence": 1,
+    "profitability_evidence": 1,
+    "operational_readiness": 4
+  },
+  "findings": {
+    "p1": [
+      "Signed/ad hoc probe scripts remain in the repository and include a production-host path.",
+      "Fixture shadow and public shadow are separate and easy to confuse.",
+      "Lifecycle evidence is split across multiple runtime/report paths."
+    ],
+    "p2": [
+      "Compatibility ledger append permits synthetic legacy identity defaults.",
+      "Historical bid/ask and execution costs are partly assumption-based."
+    ]
+  },
+  "top_blockers": [
+    "No proven cost-adjusted strategy edge.",
+    "No venue-backed execution/protection evidence in this review workflow.",
+    "Signed probe surface and split runtime paths need cleanup before execution readiness."
+  ],
+  "next_gate": "Quarantine signed probes, unify the canonical offline runtime, expand cost/liquidity stress, then rerun public-shadow evidence."
+}

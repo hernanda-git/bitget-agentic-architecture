@@ -1,45 +1,64 @@
-# Phase 3 summary: deterministic sizing and portfolio risk
+# Phase 3 summary: evaluation evidence and hypothesis registry
 
 ## Outcome
 
-Phase 3 is implemented and verified locally. This phase does **not** claim profitability or any funded/demo capability.
+Implemented work units `3.1` through `3.4` offline without a commit.
+Pre-existing modified and untracked workspace files were preserved.
 
-## TDD evidence
-
-- RED: `python3 -m pytest -q tests/test_phase3_risk.py`
-  - Expected collection failure: `ModuleNotFoundError: No module named 'src.risk'`.
-- GREEN: `python3 -m pytest -q tests/test_phase3_risk.py`
-  - `7 passed`.
-
-## Implementation
-
-- Added `src/risk/portfolio.py` and `src/risk/exposure.py`.
-- Added account/portfolio facts for equity, available/used margin, gross/net/long/short notional, positions by symbol, realized daily PnL, unrealized PnL, fees, funding, peak equity, and drawdown.
-- Added SQLite `portfolio_snapshots` projection with restart round-trip coverage.
-- Added explicit finite risk limits in `src/config.py` and `config.example.yaml`; policy mappings reject missing executable limits and infinite/non-positive values.
-- Extended sizing for contract multiplier, available equity, existing exposure, total-notional room, venue step/minimum/max constraints, and stop distance.
-- Wired `size_for_risk()` into both entry implementations: `src/paper_loop.py` and `src/runtime/paper_runtime.py`.
-- Provider quantity is rejected by the sizing API and is not part of the accepted decision schema. Durable focused tests prove the bypass path fails.
-- Existing effective-risk reporting remains venue-adjusted and reports requested risk, actual quantity/notional, stop distance, realized risk, equity/daily-cap ratios, and minimum-notional distortion.
-- Added gross, net, correlated, and symbol concentration gates in both pure exposure checks and semantic policy state.
+- `3.1`: evaluator success payload now includes durable `funding_readiness`
+  with `ok`, reason, in-range record count, expected settlement count, and
+  missing count. Existing `real_funding_readiness` fail-closed semantics remain
+  intact for absent and sparse coverage.
+- `3.2`: added a named ten-dimension stress matrix. Every row reports closed
+  trades, gross PnL, fees, funding, spread, slippage, net PnL, drawdown,
+  promotion status, and reason. The implementation asserts a stress cannot add
+  closed trades versus its plain baseline.
+- `3.3`: added small-sample-aware descriptive statistics including expectancy,
+  R expectancy, bootstrap CI, profit factor, drawdown/recovery, win/loss,
+  tails, consecutive losses, stability group status, and concentration.
+- `3.4`: added an independent validated hypothesis registry and
+  `docs/STRATEGY_HYPOTHESES.md` with all required fields.
 
 ## Verification evidence
 
-- Relevant tests: `31 passed`.
-- Full suite: `python3 -m pytest -q` -> `173 passed`.
-- Compile: `python3 -m compileall -q src scripts tests` -> passed.
-- Entrypoint: `python3 scripts/run_autonomous_paper.py --help` -> passed.
-- Paper run: `python3 scripts/run_autonomous_paper.py --mode paper --cycles 100 --scenario enter --ledger /tmp/phase3-paper.sqlite3 --reports-dir /tmp/phase3-paper-reports` -> exit `0`, `100/100` cycles, `100` closed trades, `0` open positions, `fees=2.1989999999999936`, `funding=2.1999999999999993`, `net_pnl=-0.19900000000000131`, `network_calls=0`, `signed_calls=0`, `integrity_ok=true`.
-- Replay: `python3 scripts/replay_ledger.py /tmp/phase3-paper.sqlite3` -> completed, `open_positions=[]`, replay net PnL `-0.19900000000000131`.
-- `git diff --check` -> passed.
+Commands and exact results:
 
-## Safety and limitations
+```text
+python3 -m pytest -q tests/test_phase3_evaluation.py tests/test_public_history.py tests/test_data_quality_strengthened.py tests/test_cost_coverage_gate.py
+39 passed in 1.70s
 
-- No network calls, credentials, exchange calls, demo orders, or funded mode were used.
-- The paper smoke test is an engineering result, not a profitability claim; its fee-inclusive net PnL was negative.
-- Portfolio snapshots are durable ledger projections, but the runtime does not yet automatically append a snapshot after every fill cycle.
-- Correlation is configured-matrix based; rolling-return correlation is deferred.
+python3 -m compileall -q src scripts tests
+exit 0
+
+python3 -m pytest -q
+297 passed in 10.69s
+```
+
+Offline fixture replay produced 36 snapshots and 15 closed trades, with gross
+PnL `-20.0`, net PnL `-22.63420203000006`, promotion `false`, and reason
+`NEGATIVE_NET_PNL`. The stress matrix dimensions are:
+
+`fee`, `spread`, `slippage`, `latency`, `partial_fill`, `skipped_fill`,
+`spread_widening`, `funding`, `participation`, `stale_data`.
+
+No network calls, signed calls, orders, credentials, or private keys were used;
+no public-network evaluation was performed.
+
+## Limitations and blockers
+
+- Latency, partial-fill, participation, and stale-data stresses are conservative
+  deterministic cost/coverage proxies, not venue microstructure replays.
+- Statistics operate on aggregate net trade PnLs and are descriptive; they do
+  not establish significance or profitability.
+- Rejected real-history evaluator runs preserve the existing no-output contract;
+  they fail closed with a durable reason in the rejection message. Successful
+  outputs durably include `funding_readiness` counts and reason.
+- Host capacity was constrained (`45%` root filesystem use, about `1.4 GiB`
+  available memory, and about `74%` swap used), so work and tests were run
+  sequentially.
 
 ## Next gate
 
-Phase 4: corrected market data and public shadow, retaining zero signed calls and zero orders.
+Independent review of stress model fidelity, followed by an explicitly
+authorized later public-history evaluation. Promotion remains blocked by the
+negative deterministic baseline.

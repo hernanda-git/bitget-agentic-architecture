@@ -13,6 +13,9 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.ledger.sqlite import EventLedger
+from src.market.models import MarketSnapshot
+from src.agent.context import PortfolioView
+from src.runtime.canonical import CanonicalOfflineRuntime
 from src.reporting import write_run_report
 
 
@@ -20,12 +23,16 @@ def run_shadow(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: 
     if cycles < 1 or not symbols:
         raise ValueError("cycles and symbols must be non-empty")
     ledger = EventLedger(ledger_path)
+    runtime = CanonicalOfflineRuntime.fixture_shadow(ledger)
     for cycle in range(cycles):
         for symbol in symbols:
-            ledger.append("SHADOW_TICK_OBSERVED", {"cycle": cycle, "symbol": symbol, "source": "fixture_public"})
+            snapshot = MarketSnapshot(symbol, 100, 99.99, 100.01, 0, 1,
+                                      int(time.time() * 1000) + cycle, int(time.time() * 1000) + cycle).with_hash()
+            import asyncio
+            asyncio.run(runtime.process(snapshot, PortfolioView(), snapshot.observed_ts_ms))
     events = ledger.all()
     counts = Counter(event["event_type"] for event in events)
-    report = {"run_id": uuid.uuid4().hex[:12], "mode": "shadow", "status": "SHADOW_ONLY",
+    report = {"run_id": uuid.uuid4().hex[:12], "mode": "shadow", "source": "fixture-shadow", "status": "SHADOW_ONLY",
               "integrity_ok": True, "cycles_requested": cycles, "cycles_completed": cycles,
               "orders_placed": 0, "signed_calls": 0, "network_calls": 0,
               "counts": {**counts, "cycles": cycles}, "rejection_codes": {},

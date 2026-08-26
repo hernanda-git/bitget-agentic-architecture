@@ -2,6 +2,7 @@ from dataclasses import replace
 
 from src.agentic_engine import Action, AgentDecision, MarketSnapshot
 from src.policy.semantic import SemanticPolicy, SemanticState, validate_semantic
+from src.policy.semantic import POLICY_REJECTION_CODES, is_stable_policy_code
 
 
 def decision(**changes):
@@ -59,3 +60,20 @@ def test_breaker_and_kill_switch_reject_entries_with_stable_codes():
 def test_hold_is_safe_without_entry_geometry():
     result = validate_semantic(decision(action=Action.HOLD, side="NONE", entry=None, stop_loss=None, take_profit=None), market(), policy(), SemanticState())
     assert (result.approved, result.code) == (True, "HOLD")
+
+
+def test_every_semantic_rejection_is_a_stable_machine_code():
+    cases = [
+        (policy(product_type="USDT-FUTURES"), SemanticState(), decision()),
+        (policy(), SemanticState(kill_switch_active=True), decision()),
+        (policy(), SemanticState(), decision(symbol="ETHUSDT")),
+        (policy(), SemanticState(), decision(entry=120)),
+        (policy(), SemanticState(), decision(stop_loss=101)),
+        (policy(), SemanticState(), decision(leverage=99)),
+        (policy(), SemanticState(), decision(max_notional_usd=0.1)),
+    ]
+    for pol, state, dec in cases:
+        result = validate_semantic(dec, market(), pol, state)
+        assert not result.approved
+        assert is_stable_policy_code(result.code)
+        assert result.code in POLICY_REJECTION_CODES

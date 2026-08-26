@@ -27,7 +27,13 @@ import sys
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from src.market.history import acquire_dataset, data_quality_report, load_dataset, snapshots_from_dataset
+from src.market.history import (
+    acquire_dataset,
+    data_quality_report,
+    load_dataset,
+    real_funding_readiness,
+    snapshots_from_dataset,
+)
 from src.market.bitget_public import BitgetPublicClient
 from src.evaluation.baseline import (
     BaselineConfig,
@@ -38,6 +44,8 @@ from src.evaluation.baseline import (
     run_walk_forward,
     summarize_walk_forward,
 )
+from src.evaluation.stress import run_stress_matrix
+from src.evaluation.statistics import compute_statistics
 
 
 async def fetch_dataset(args: argparse.Namespace):
@@ -112,11 +120,27 @@ def main() -> int:
 
     snapshots = snapshots_from_dataset(dataset)
     config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps, slippage_bps=args.slippage_bps, real_funding=True)
+
+    # Fail closed when real funding is requested but the dataset has no usable
+    # funding coverage: unmodeled funding is not the same as free funding.
+    readiness = real_funding_readiness(dataset, dq)
+    if not readiness.ok:
+        print(
+            f"FUNDING_COVERAGE_REJECTED: {readiness.reason} "
+            f"in_range={readiness.funding_records_in_range} "
+            f"expected_settlements={readiness.expected_settlements} "
+            f"missing={readiness.funding_missing}",
+            file=sys.stderr,
+        )
+        return 3
+
     baseline = run_baseline(snapshots, config)
     walk_forward = run_walk_forward(snapshots, config)
     cost_stress = run_cost_stress(snapshots, config)
     coverage_variants = run_coverage_variants(snapshots, config, coverages=(1.0, 2.0, 3.0))
     strategy_attribution = run_strategy_attribution(snapshots, config)
+    stress_matrix = run_stress_matrix(snapshots, config)
+    statistics = compute_statistics(baseline.trade_pnls)
 
     payload = {
         "source": "bitget-public-history",
@@ -125,12 +149,15 @@ def main() -> int:
         "funding_records": len(dataset.funding), "candles": len(dataset.candles),
         "config": {"fee_bps": args.fee_bps, "funding_bps": args.funding_bps, "slippage_bps": args.slippage_bps},
         "data_quality": dq.as_dict(),
+        "funding_readiness": readiness.as_dict(),
         "baseline": {k: list(v) if isinstance(v, tuple) else v for k, v in baseline.__dict__.items()},
         "walk_forward": [dict(r) for r in walk_forward],
         "walk_forward_summary": summarize_walk_forward(walk_forward),
         "cost_stress": [dict(r) for r in cost_stress],
         "cost_coverage_variants": [dict(r) for r in coverage_variants],
         "strategy_attribution": strategy_attribution,
+        "stress_matrix": [dict(r) for r in stress_matrix],
+        "statistics": statistics,
         "snapshot_time_range": {
             "first_ms": snapshots[0].source_ts_ms, "last_ms": snapshots[-1].source_ts_ms,
         },

@@ -1,74 +1,37 @@
 {
-  "phase": 3,
-  "status": "VERIFIED",
-  "source_revision_before_commit": "fc977bb",
-  "files_changed": [
-    "config.example.yaml",
-    "src/agentic_engine.py",
-    "src/config.py",
-    "src/ledger/sqlite.py",
-    "src/paper_loop.py",
-    "src/policy/semantic.py",
-    "src/policy/sizing.py",
-    "src/runtime/paper_runtime.py",
-    "src/risk/__init__.py",
-    "src/risk/exposure.py",
-    "src/risk/portfolio.py",
-    "tests/test_phase3_risk.py"
-  ],
-  "tdd": {
-    "red_command": "python3 -m pytest -q tests/test_phase3_risk.py",
-    "red_result": "collection error: ModuleNotFoundError: No module named 'src.risk'",
-    "green_command": "python3 -m pytest -q tests/test_phase3_risk.py",
-    "green_result": "7 passed"
-  },
+  "phase": "phase-3",
+  "work_units": ["3.1", "3.2", "3.3", "3.4"],
+  "status": "PASS",
+  "source_revision": "d47ac14 (pre-existing workspace changes preserved; no commit made)",
   "tests": {
-    "focused": "python3 -m pytest -q tests/test_phase3_risk.py",
-    "focused_result": "7 passed",
-    "relevant": "python3 -m pytest -q tests/test_phase3_risk.py tests/test_sizing.py tests/test_risk_report.py tests/test_config.py tests/test_semantic_policy.py tests/test_paper_loop.py tests/test_paper_runtime.py",
-    "relevant_result": "31 passed",
+    "focused": "python3 -m pytest -q tests/test_phase3_evaluation.py tests/test_public_history.py tests/test_data_quality_strengthened.py tests/test_cost_coverage_gate.py",
+    "focused_result": "39 passed in 1.70s",
     "full": "python3 -m pytest -q",
-    "full_result": "173 passed"
+    "full_result": "297 passed in 10.69s",
+    "compile": "python3 -m compileall -q src scripts tests",
+    "compile_result": "exit 0"
   },
-  "verification": {
-    "compileall": "python3 -m compileall -q src scripts tests: passed",
-    "diff_check": "git diff --check: passed",
-    "paper_help": "python3 scripts/run_autonomous_paper.py --help: passed",
-    "paper_run": "python3 scripts/run_autonomous_paper.py --mode paper --cycles 100 --scenario enter --ledger /tmp/phase3-paper.sqlite3 --reports-dir /tmp/phase3-paper-reports",
-    "paper_result": {
-      "status": "PASS",
-      "cycles_completed": 100,
-      "open_positions": [],
-      "closed_trades": 100,
-      "fees": 2.1989999999999936,
-      "funding": 2.1999999999999993,
-      "net_pnl": -0.19900000000000131,
-      "network_calls": 0,
-      "signed_calls": 0,
-      "orders_placed": 200,
-      "protection_verified": 100,
-      "reconciled": 100,
-      "integrity_ok": true
-    },
-    "replay": "python3 scripts/replay_ledger.py /tmp/phase3-paper.sqlite3: completed; net_pnl -0.19900000000000131, open_positions []"
+  "offline_boundary": {
+    "network_calls": 0,
+    "signed_calls": 0,
+    "orders": 0,
+    "external_runtime_accessed": false,
+    "credentials_or_private_keys_read": false,
+    "public_network_evaluation_performed": false
   },
-  "risk_features": [
-    "account and portfolio snapshots with equity, available/used margin, gross/net/long/short notional, per-symbol positions, realized daily PnL, unrealized PnL, fees, funding, peak equity, and drawdown",
-    "portfolio snapshots persisted and restored through SQLite restart",
-    "finite explicit executable limits with missing/infinite rejection",
-    "sizing uses stop distance, venue minimum/step/max, contract multiplier, available equity, and total exposure",
-    "both PaperLoop and AutonomousPaperRuntime use size_for_risk; provider quantity is not accepted",
-    "effective risk report retains requested versus venue-adjusted actual risk and minimum-notional distortion",
-    "gross, net, correlated, and symbol concentration gates"
+  "evidence": {
+    "baseline_fixture": {"snapshots": 36, "closed_trades": 15, "gross_pnl": -20.0, "net_pnl": -22.63420203000006, "promotion_allowed": false, "promotion_reason": "NEGATIVE_NET_PNL"},
+    "stress_dimensions": ["fee", "spread", "slippage", "latency", "partial_fill", "skipped_fill", "spread_widening", "funding", "participation", "stale_data"],
+    "stress_contract": "Each row includes closed_trades, gross_pnl, fees, funding, spread, slippage, net_pnl, drawdown, promotion_status; rows assert closed_trades <= baseline.",
+    "statistics": "Minimum sample returns NOT_EVIDENCED/MINIMUM_SAMPLE_NOT_MET; adequate samples expose expectancy/R, bootstrap CI, profit factor, drawdown/recovery, win-loss, tails, consecutive losses, stability, and concentration.",
+    "hypotheses": "Independent registry validates all required mechanism/data/features/entry-exit/cost-edge/falsification/failure-mode/exclusion/OOS fields."
+  },
+  "resource_guard": {"disk_root_use_percent": 45, "memory_available_mib": 1433, "swap_used_percent": 74, "decision": "sequential bounded execution; no parallel heavy jobs"},
+  "limitations": [
+    "Stress latency, partial-fill, participation, and stale-data rows use conservative deterministic cost/coverage proxies; they are not venue microstructure replays.",
+    "Baseline currently stores aggregate net trade PnLs, so statistics are descriptive and do not establish statistical significance.",
+    "Funding readiness is durably emitted on successful evaluator output; rejected evaluator runs retain the historical no-output contract while returning a rejection reason on stderr.",
+    "No public-network evaluation was performed in this phase."
   ],
-  "network_calls": 0,
-  "signed_calls": 0,
-  "demo_orders": 0,
-  "funded_mode": false,
-  "known_limitations": [
-    "Portfolio snapshots are exposed as a durable ledger projection, but the paper runtime does not yet automatically write a snapshot after every fill cycle.",
-    "Exposure correlation uses a configured matrix; rolling-return correlation is deferred.",
-    "The Phase 3 paper run is an engineering smoke test, not profitability evidence; its fee-inclusive net PnL was negative."
-  ],
-  "next_gate": "Phase 4 market-data and public-shadow work"
+  "next_gate": "Independent review of stress semantics and public-history evaluation under an explicitly authorized later phase."
 }

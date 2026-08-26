@@ -6,6 +6,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
 from src.evaluation.baseline import BaselineConfig, run_baseline, run_walk_forward, run_cost_stress
+from src.evaluation.stress import run_stress_matrix
+from src.evaluation.statistics import compute_statistics
 from src.market.models import Candle, MarketSnapshot
 
 def make_series(count: int = 36):
@@ -28,6 +30,8 @@ def main() -> int:
     payload = dict(result.__dict__)
     payload["walk_forward_evaluation"] = run_walk_forward(series)
     payload["cost_stress"] = run_cost_stress(series)
+    payload["stress_matrix"] = run_stress_matrix(series)
+    payload["statistics"] = compute_statistics(result.trade_pnls)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x) + "\n")
     print(json.dumps(payload, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x))

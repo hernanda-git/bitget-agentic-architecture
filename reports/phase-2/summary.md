@@ -1,38 +1,43 @@
-# Phase 2 summary: event-driven paper exchange
+# Phase 2 summary
 
-## Gate status
+- Status: `PASS`
+- Timestamp: `2026-08-26T23:25:07+07:00`, timezone `Asia/Jakarta`
+- Scope: ledger identity, atomic event/projection writes, and offline replay equality.
 
-**PASS** for the offline Phase 2 gate. This is not a profitability claim and does not authorize demo or live execution.
+## Work units
 
-## Implemented
+- `2.1`: `append_event` and `append_event_with_projection` reject implicit canonical identity. Required runtime identity is `cycle_id`, `trace_id`, `mode`, `product_type`, `symbol`, and timestamp (`created_ms`, with `timestamp` accepted as an input alias). Canonical payload hashes are persisted. `append_legacy` is the explicitly named compatibility adapter for historical fixtures. The paper and fixture-shadow runtime paths use `append_event` with explicit identity.
+- `2.2`: Event and projection insertion share one SQLite transaction. Explicit rollback is executed on injected or database faults. The fault test proves both event and projection rows remain absent.
+- `2.3`: Replay now reconstructs terminal dispositions, positions, protection, reconciliation, breaker state, fees, funding, and PnL. `assert_replay_equal` raises `ReplayMismatch` on any drift, including financial values.
 
-- Typed `ExchangePort` and `MarketEventPort` interfaces.
-- `VenueSpecification` with exact price/quantity/minimum-notional/leverage/margin validation.
-- Deterministic `MarketEvent` model.
-- Event-driven `FakeExchange` with `NEW`, `PARTIALLY_FILLED`, `FILLED`, `CANCEL_REQUESTED`, `CANCELLED`, `REJECTED`, and `EXPIRED` states.
-- Market and resting-limit matching, partial fills, IOC expiry, duplicate IDs, rejection, spread crossing, slippage, reduce-only, funding, and balance reads.
-- Exactly-once protection trigger behavior, including gap-through-stop, with mark progression.
-- Fee-inclusive accounting function for gross PnL, entry/exit fees, funding, slippage, net PnL, and return on margin.
-- Paper entry lifecycle now closes the deterministic target path before reporting success.
-- Replay now reports closed trades, open positions, and replay net PnL.
+## Exact verification commands and raw outcomes
 
-## Raw verification evidence
+1. `python3 -m pytest -q tests/test_ledger_identity.py tests/test_ledger_atomicity.py tests/test_replay_equality.py tests/test_paper_runtime.py tests/test_canonical_runtime.py`
+   - Initial TDD result: `RED`, collection failed because the new replay and legacy symbols did not exist.
+   - Final result: `17 passed`.
+2. `python -m pytest -q tests/test_ledger.py tests/test_ledger_schema.py tests/test_ledger_summary.py tests/test_phase1_ledger.py tests/test_replay.py tests/test_paper_runtime.py tests/test_canonical_runtime.py`
+   - Result: `32 passed`.
+3. `python -m pytest -q`
+   - Result: `293 passed in 8.28s`.
+4. `python3 -m compileall -q src scripts tests`
+   - Result: exit `0`.
+5. `python3 scripts/resource_guard.py --json`
+   - Result: `ok: true`, violations `[]`.
+6. Offline repository-root smoke:
+   - `python scripts/run_autonomous_paper.py --mode paper --cycles 1 --symbols BTCUSDT --scenario enter --ledger /tmp/phase2-ledger.sqlite3 --reports-dir /tmp/phase2-run`
+   - `python scripts/replay_ledger.py /tmp/phase2-ledger.sqlite3`
+   - Result: `PASS`; runtime/replay assertions matched `EXECUTED`, zero open positions, fees `0.020999999999999998`, funding `0.022`, net PnL `1.957`.
 
-| Check | Command | Result |
-|---|---|---|
-| RED | `pytest -q tests/test_phase2_exchange.py` before implementation | Collection failed as expected: missing `src.execution.ports` |
-| GREEN | `pytest -q tests/test_phase2_exchange.py` | `7 passed` |
-| Relevant suite | `pytest -q tests/test_phase2_exchange.py tests/test_fake_exchange.py tests/test_autonomous_paper_cli.py tests/test_service_hygiene.py tests/test_event_contracts.py` | `26 passed` |
-| Full suite | `pytest -q` | `166 passed in 4.52s` |
-| Compile | `python3 -m compileall -q src scripts tests` | exit `0` |
-| Launcher | `python3 scripts/run_autonomous_paper.py --help` | exit `0` |
-| Acceptance | `python3 scripts/run_autonomous_paper.py --mode paper --cycles 100 --scenario enter --ledger /tmp/paper-phase2.sqlite3 --reports-dir /tmp/paper-phase2-reports` | `PASS`, 100/100 cycles, zero anomalies |
-| Replay | `python3 scripts/replay_ledger.py /tmp/paper-phase2.sqlite3` | exit `0`, 100 closed trades, no open positions |
+## Offline fake execution counts
 
-Acceptance evidence: `network_calls=0`, `signed_calls=0`, `orders_are_fake=true`, `fees=10.994999999999969`, forced funding `=10.999999999999995`, runtime `net_pnl=-0.9950000000000008`, replay `net_pnl=-0.9950000000000008`.
+- Network calls: `0`
+- Signed calls: `0`
+- Orders: `2` (entry and protective exit)
+- Open positions: `0`
+- Closed trades: `1`
 
-## Limitations
+## Limitations and next gate
 
-- This is deterministic fake exchange behavior only. It does not validate a real venue or network path.
-- Funding is forced by the acceptance scenario and recorded as an exchange balance cost; trade-level funding allocation remains minimal.
-- The legacy `place_order` compatibility facade remains; event-driven callers should use `submit_order` and `apply_market_event`.
+`RuntimeEvent.from_dict` remains tolerant for historical object fixtures and computes a missing hash, while canonical ledger writes persist the canonical hash. The old `append` spelling remains an alias for `append_legacy` to preserve existing callers, so new runtime code must use `append_event` or `append_event_with_projection`. Replay is offline only and does not exercise exchange/network or funded execution. The direct `AutonomousPaperRuntime` path was corrected after worker verification so its events also carry explicit identity.
+
+Next gate: Phase 3 public-data hardening and funding-readiness gating. Demo and funded execution remain blocked.

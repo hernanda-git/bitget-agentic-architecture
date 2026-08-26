@@ -12,6 +12,23 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
+class ReplayMismatch(ValueError):
+    """Raised when durable runtime state cannot be reproduced by replay."""
+
+
+def _numeric(value: Any) -> float:
+    return round(float(value), 12)
+
+
+def assert_replay_equal(expected: dict[str, Any], replayed: dict[str, Any]) -> None:
+    for field in ("dispositions", "positions", "protection", "reconciliation", "risk_breaker", "closed_trades"):
+        if expected.get(field) != replayed.get(field):
+            raise ReplayMismatch(f"replay mismatch in {field}")
+    for field in ("fees", "funding", "net_pnl"):
+        if _numeric(expected.get(field, 0)) != _numeric(replayed.get(field, 0)):
+            raise ReplayMismatch(f"replay mismatch in {field}")
+
+
 def replay_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
     events = list(events)
     dispositions: Counter[str] = Counter()
@@ -21,6 +38,9 @@ def replay_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
     risk_breaker = "CLOSED"
     closed_trades = []
     net_pnl = 0.0
+    fees = 0.0
+    funding = 0.0
+    fill_funding_seen = False
     for event in events:
         kind = event.get("event_type")
         payload = event.get("payload", {})
@@ -35,6 +55,9 @@ def replay_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
                 current["side"] = side
                 current["entry_price"] = payload.get("price")
                 current["fees"] = current.get("fees", 0.0) + float(payload.get("fee", 0.0))
+                fees += float(payload.get("fee", 0.0))
+                funding += float(payload.get("funding", 0.0))
+                fill_funding_seen = fill_funding_seen or "funding" in payload
         elif kind in {"PROTECTION_VERIFIED", "PROTECTION_FAILED"}:
             symbol = payload.get("symbol") or _symbol_for_cycle(events, payload.get("cycle_id"))
             if symbol:
@@ -45,15 +68,17 @@ def replay_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
         elif kind == "TRADE_CLOSED":
             closed_trades.append(payload)
             net_pnl += float(payload.get("net_pnl", 0.0))
+            if not fill_funding_seen:
+                funding += float(payload.get("funding", 0.0))
         elif kind == "RISK_BREAKER_OPEN":
             risk_breaker = "OPEN"
         elif kind == "RISK_BREAKER_CLOSED":
             risk_breaker = "CLOSED"
         elif kind == "CYCLE_TERMINAL":
             dispositions[str(payload.get("disposition", "UNKNOWN"))] += 1
-    return {"dispositions": dict(dispositions), "positions": positions,
+    return {"dispositions": dict(dispositions), "positions": {symbol: position for symbol, position in positions.items() if abs(float(position.get("quantity", 0))) > 1e-12},
             "open_positions": [p for p in positions.values() if abs(float(p.get("quantity", 0))) > 1e-12],
-            "closed_trades": closed_trades, "net_pnl": net_pnl,
+            "closed_trades": closed_trades, "net_pnl": net_pnl, "fees": fees, "funding": funding,
             "protection": protection, "reconciliation": reconciliation, "risk_breaker": risk_breaker}
 
 

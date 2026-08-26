@@ -1,0 +1,39 @@
+"""Independent strategy hypothesis registry.
+
+The registry is deliberately separate from strategy selection and evaluation so
+hypotheses remain auditable claims rather than hidden tuning configuration.
+"""
+from __future__ import annotations
+from dataclasses import dataclass, asdict
+
+_REQUIRED = ("mechanism", "data", "features", "entry_exit", "cost_edge", "falsification", "failure_modes", "data_exclusions", "oos_gate")
+
+@dataclass(frozen=True)
+class Hypothesis:
+    hypothesis_id: str
+    title: str
+    mechanism: str = ""
+    data: str = ""
+    features: tuple[str, ...] = ()
+    entry_exit: str = ""
+    cost_edge: str = ""
+    falsification: str = ""
+    failure_modes: str = ""
+    data_exclusions: str = ""
+    oos_gate: str = ""
+
+    def validate(self):
+        missing = [name for name in _REQUIRED if not getattr(self, name)]
+        if missing: raise ValueError("missing hypothesis fields: " + ", ".join(missing))
+        if not self.hypothesis_id or not self.title: raise ValueError("hypothesis_id and title are required")
+        return self
+
+class HypothesisRegistry:
+    def __init__(self): self._items = {}
+    def register(self, hypothesis):
+        hypothesis.validate()
+        if hypothesis.hypothesis_id in self._items: raise ValueError("duplicate hypothesis_id")
+        self._items[hypothesis.hypothesis_id] = hypothesis
+    def get(self, hypothesis_id): return self._items[hypothesis_id]
+    def as_dict(self): return {"hypotheses": [asdict(h) for h in self._items.values()]}
+    def __len__(self): return len(self._items)

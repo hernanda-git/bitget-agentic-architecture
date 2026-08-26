@@ -1,57 +1,31 @@
 {
   "phase": "1",
-  "title": "Repair the ledger trust spine",
-  "status": "PASS",
-  "scope": "standalone repository only",
+  "source_revision": "d47ac14ebb383e85d0504f8cd2ac7e035824f86f",
+  "captured_at": "2026-08-26T23:17:55+07:00",
+  "timezone": "Asia/Jakarta",
+  "work_units": {"1.1": "PROVEN: runtime wiring inventory", "1.2": "PROVEN: canonical offline runtime"},
+  "files_changed": ["reports/redesign/runtime-wiring.md", "src/runtime/canonical.py", "tests/test_canonical_runtime.py", "scripts/northline_agentic_demo.py", "scripts/run_autonomous_paper.py", "scripts/run_autonomous_shadow.py"],
+  "tests": {"focused": {"passed": 24, "failed": 0}, "full_suite": {"passed": 284, "failed": 0}},
+  "compile_status": "passed",
+  "entrypoints": {
+    "fixture_shadow": {"status": "passed", "network_calls": 0, "signed_calls": 0, "orders": 0, "source": "fixture-shadow"},
+    "paper_enter": {"status": "passed", "integrity_ok": true, "open_positions": 0, "closed_trades": 1, "network_calls": 0, "signed_calls": 0},
+    "northline_paper_without_confirmation": {"status": "blocked", "reason": "explicit offline execution confirmation required"}
+  },
   "network_calls": 0,
+  "signed_calls": 0,
   "orders": 0,
-  "tests": {
-    "focused": {
-      "command": "python3 -m pytest tests/test_phase1_ledger.py -q",
-      "exit_code": 0,
-      "output": "6 passed in 0.14s"
-    },
-    "required_ledger": [
-      {"command": "python3 -m pytest tests/test_event_contracts.py tests/test_ledger.py -q", "exit_code": 0, "output": "8 passed in 0.05s"},
-      {"command": "python3 -m pytest tests/test_ledger_schema.py tests/test_restart_recovery.py -q", "exit_code": 0, "output": "6 passed in 0.11s"},
-      {"command": "python3 -m pytest tests/test_ledger_summary.py -q", "exit_code": 0, "output": "2 passed in 0.07s"},
-      {"command": "python3 -m pytest tests/test_service_hygiene.py -q", "exit_code": 0, "output": "5 passed in 0.43s"}
-    ],
-    "full": {"command": "python3 -m pytest -q", "exit_code": 0, "output": "159 passed in 4.49s"}
-  },
-  "tdd": {
-    "red": {"command": "python -m pytest tests/test_phase1_ledger.py -q", "exit_code": 1, "output": "5 failed in 0.11s; missing metadata, transactional API, WAL, and required queries"},
-    "red_script_regression": {"command": "python -m pytest tests/test_phase1_ledger.py::test_replay_script_runs_directly_from_repository_root -q", "exit_code": 1, "output": "1 failed; ModuleNotFoundError: No module named 'src'"},
-    "green": {"command": "python -m pytest tests/test_phase1_ledger.py -q", "exit_code": 0, "output": "6 passed in 0.14s"}
-  },
-  "runtime_gates": [
-    {"command": "python3 scripts/replay_ledger.py /tmp/phase1-empty-ledger.sqlite3", "exit_code": 0, "output": "{\"dispositions\": {}, \"positions\": {}, \"protection\": {}, \"reconciliation\": \"UNKNOWN\", \"risk_breaker\": \"CLOSED\"}"},
-    {"command": "python3 scripts/review_run.py --help", "exit_code": 0},
-    {"command": "python3 scripts/run_autonomous_paper.py --help", "exit_code": 0},
-    {"command": "python3 scripts/run_autonomous_shadow.py --help", "exit_code": 0}
-  ],
-  "quality_gates": [
-    {"command": "python3 -m compileall -q src scripts tests", "exit_code": 0},
-    {"command": "git diff --check", "exit_code": 0}
-  ],
-  "implementation": [
-    "RuntimeEvent is the canonical validated insertion shape with bounded canonical SHA-256 payload hashes.",
-    "Run metadata is represented as immutable fields and preserved in event JSON.",
-    "SQLite uses WAL, foreign keys, busy timeout, and a schema_migrations table with explicit version 1 migration evidence.",
-    "append_event_with_projection commits event and projection atomically and supports fault injection rollback verification.",
-    "Required ledger summary queries are implemented from durable typed rows/events.",
-    "Legacy append callers are retained only through validation and complete event construction.",
-    "replay_ledger.py now supports direct execution from the repository root."
-  ],
-  "modified_files": [
-    "src/ledger/events.py",
-    "src/ledger/models.py",
-    "src/ledger/sqlite.py",
-    "scripts/replay_ledger.py",
-    "tests/test_phase1_ledger.py",
-    "reports/phase-1/summary.json",
-    "reports/phase-1/summary.md"
-  ],
-  "blocked_or_unverified": [],
-  "forbidden_boundary": "/opt/bots/bitget-listener was not accessed or modified"
+  "open_positions": 0,
+  "closed_trades": 1,
+  "gross_pnl": 2.0,
+  "fees": 0.020999999999999998,
+  "funding": 0.022,
+  "spread": 0.0,
+  "slippage": 0.0,
+  "net_pnl": 1.957,
+  "protection_incidents": 0,
+  "reconciliation_incidents": 0,
+  "limitations": ["Paper result is a single deterministic fake-exchange fixture and is not profitability evidence."],
+  "unresolved_blockers": ["Public-shadow remains a separate composition root; Phase 2 ledger identity and replay gates remain."],
+  "next_gate": "Phase 2 ledger identity, atomicity, and replay equality"
 }

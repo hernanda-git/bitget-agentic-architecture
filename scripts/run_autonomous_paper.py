@@ -20,7 +20,7 @@ from src.ledger.sqlite import EventLedger
 from src.market.models import MarketSnapshot
 from src.providers.fake import FakeProvider
 from src.providers.ports import ProviderResponse
-from src.paper_loop import PaperLoop
+from src.runtime.canonical import CanonicalOfflineRuntime
 from src.reporting import write_run_report
 from src.simulation.events import MarketEvent
 from src.health.variation import assess_runtime_health
@@ -57,8 +57,8 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
             snapshot = MarketSnapshot(symbol, 100, 99.99, 100.01, 0, 1, now + index, now + index).with_hash()
             market_marks.append(snapshot.mark_price)
             provider = FakeProvider([_response(symbol, scenario, now + index)])
-            result = asyncio.run(PaperLoop(provider, policy, ledger, venue).process(
-                snapshot, PortfolioView(), now + index))
+            runtime = CanonicalOfflineRuntime.paper(provider, policy, ledger, venue)
+            result = asyncio.run(runtime.process(snapshot, PortfolioView(), now + index))
             decision_statuses.append(result.get("status", "UNKNOWN"))
             # A bounded paper cycle includes the market path to a terminal exit.
             # This is deliberately deterministic and remains entirely offline.

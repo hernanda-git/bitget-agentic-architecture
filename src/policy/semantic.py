@@ -3,8 +3,60 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 import math
+from typing import FrozenSet, TYPE_CHECKING
+from enum import Enum
 
-from src.agentic_engine import Action, AgentDecision, MarketSnapshot
+if TYPE_CHECKING:
+    from src.agentic_engine import AgentDecision, MarketSnapshot
+
+
+class PolicyRejectionCode(str, Enum):
+    """Closed, provider-independent vocabulary for unsafe proposals."""
+    PRODUCT_TYPE_UNSUPPORTED = "PRODUCT_TYPE_UNSUPPORTED"
+    KILL_SWITCH_ACTIVE = "KILL_SWITCH_ACTIVE"
+    KILL_SWITCH = "KILL_SWITCH"
+    PROVIDER_CIRCUIT_OPEN = "PROVIDER_CIRCUIT_OPEN"
+    RECONCILIATION_DEGRADED = "RECONCILIATION_DEGRADED"
+    SYMBOL_NOT_ALLOWED = "SYMBOL_NOT_ALLOWED"
+    MARKET_SYMBOL_MISMATCH = "MARKET_SYMBOL_MISMATCH"
+    MARKET_AGE_INVALID = "MARKET_AGE_INVALID"
+    STALE_MARKET_DATA = "STALE_MARKET_DATA"
+    SPREAD_TOO_WIDE = "SPREAD_TOO_WIDE"
+    DECISION_EXPIRED = "DECISION_EXPIRED"
+    ACTION_UNSUPPORTED = "ACTION_UNSUPPORTED"
+    SIDE_INVALID = "SIDE_INVALID"
+    SIDE_REQUIRED = "SIDE_REQUIRED"
+    ENTRY_REQUIRED = "ENTRY_REQUIRED"
+    MARK_PRICE_INVALID = "MARK_PRICE_INVALID"
+    ENTRY_TOO_FAR_FROM_MARK = "ENTRY_TOO_FAR_FROM_MARK"
+    PROTECTION_REQUIRED = "PROTECTION_REQUIRED"
+    STOP_LOSS_REQUIRED = "STOP_LOSS_REQUIRED"
+    TAKE_PROFIT_REQUIRED = "TAKE_PROFIT_REQUIRED"
+    LONG_LEVELS_INVALID = "LONG_LEVELS_INVALID"
+    SHORT_LEVELS_INVALID = "SHORT_LEVELS_INVALID"
+    SLIPPAGE_TOO_HIGH = "SLIPPAGE_TOO_HIGH"
+    FUNDING_TOO_HIGH = "FUNDING_TOO_HIGH"
+    FEE_NOT_VIABLE = "FEE_NOT_VIABLE"
+    LEVERAGE_LIMIT = "LEVERAGE_LIMIT"
+    MIN_NOTIONAL = "MIN_NOTIONAL"
+    MAX_NOTIONAL = "MAX_NOTIONAL"
+    NOTIONAL_LIMIT = "NOTIONAL_LIMIT"
+    DAILY_LOSS_LIMIT = "DAILY_LOSS_LIMIT"
+    DRAWDOWN_LIMIT = "DRAWDOWN_LIMIT"
+    CONCURRENT_POSITIONS_LIMIT = "CONCURRENT_POSITIONS_LIMIT"
+    GROSS_EXPOSURE_LIMIT = "GROSS_EXPOSURE_LIMIT"
+    NET_EXPOSURE_LIMIT = "NET_EXPOSURE_LIMIT"
+    CORRELATED_EXPOSURE_LIMIT = "CORRELATED_EXPOSURE_LIMIT"
+    SYMBOL_CONCENTRATION_LIMIT = "SYMBOL_CONCENTRATION_LIMIT"
+    DUPLICATE_EXPOSURE = "DUPLICATE_EXPOSURE"
+    PROTECTION_UNVERIFIED = "PROTECTION_UNVERIFIED"
+
+
+POLICY_REJECTION_CODES = frozenset(code.value for code in PolicyRejectionCode)
+
+
+def is_stable_policy_code(code: str) -> bool:
+    return isinstance(code, str) and code in POLICY_REJECTION_CODES
 
 PRODUCT_TYPE = "SUSDT-FUTURES"
 
@@ -74,6 +126,9 @@ def _reject(code: str, details: str = "") -> SemanticResult:
 def validate_semantic(decision: AgentDecision, market: MarketSnapshot,
                       policy: SemanticPolicy, state: SemanticState | None = None) -> SemanticResult:
     """Validate a decision without network or execution side effects."""
+    # Lazy import avoids a policy/engine import cycle while keeping the policy
+    # vocabulary the single source of truth for both entry points.
+    from src.agentic_engine import Action
     state = state or SemanticState()
     if policy.product_type != PRODUCT_TYPE:
         return _reject("PRODUCT_TYPE_UNSUPPORTED")

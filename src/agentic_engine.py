@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from src.policy.semantic import PolicyRejectionCode
+
 
 class Action(str, Enum):
     ENTER = "ENTER"
@@ -64,36 +66,36 @@ class Policy:
 def validate_decision(decision: AgentDecision, market: MarketSnapshot, policy: Policy) -> tuple[bool, str]:
     """Fail-closed semantic validation. No network and no order side effects."""
     if policy.kill_switch:
-        return False, "KILL_SWITCH"
+        return False, PolicyRejectionCode.KILL_SWITCH.value
     if decision.action == Action.HOLD:
         return True, "HOLD"
     if decision.symbol not in policy.allow_symbols:
-        return False, "SYMBOL_NOT_ALLOWED"
+        return False, PolicyRejectionCode.SYMBOL_NOT_ALLOWED.value
     if market.symbol != decision.symbol:
-        return False, "MARKET_SYMBOL_MISMATCH"
+        return False, PolicyRejectionCode.MARKET_SYMBOL_MISMATCH.value
     if market.age_seconds > policy.max_snapshot_age_seconds:
-        return False, "STALE_MARKET_DATA"
+        return False, PolicyRejectionCode.STALE_MARKET_DATA.value
     if market.spread_bps > policy.max_spread_bps:
-        return False, "SPREAD_TOO_WIDE"
+        return False, PolicyRejectionCode.SPREAD_TOO_WIDE.value
     if decision.leverage <= 0 or decision.leverage > policy.max_leverage:
-        return False, "LEVERAGE_LIMIT"
+        return False, PolicyRejectionCode.LEVERAGE_LIMIT.value
     if decision.max_notional_usd <= 0 or decision.max_notional_usd > policy.max_position_notional_usd:
-        return False, "NOTIONAL_LIMIT"
+        return False, PolicyRejectionCode.NOTIONAL_LIMIT.value
     if decision.action == Action.ENTER:
         if decision.side not in {"BUY", "SELL"}:
-            return False, "SIDE_REQUIRED"
+            return False, PolicyRejectionCode.SIDE_REQUIRED.value
         if decision.entry is None or decision.entry <= 0:
-            return False, "ENTRY_REQUIRED"
+            return False, PolicyRejectionCode.ENTRY_REQUIRED.value
         if policy.require_stop_loss and (decision.stop_loss is None or decision.stop_loss <= 0):
-            return False, "STOP_LOSS_REQUIRED"
+            return False, PolicyRejectionCode.STOP_LOSS_REQUIRED.value
         if policy.require_take_profit and (decision.take_profit is None or decision.take_profit <= 0):
-            return False, "TAKE_PROFIT_REQUIRED"
+            return False, PolicyRejectionCode.TAKE_PROFIT_REQUIRED.value
         assert decision.stop_loss is not None
         assert decision.take_profit is not None
         if decision.side == "BUY" and not (decision.stop_loss < decision.entry < decision.take_profit):
-            return False, "LONG_LEVELS_INVALID"
+            return False, PolicyRejectionCode.LONG_LEVELS_INVALID.value
         if decision.side == "SELL" and not (decision.take_profit < decision.entry < decision.stop_loss):
-            return False, "SHORT_LEVELS_INVALID"
+            return False, PolicyRejectionCode.SHORT_LEVELS_INVALID.value
     return True, "APPROVED"
 
 

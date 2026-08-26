@@ -1,4 +1,5 @@
 from src.agentic_engine import Action, AgentDecision, MarketSnapshot, Policy, validate_decision
+from src.policy.semantic import POLICY_REJECTION_CODES, is_stable_policy_code
 
 
 def decision(**overrides):
@@ -63,3 +64,11 @@ def test_wrong_long_levels_are_rejected():
 def test_hold_does_not_create_order_requirements():
     ok, reason = validate_decision(decision(action=Action.HOLD, side="NONE", entry=None, stop_loss=None, take_profit=None), market(), policy())
     assert (ok, reason) == (True, "HOLD")
+
+
+def test_engine_rejections_use_the_same_canonical_code_set():
+    for kwargs in ({"symbol": "ETHUSDT"}, {"leverage": 4}, {"max_notional_usd": 26}, {"entry": 65000}):
+        ok, reason = validate_decision(decision(**kwargs), market(), policy())
+        assert ok is False
+        assert is_stable_policy_code(reason)
+        assert reason in POLICY_REJECTION_CODES

@@ -1,28 +1,36 @@
 {
-  "phase": 0,
-  "name": "freeze-scope-and-baseline",
-  "source_revision": "f5eac10f17cc80a5f0305eabf3907abf56fabdd8",
-  "files_changed": [
-    "pyproject.toml",
-    "requirements-lock.txt",
-    "scripts/baseline_check.py",
-    "tests/test_baseline_check.py",
-    "reports/baseline/README.md"
-  ],
-  "tests_run": ["python3 -m pytest tests/test_baseline_check.py tests/test_boundary.py -q", "python3 -m compileall -q src scripts tests"],
-  "tests_passed": 4,
-  "tests_failed": 0,
-  "runtime_commands": ["python3 scripts/baseline_check.py --output reports/baseline/latest.json"],
+  "phase": "0",
+  "source_revision": "d47ac14ebb383e85d0504f8cd2ac7e035824f86f",
+  "captured_at": "2026-08-26T23:09:04+07:00",
+  "timezone": "Asia/Jakarta",
+  "work_units": {
+    "0.1": "PROVEN",
+    "0.2": "PROVEN: scanner implemented with focused RED then GREEN evidence",
+    "0.3": "PROVEN: five ad hoc signed probes moved out of scripts/"
+  },
+  "files_changed": ["scripts/audit_safety_surface.py", "tests/test_safety_surface.py", "docs/PROBE_QUARANTINE.md", "quarantine/demo-probes/*", "reports/redesign/baseline.json", "reports/redesign/baseline.md"],
+  "tests": {"focused_safety_surface": {"passed": 4, "failed": 0}, "full_suite": {"passed": 279, "failed": 0}},
+  "compile_status": "passed",
   "network_calls": 0,
   "signed_calls": 0,
-  "orders_placed": 0,
-  "open_positions": "not applicable; no runtime execution",
+  "orders": 0,
+  "open_positions": 0,
   "closed_trades": 0,
-  "fees": 0,
-  "funding": 0,
-  "net_pnl": 0,
   "protection_incidents": 0,
   "reconciliation_incidents": 0,
-  "known_limitations": ["clean virtualenv install still pending"],
-  "next_gate": "clean installation and full suite"
+  "scanner": {
+    "status": "FLAGGED",
+    "finding_count": 8,
+    "accepted_findings": [
+      "scripts/ui_server.py contains credential-backed signed reads and remains a Phase 5 remediation target",
+      "src/execution/bitget_demo.py contains typed demo signing and remains separately gated",
+      "ignored .env and SQLite artifacts are reported as sensitive filenames"
+    ],
+    "forbidden_path_findings": 0,
+    "production_product_findings": 0,
+    "unignored_artifact_findings": 0
+  },
+  "limitations": ["No external API, signed call, order, demo, or funded execution was performed."],
+  "unresolved_blockers": ["UI credential path must be removed before truthful read-only UI gate; typed demo adapter remains outside offline execution."],
+  "next_gate": "Phase 1.1 runtime wiring inventory"
 }

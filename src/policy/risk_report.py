@@ -26,6 +26,28 @@ class EffectiveRiskReport:
     def actual_risk_percent_equity(self) -> float:
         return self.risk_percent_equity
 
+    # Explicit domain names make it impossible to confuse configured/requested
+    # risk with venue-constrained, executable dimensions.
+    @property
+    def venue_constrained_quantity(self) -> float:
+        return self.actual_quantity
+
+    @property
+    def actual_notional(self) -> float:
+        return self.actual_notional_usd
+
+    @property
+    def stop_distance(self) -> float:
+        return self.actual_stop_distance_usd
+
+    @property
+    def realized_risk(self) -> float:
+        return self.realized_risk_usd
+
+    @property
+    def leverage(self) -> float:
+        return self.implied_leverage
+
 
 def build_risk_report(*, sizing: SizingResult, equity_usd: float,
                       daily_loss_cap_usd: float, entry: float,

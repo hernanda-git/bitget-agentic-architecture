@@ -8,6 +8,7 @@ from src.agentic_engine import Policy, MarketSnapshot as PolicyMarketSnapshot, v
 from src.decision_parser import DecisionParseError, parse_decision
 from src.execution.fake_exchange import FakeExchange
 from src.ledger.sqlite import EventLedger
+from src.ledger.events import RuntimeEvent
 from src.market.freshness import check_freshness
 from src.market.models import MarketSnapshot
 from src.providers.circuit import ProviderCircuit
@@ -27,12 +28,21 @@ class AutonomousPaperRuntime:
             raise TypeError("AutonomousPaperRuntime accepts FakeExchange only")
         self.circuit = provider if isinstance(provider, ProviderCircuit) else ProviderCircuit(
             provider, provider_timeout_seconds, provider_failure_threshold)
+        self._event_context: dict[str, Any] = {}
 
     async def process(self, snapshot: MarketSnapshot, portfolio: PortfolioView | None = None,
                       now_ts_ms: int | None = None, attach_protection: bool = True) -> dict[str, Any]:
         portfolio = portfolio or PortfolioView()
         now_ts_ms = now_ts_ms if now_ts_ms is not None else snapshot.observed_ts_ms
         cycle_id = snapshot.snapshot_hash or snapshot.computed_hash()
+        self._event_context = {
+            "cycle_id": cycle_id,
+            "trace_id": cycle_id,
+            "created_ms": max(1, now_ts_ms),
+            "mode": "paper",
+            "product_type": "SUSDT-FUTURES",
+            "symbol": snapshot.symbol,
+        }
         if not self._claim(cycle_id):
             self._append("CYCLE_TERMINAL", {"cycle_id": cycle_id, "disposition": "SKIPPED", "reason": "DUPLICATE_CYCLE"})
             return {"status": "SKIPPED", "reason": "DUPLICATE_CYCLE", "cycle_id": cycle_id}
@@ -103,7 +113,8 @@ class AutonomousPaperRuntime:
         return bool(self.ledger.claim_cycle(cycle_id))
 
     def _append(self, event_type: str, payload: dict[str, Any]) -> None:
-        self.ledger.append(event_type, payload)
+        value = {"event_type": event_type, **self._event_context, "payload": payload}
+        self.ledger.append_event(RuntimeEvent.from_dict(value))
 
     def _terminal(self, cycle_id: str, status: str, reason: str, **extra: Any) -> dict[str, Any]:
         payload = {"cycle_id": cycle_id, "disposition": status}

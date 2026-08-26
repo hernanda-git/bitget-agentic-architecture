@@ -19,6 +19,7 @@ LEGACY_EVENT_TYPES = frozenset({"POLICY_REJECTED", "SHADOW_TICK_OBSERVED", "SHAD
 SCHEMA_VERSION = 1
 MAX_PAYLOAD_BYTES = 64 * 1024
 _HEX64 = set("0123456789abcdef")
+CANONICAL_IDENTITY_FIELDS = ("cycle_id", "trace_id", "mode", "product_type", "symbol", "created_ms", "payload_hash")
 _METADATA = ("market_snapshot_id", "market_snapshot_hash", "context_hash", "provider", "model",
              "prompt_version", "decision_hash", "policy_version", "strategy_version", "intent_id",
              "client_order_id", "venue_order_id", "fill_ids", "position_snapshot_id", "protection_snapshot_id")

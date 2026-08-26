@@ -27,3 +27,16 @@ def test_report_marks_capped_risk_as_actual_and_not_configured():
     assert report.realized_risk_usd == 5
     assert report.risk_percent_equity == 0.5
     assert report.minimum_notional_distortion is False
+
+
+def test_report_exposes_distinct_venue_effective_risk_dimensions():
+    sizing = size_for_risk(side="BUY", entry=100, stop_loss=98, requested_risk_usd=3,
+                           min_notional_usd=1, max_notional_usd=250, quantity_step=0.5,
+                           contract_multiplier=2)
+    report = build_risk_report(sizing=sizing, equity_usd=1_000, daily_loss_cap_usd=20,
+                              entry=100, stop_loss=98, margin_used_usd=25)
+    assert report.venue_constrained_quantity == report.actual_quantity
+    assert report.actual_notional == report.actual_notional_usd
+    assert report.stop_distance == report.actual_stop_distance_usd
+    assert report.realized_risk == report.realized_risk_usd
+    assert report.leverage == report.implied_leverage

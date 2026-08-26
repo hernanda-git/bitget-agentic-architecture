@@ -1,45 +1,44 @@
 {
   "phase": "2",
   "status": "PASS",
-  "source_revision": "phase-2 commit HEAD (recorded at commit time)",
-  "tests": {
-    "focused_red": "pytest -q tests/test_phase2_exchange.py -> collection failed: ModuleNotFoundError: src.execution.ports",
-    "focused_green": "pytest -q tests/test_phase2_exchange.py -> 7 passed",
-    "relevant": "pytest -q tests/test_phase2_exchange.py tests/test_fake_exchange.py tests/test_autonomous_paper_cli.py tests/test_service_hygiene.py tests/test_event_contracts.py -> 26 passed",
-    "full": "pytest -q -> 166 passed in 4.52s"
+  "timestamp": "2026-08-26T23:19:30+07:00",
+  "timezone": "Asia/Jakarta",
+  "work_units": {
+    "2.1": "PASS: canonical append_event and event/projection path reject missing cycle_id, trace_id, mode, product_type, symbol, and timestamp; payload hashes are canonicalized and persisted; append_legacy is explicit for historical fixtures; paper and fixture-shadow runtime paths use explicit identity",
+    "2.2": "PASS: event plus projection are one transaction with explicit rollback; injected fault leaves zero rows in both tables",
+    "2.3": "PASS: replay covers terminal dispositions, positions, protection, reconciliation, breaker state, fees, funding, and PnL; assert_replay_equal fails closed"
   },
   "verification": {
-    "compileall": "python3 -m compileall -q src scripts tests -> exit 0",
-    "help": "python3 scripts/run_autonomous_paper.py --help -> exit 0",
-    "acceptance_command": "python3 scripts/run_autonomous_paper.py --mode paper --cycles 100 --scenario enter --ledger /tmp/paper-phase2.sqlite3 --reports-dir /tmp/paper-phase2-reports",
-    "acceptance_status": "PASS",
-    "replay_command": "python3 scripts/replay_ledger.py /tmp/paper-phase2.sqlite3",
-    "replay_status": "exit 0",
-    "replay_matches_runtime_net_pnl": true
+    "focused_red": {
+      "command": "python -m pytest -q tests/test_ledger_identity.py tests/test_ledger_atomicity.py tests/test_replay_equality.py",
+      "result": "RED, collection failed because ReplayMismatch/assert_replay_equal/replay_state/append_legacy did not exist"
+    },
+    "focused_green": {
+      "command": "python -m pytest -q tests/test_ledger_identity.py tests/test_ledger_atomicity.py tests/test_replay_equality.py",
+      "result": "17 passed"
+    },
+    "relevant_suite": {
+      "command": "python -m pytest -q tests/test_ledger.py tests/test_ledger_schema.py tests/test_ledger_summary.py tests/test_phase1_ledger.py tests/test_replay.py tests/test_paper_runtime.py tests/test_canonical_runtime.py",
+      "result": "32 passed"
+    },
+    "full_suite": {"command": "python -m pytest -q", "result": "293 passed in 8.28s"},
+    "compileall": {"command": "python3 -m compileall -q src scripts tests", "result": "exit 0"},
+    "replay_smoke": {
+      "command": "python scripts/run_autonomous_paper.py --mode paper --cycles 1 --symbols BTCUSDT --scenario enter --ledger /tmp/phase2-ledger.sqlite3 --reports-dir /tmp/phase2-run && python scripts/replay_ledger.py /tmp/phase2-ledger.sqlite3",
+      "result": "PASS; runtime and replay matched disposition EXECUTED, no open positions, fees 0.020999999999999998, funding 0.022, net PnL 1.957"
+    }
   },
-  "safety": {
-    "mode": "paper",
+  "offline_fake_counts": {
     "network_calls": 0,
     "signed_calls": 0,
-    "credentials_used": false,
-    "orders_are_fake": true
-  },
-  "evidence": {
-    "cycles_requested": 100,
-    "cycles_completed": 100,
-    "orders_placed": 200,
-    "open_positions": [],
-    "closed_trades": 100,
-    "fees": 10.994999999999969,
-    "funding": 10.999999999999995,
-    "net_pnl": -0.9950000000000008,
-    "replay_net_pnl": -0.9950000000000008,
-    "protection_triggers": 100,
-    "partial_fill_duplicate_rejection_stop_target_restart_tests": "covered by passing focused/relevant/full suites"
+    "orders": 2,
+    "positions": 0,
+    "trades": 1
   },
   "limitations": [
-    "The phase-2 exchange is deterministic and fake only; no venue or network behavior is asserted.",
-    "Funding is forced by the acceptance scenario and is recorded as an exchange balance cost; trade-level funding allocation remains minimal.",
-    "The legacy place_order facade remains for compatibility; new event-driven callers should use submit_order/apply_market_event."
-  ]
+    "Legacy append remains a backward-compatible alias, but new canonical writes must use append_event or append_event_with_projection.",
+    "RuntimeEvent.from_dict computes a missing hash for historical object fixtures; canonical ledger writes always persist a hash.",
+    "Replay is offline and does not validate exchange/network behavior or funded execution."
+  ],
+  "next_gate": "Phase 3 public-data hardening and funding-readiness gating; funded/demo execution remains blocked."
 }
