@@ -190,9 +190,44 @@ def test_baseline_rejects_timestamp_regression_in_input_order():
         run_baseline(reordered)
 
 
+def test_baseline_rejects_source_timestamp_regression_when_observed_order_is_valid():
+    series = make_series(12)
+    malformed = replace(series[8], source_ts_ms=series[7].source_ts_ms - 1).with_hash()
+
+    with pytest.raises(ValueError, match="evaluation data.*timestamp"):
+        run_baseline(series[:8] + (malformed,) + series[9:])
+
+
 def test_baseline_rejects_mixed_symbol_replay_data_even_when_rehashed():
     series = make_series(12)
     mixed = replace(series[5], symbol="ETHUSDT").with_hash()
 
     with pytest.raises(ValueError, match="evaluation data.*symbol"):
         run_baseline(series[:5] + (mixed,) + series[6:])
+
+
+def test_walk_forward_rejects_reordered_candle_history_even_when_rehashed():
+    series = make_series(36)
+    current = series[22]
+    malformed = replace(
+        current,
+        candles=current.candles[:-2] + (current.candles[-1], current.candles[-2]),
+    ).with_hash()
+
+    with pytest.raises(ValueError, match="evaluation data.*candle.*timestamp"):
+        run_walk_forward(series[:22] + (malformed,) + series[23:],
+                         BaselineConfig(train_fraction=0.6, embargo=1, test_window=10))
+
+
+def test_walk_forward_rejects_reordered_candle_window_history_even_when_rehashed():
+    series = make_series(36)
+    current = series[22]
+    malformed = replace(
+        current,
+        candles_by_window={"1m": tuple(reversed(current.candles))},
+        required_windows=("1m",),
+    ).with_hash()
+
+    with pytest.raises(ValueError, match="evaluation data.*candle.*timestamp"):
+        run_walk_forward(series[:22] + (malformed,) + series[23:],
+                         BaselineConfig(train_fraction=0.6, embargo=1, test_window=10))

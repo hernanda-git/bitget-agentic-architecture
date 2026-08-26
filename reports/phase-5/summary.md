@@ -27,7 +27,7 @@
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
-- Tests: `208 passed`, `0 failed`
+- Tests: `216 passed`, `0 failed`
 - Public market-data or exchange network calls in this work unit: `0`
 
 ## Evaluation improvements
@@ -51,11 +51,11 @@
 - Added finite, positive cost-stress multiplier validation.
 - Added a fail-closed Phase 5 artifact validator that compares detailed baseline JSON with compact summary fields and checked-in Markdown numerical claims, including separate spread attribution.
 - Added replay-input data-quality validation: missing or stale snapshot hashes, mixed symbols, and regressing observed or source timestamps fail closed before evaluation.
+- Added replay-input validation for chronological candle timestamps in both the primary candle list and populated candle windows; rehashed reordered history is rejected before walk-forward evaluation.
 - Corrected protection-triggered paper fills to execute from the quoted bid or ask with configured adverse slippage instead of filling at mark and misclassifying the quote gap as slippage.
 - Corrected typed end-of-replay closes to preserve the final executable bid and ask instead of erasing the final half-spread.
 - Fail closed when a fresh armed bot monitor has no intended stop-loss or take-profit levels; missing protection now remains `DEGRADED` and parks entries.
-- Verified a 100-cycle offline paper runtime smoke: `200` symbol cycles executed with no crash, no open positions, `PROTECTED` protection, `IN_SYNC` reconciliation, and zero network or signed calls.
-- Mutation checks restored the prior protection-monitor guard, protection fill price, and end-of-replay quote handling; each corresponding regression test failed under mutation and passed after restoration.
+
 
 ## Implemented
 
@@ -80,4 +80,4 @@ python3 scripts/verify_phase5_report.py --root .
 
 ## Limitations and safety
 
-The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, funded execution, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history; the paper exchange handles positive and negative funding directions and attributes them to closed trades. Spread is derived from the fixture's bid/ask versus mark, and execution slippage is derived from the configured fill impact beyond the quoted side. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Phase 6 bounded LLM selection remains explicitly blocked.
+The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history; the paper exchange handles positive and negative funding directions and attributes them to closed trades. Spread is derived from the fixture's bid/ask versus mark, and execution slippage is derived from the configured fill impact beyond the quoted side. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Candle chronology is checked for the primary and populated window sequences, but this remains replay validation rather than live venue data-quality evidence. Phase 6 bounded LLM selection remains explicitly blocked.

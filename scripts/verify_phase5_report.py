@@ -11,6 +11,8 @@ from typing import Any
 
 _NUMERIC_FIELDS = (
     "snapshots",
+    "network_calls",
+    "signed_calls",
     "orders",
     "closed_trades",
     "open_positions",
@@ -83,7 +85,29 @@ def validate_phase5_report(root: Path) -> list[str]:
                 if baseline_row.get(key) != value:
                     errors.append(f"summary.json drift for {field}[{index}].{key}")
 
+    compact_fields = {
+        "walk_forward_protection_attachments": "protection_attachments",
+        "walk_forward_reconciliation_checks": "reconciliation_checks",
+    }
+    for compact_field, row_field in compact_fields.items():
+        if compact_field not in summary:
+            continue
+        expected = [
+            row.get(row_field)
+            for row in baseline.get("walk_forward_evaluation", [])
+        ]
+        if summary[compact_field] != expected:
+            errors.append(f"summary.json drift for {compact_field}")
+
     markdown_expectations = {
+        "network calls": f"- Trading-runtime network calls: `{baseline['network_calls']}`",
+        "signed calls": f"- Signed calls: `{baseline['signed_calls']}`",
+        "orders": f"- Runner-submitted paper orders: `{baseline['orders']}`",
+        "open positions": f"- Open positions at replay end: `{baseline['open_positions']}`",
+        "closed trades": f"- Closed trades: `{baseline['closed_trades']}`",
+        "end-of-replay closes": f"- End-of-replay closes: `{baseline['end_of_replay_closes']}`",
+        "protection attachments": f"- Protection attachments: `{baseline['protection_attachments']}`",
+        "reconciliation checks": f"- Reconciliation checks: `{baseline['reconciliation_checks']}`",
         "gross PnL": f"- Gross PnL: `{baseline['gross_pnl']}`",
         "fees": f"- Fees: `{baseline['fees']}`",
         "spread": f"- Spread: `{baseline['spread']}`",

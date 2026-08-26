@@ -78,6 +78,14 @@ def _validate_replay_snapshots(snapshots: tuple) -> None:
             raise ValueError(f"evaluation data timestamp regression at index {index}")
         if previous_source is not None and snapshot.source_ts_ms < previous_source:
             raise ValueError(f"evaluation data timestamp regression at index {index}")
+        for label, candles in (("candles", snapshot.candles), *snapshot.candles_by_window.items()):
+            previous_candle_ts = None
+            for candle in candles:
+                if previous_candle_ts is not None and candle.source_ts_ms < previous_candle_ts:
+                    raise ValueError(
+                        f"evaluation data candle timestamp regression at index {index} in {label}"
+                    )
+                previous_candle_ts = candle.source_ts_ms
         previous_observed = snapshot.observed_ts_ms
         previous_source = snapshot.source_ts_ms
 
