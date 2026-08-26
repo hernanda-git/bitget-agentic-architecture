@@ -2,6 +2,7 @@
   "assumed_half_spread_bps": 0.5,
   "baseline": {
     "closed_trades": 353,
+    "cost_gate_skipped": 0,
     "end_of_replay_closes": 0,
     "fees": 25539.039252577928,
     "funding": 137.9238797,
@@ -119,6 +120,47 @@
     "funding_bps": 2.0,
     "slippage_bps": 2.0
   },
+  "cost_coverage_variants": [
+    {
+      "closed_trades": 353,
+      "cost_gate_skipped": 0,
+      "fees": 25539.039252577928,
+      "funding": 137.9238797,
+      "gross_pnl": 13222.500000000124,
+      "min_edge_coverage": 1.0,
+      "net_pnl": -25223.98332505426,
+      "orders": 353,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 10215.616127773923,
+      "spread": 2553.9040650025345
+    },
+    {
+      "closed_trades": 213,
+      "cost_gate_skipped": 190,
+      "fees": 15159.045432140472,
+      "funding": 131.216108,
+      "gross_pnl": 11355.600000000086,
+      "min_edge_coverage": 2.0,
+      "net_pnl": -11514.184776585167,
+      "orders": 213,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 6063.618566443292,
+      "spread": 1515.9046700014878
+    },
+    {
+      "closed_trades": 37,
+      "cost_gate_skipped": 4284,
+      "fees": 2750.817047695675,
+      "funding": 7.823718900000001,
+      "gross_pnl": 3438.500000000051,
+      "min_edge_coverage": 3.0,
+      "net_pnl": -695.549457210759,
+      "orders": 37,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 1100.3269456148919,
+      "spread": 275.08174500024325
+    }
+  ],
   "cost_stress": [
     {
       "fee_bps": 5.0,
@@ -158,16 +200,23 @@
     }
   ],
   "data_quality": {
+    "bad_prices": 0,
     "candle_count": 6000,
+    "data_age_ms": 88544,
     "duplicate_timestamps": 0,
+    "freshness_ok": true,
+    "funding_anomalies": 0,
     "funding_expected_settlements": 62,
     "funding_missing": 0,
     "funding_records_in_range": 63,
     "gaps": [],
     "granularity": "5m",
+    "max_data_age_ms": null,
     "max_missing_bars": 0,
+    "max_single_bar_return_bps": 181.9078503416287,
     "non_chronological": 0,
     "ok": true,
+    "price_integrity_ok": true,
     "symbol": "BTCUSDT",
     "zero_volume_bars": 0
   },

@@ -20,6 +20,7 @@ class BaselineConfig:
     embargo: int = 1
     test_window: int = 10
     real_funding: bool = False
+    min_edge_coverage: float = 1.0
 
 @dataclass(frozen=True)
 class BaselineResult:
@@ -41,9 +42,10 @@ class BaselineResult:
     strategy_breakdown: dict[str, dict]
     regime_breakdown: dict[str, dict]
     walk_forward_splits: tuple[dict, ...]
-    promotion_allowed: bool
-    promotion_reason: str
-    replay_hash: str
+    cost_gate_skipped: int = 0
+    promotion_allowed: bool = False
+    promotion_reason: str = ""
+    replay_hash: str = ""
 
 
 def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
@@ -94,6 +96,8 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
                  evaluation_start: int = 0, evaluation_end: int | None = None) -> BaselineResult:
     snapshots = tuple(snapshots)
     _validate_replay_snapshots(snapshots)
+    if not isinstance(config.min_edge_coverage, (int, float)) or not math.isfinite(config.min_edge_coverage) or config.min_edge_coverage < 1.0:
+        raise ValueError("min_edge_coverage must be a finite number greater than or equal to 1.0")
     if evaluation_end is None:
         evaluation_end = len(snapshots) - 1
     if not snapshots or not 0 <= evaluation_start <= evaluation_end < len(snapshots):
@@ -103,6 +107,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
     total_fees = total_spread = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = protection_attachments = 0
     reconciliation_checks = 0
+    cost_gate_skipped = 0
     # One open position per strategy: a real bot cannot stack overlapping
     # entries, so a strategy is blocked from re-entering until its previous
     # position has actually closed (including the bar the exit filled on).
@@ -119,6 +124,9 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             candidates = generator(snapshot, costs)
             if not candidates: continue
             candidate = candidates[0]
+            if candidate.expected_move < config.min_edge_coverage * candidate.expected_cost:
+                cost_gate_skipped += 1
+                continue
             venue.market_prices[snapshot.symbol] = (snapshot.bid, snapshot.ask, snapshot.mark_price)
             oid = f"baseline-{name}-{index}"
             order = venue.submit_order(OrderRequest(oid, snapshot.symbol, candidate.side, config.quantity, None))
@@ -163,7 +171,9 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     elif total_net < 0: reason = "NEGATIVE_NET_PNL"
     return BaselineResult(len(snapshots), 0, 0, orders, closed, 0, end_of_replay_closes,
                           protection_attachments, reconciliation_checks, total_fees, total_spread, total_slippage, total_funding, total_gross, total_net,
-                          strategy, regime, splits, False, reason, replay_hash)
+                          strategy, regime, splits,
+                          cost_gate_skipped=cost_gate_skipped,
+                          promotion_allowed=False, promotion_reason=reason, replay_hash=replay_hash)
 
 
 def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfig()) -> tuple[dict, ...]:
@@ -235,4 +245,26 @@ def run_cost_stress(snapshots: Iterable, config: BaselineConfig = BaselineConfig
                      "gross_pnl": result.gross_pnl, "fees": result.fees,
                      "spread": result.spread, "slippage": result.slippage, "funding": result.funding,
                      "net_pnl": result.net_pnl})
+    return tuple(rows)
+
+
+def run_coverage_variants(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
+                          coverages=(1.0, 2.0, 3.0)) -> tuple[dict, ...]:
+    """Run the same replay under increasing minimum edge-coverage requirements.
+
+    Each row reports the raw cost-inclusive outcome for that coverage level.
+    This is measurement, not tuning: no variant changes the promotion gate.
+    """
+    coverages = tuple(coverages)
+    if not coverages or any(not isinstance(c, (int, float)) or not math.isfinite(c) or c < 1.0 for c in coverages):
+        raise ValueError("coverage levels must be finite numbers greater than or equal to 1.0")
+    rows = []
+    for coverage in coverages:
+        result = run_baseline(snapshots, replace(config, min_edge_coverage=float(coverage)))
+        rows.append({"min_edge_coverage": float(coverage),
+                     "orders": result.orders, "closed_trades": result.closed_trades,
+                     "gross_pnl": result.gross_pnl, "fees": result.fees,
+                     "spread": result.spread, "slippage": result.slippage, "funding": result.funding,
+                     "net_pnl": result.net_pnl, "cost_gate_skipped": result.cost_gate_skipped,
+                     "promotion_reason": result.promotion_reason})
     return tuple(rows)

@@ -2,6 +2,7 @@
   "assumed_half_spread_bps": 0.5,
   "baseline": {
     "closed_trades": 467,
+    "cost_gate_skipped": 0,
     "end_of_replay_closes": 0,
     "fees": 1038.1603854628552,
     "funding": 6.0033372,
@@ -119,6 +120,47 @@
     "funding_bps": 2.0,
     "slippage_bps": 2.0
   },
+  "cost_coverage_variants": [
+    {
+      "closed_trades": 467,
+      "cost_gate_skipped": 0,
+      "fees": 1038.1603854628552,
+      "funding": 6.0033372,
+      "gross_pnl": 719.3499999999981,
+      "min_edge_coverage": 1.0,
+      "net_pnl": -843.8939479694227,
+      "orders": 467,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 415.2641788064575,
+      "spread": 103.81604650010809
+    },
+    {
+      "closed_trades": 246,
+      "cost_gate_skipped": 302,
+      "fees": 536.9829688298305,
+      "funding": 5.00628432,
+      "gross_pnl": 612.3199999999958,
+      "min_edge_coverage": 2.0,
+      "net_pnl": -198.16076702666592,
+      "orders": 246,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 214.79320987677534,
+      "spread": 53.69830400005594
+    },
+    {
+      "closed_trades": 61,
+      "cost_gate_skipped": 3823,
+      "fees": 140.8128657431288,
+      "funding": 1.39054483,
+      "gross_pnl": 125.31999999999925,
+      "min_edge_coverage": 3.0,
+      "net_pnl": -87.28984931993814,
+      "orders": 61,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "slippage": 56.325150746793724,
+      "spread": 14.081288000014865
+    }
+  ],
   "cost_stress": [
     {
       "fee_bps": 5.0,
@@ -158,16 +200,23 @@
     }
   ],
   "data_quality": {
+    "bad_prices": 0,
     "candle_count": 6000,
+    "data_age_ms": 26450,
     "duplicate_timestamps": 0,
+    "freshness_ok": true,
+    "funding_anomalies": 0,
     "funding_expected_settlements": 62,
     "funding_missing": 0,
     "funding_records_in_range": 63,
     "gaps": [],
     "granularity": "5m",
+    "max_data_age_ms": null,
     "max_missing_bars": 0,
+    "max_single_bar_return_bps": 355.13272257458374,
     "non_chronological": 0,
     "ok": true,
+    "price_integrity_ok": true,
     "symbol": "ETHUSDT",
     "zero_volume_bars": 0
   },

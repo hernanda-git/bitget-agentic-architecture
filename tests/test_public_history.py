@@ -393,3 +393,26 @@ def test_real_funding_flag_uses_settlement_rates_not_proxy():
     # Proxy path scales by funding_bps (2bps => 0.0002/event); real path uses the
     # single 0.0001 settlement rate, so real funding must be far smaller.
     assert real.funding < proxy.funding
+
+
+def test_evaluate_real_history_embeds_cost_coverage_variants(tmp_path, monkeypatch):
+    import importlib.util
+    dataset = _sample_dataset()
+    store = tmp_path / "ds.json"
+    store.write_text(json.dumps(dataset.to_dict(), indent=2, sort_keys=True))
+    out = tmp_path / "out.json"
+    spec = importlib.util.spec_from_file_location("eval_real", ROOT / "scripts" / "evaluate_real_history.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store), "--output", str(out)])
+    assert mod.main() == 0
+    result = json.loads(out.read_text())
+    variants = result["cost_coverage_variants"]
+    assert [row["min_edge_coverage"] for row in variants] == [1.0, 2.0, 3.0]
+    for row in variants:
+        assert set(row) >= {"min_edge_coverage", "orders", "closed_trades", "net_pnl", "cost_gate_skipped"}
+    # The 1.0 variant must reproduce the plain baseline numbers exactly.
+    baseline = result["baseline"]
+    assert variants[0]["orders"] == baseline["orders"]
+    assert variants[0]["closed_trades"] == baseline["closed_trades"]
+    assert variants[0]["net_pnl"] == pytest.approx(baseline["net_pnl"])

@@ -33,6 +33,7 @@ from src.evaluation.baseline import (
     BaselineConfig,
     run_baseline,
     run_cost_stress,
+    run_coverage_variants,
     run_walk_forward,
     summarize_walk_forward,
 )
@@ -113,6 +114,7 @@ def main() -> int:
     baseline = run_baseline(snapshots, config)
     walk_forward = run_walk_forward(snapshots, config)
     cost_stress = run_cost_stress(snapshots, config)
+    coverage_variants = run_coverage_variants(snapshots, config, coverages=(1.0, 2.0, 3.0))
 
     payload = {
         "source": "bitget-public-history",
@@ -125,6 +127,7 @@ def main() -> int:
         "walk_forward": [dict(r) for r in walk_forward],
         "walk_forward_summary": summarize_walk_forward(walk_forward),
         "cost_stress": [dict(r) for r in cost_stress],
+        "cost_coverage_variants": [dict(r) for r in coverage_variants],
         "snapshot_time_range": {
             "first_ms": snapshots[0].source_ts_ms, "last_ms": snapshots[-1].source_ts_ms,
         },
@@ -133,6 +136,7 @@ def main() -> int:
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n")
     print(json.dumps({
         "snapshots": len(snapshots), "closed_trades": baseline.closed_trades,
+        "cost_gate_skipped": baseline.cost_gate_skipped,
         "gross_pnl": round(baseline.gross_pnl, 4), "fees": round(baseline.fees, 4),
         "spread": round(baseline.spread, 4), "slippage": round(baseline.slippage, 4),
         "funding": round(baseline.funding, 4), "net_pnl": round(baseline.net_pnl, 4),
