@@ -1,7 +1,7 @@
 {
   "phase": "5",
   "mode": "offline-paper-replay",
-  "source_revision_before_commit": "975872c",
+  "source_revision_before_commit": "c3ce199",
   "tests": {"command": "python3 -m pytest -q", "passed": 216, "failed": 0},
   "compileall_ok": true,
   "network_calls": 0,
@@ -43,6 +43,7 @@
     "The synthetic fixture contains repeated warm-up snapshots; equal timestamps are retained and not silently deduplicated.",
     "The baseline order counter covers runner-submitted entry and typed end-of-replay orders; protection-triggered internal close records are not included in that counter.",
     "This work unit added fail-closed validation for chronological candle sequences in both the primary candle list and populated candle windows; both reordered-history regression tests are green.",
+    "Offline composition-root smoke used FakeExchange only: 2 of 2 cycles completed, 4 orders, 2 closed trades, no open positions, protection reconciled and verified for 2 positions, integrity PASS, and zero network or signed calls.",
     "Phase 6 bounded LLM selection is blocked by the negative cost-inclusive gate."
   ]
 }

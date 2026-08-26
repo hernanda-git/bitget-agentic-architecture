@@ -52,6 +52,7 @@
 - Added a fail-closed Phase 5 artifact validator that compares detailed baseline JSON with compact summary fields and checked-in Markdown numerical claims, including separate spread attribution.
 - Added replay-input data-quality validation: missing or stale snapshot hashes, mixed symbols, and regressing observed or source timestamps fail closed before evaluation.
 - Added replay-input validation for chronological candle timestamps in both the primary candle list and populated candle windows; rehashed reordered history is rejected before walk-forward evaluation.
+- Verified the offline composition root with FakeExchange: `2/2` paper cycles completed, `4` orders, `2` closed trades, no open positions, `2/2` protection reconciliation and verification, integrity `PASS`, and zero network or signed calls.
 - Corrected protection-triggered paper fills to execute from the quoted bid or ask with configured adverse slippage instead of filling at mark and misclassifying the quote gap as slippage.
 - Corrected typed end-of-replay closes to preserve the final executable bid and ask instead of erasing the final half-spread.
 - Fail closed when a fresh armed bot monitor has no intended stop-loss or take-profit levels; missing protection now remains `DEGRADED` and parks entries.
