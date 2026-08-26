@@ -10,20 +10,20 @@
 - Snapshots replayed: `36`
 - Trading-runtime network calls: `0`
 - Signed calls: `0`
-- Runner-submitted paper orders: `37` (`36` entries, `1` typed end-of-replay reduce-only close); protection-triggered internal close records are excluded from this counter
+- Runner-submitted paper orders: `16`
 - Open positions at replay end: `0`
-- Closed trades: `36`
+- Closed trades: `15`
 - End-of-replay closes: `1`
-- Protection attachments: `36` paper positions configured with stop and target
-- Reconciliation checks: `0` venue reconciliation checks; this is an offline simulator, not an exchange adapter
+- Protection attachments: `15`
+- Reconciliation checks: `0`
 - Walk-forward protection attachments: `10` in complete window `[22,31]`
 - Walk-forward reconciliation checks: `0` in the complete window
-- Gross PnL: `-36.5` (mark-to-mark before transaction costs)
-- Fees: `3.3977537220000005` (calculated from executed prices)
-- Spread: `0.720000000000347` (bid/ask cost, including the final executable quote)
-- Simulated slippage: `1.3590999999998772` (execution impact beyond the quoted bid/ask)
-- Funding: `1.2428000000000003`
-- Net PnL: `-43.219653722000224` (gross minus fees, spread, slippage, and funding)
+- Gross PnL: `-20.0`
+- Fees: `1.37750203`
+- Spread: `0.30000000000013927`
+- Simulated slippage: `0.5509999999999238`
+- Funding: `0.40569999999999995`
+- Net PnL: `-22.63420203000006`
 - Promotion allowed: `false`
 - Promotion reason: `NEGATIVE_NET_PNL`
 - Replay hash: `7fd9201588e765b283d38db03b5f46728ebef818891136fc87ddf11bf11b5e3c`
@@ -54,7 +54,7 @@
 - Strategy/regime attribution, robust walk-forward evaluation, and cost stress reporting now expose spread separately from execution slippage.
 - Added explicit gross PnL and cost attribution by strategy and regime.
 - Added expanding walk-forward test windows with an embargo and retained pre-test context while bounding execution and end-of-window flattening to each test window. Only complete test windows are reported; the fixture produced one complete window `[22,31]`, while the trailing 3-snapshot remainder is excluded rather than presented as comparable evidence.
-- Walk-forward net PnL was `-24.02105227000008` for the complete window `[22,31]`.
+- Walk-forward net PnL was `-13.276751260000037` for the complete window `[22,31]`.
 - Added per-window strategy attribution. In this fixture, all 10 complete-window closed trades were attributed to `trend_continuation`; `mean_reversion` and `volatility_breakout` produced zero closed trades.
 - Fixed cost-stress funding attribution so configured funding assumptions affect replay cash costs while preserving fixture funding direction.
 - Corrected net funding attribution so funding received offsets funding paid rather than being incorrectly added to costs.
