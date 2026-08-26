@@ -45,7 +45,7 @@ from src.evaluation.baseline import (
     run_walk_forward,
     summarize_walk_forward,
 )
-from src.evaluation.stress import run_stress_matrix
+from src.evaluation.stress import run_stress_matrix, run_combined_stress
 from src.evaluation.statistics import compute_statistics
 
 
@@ -142,6 +142,9 @@ def main() -> int:
     coverage_variants = run_coverage_variants(snapshots, config, coverages=(1.0, 2.0, 3.0))
     strategy_attribution = run_strategy_attribution(snapshots, config)
     stress_matrix = run_stress_matrix(snapshots, config)
+    # Realistic simultaneous adverse-cost stress (fee + funding + slippage move
+    # together). Measurement only; never flips the deterministic promotion gate.
+    combined_stress = run_combined_stress(snapshots, config)
     statistics = compute_statistics(baseline.trade_pnls)
     # Measurement-only robustness gate: reports adequate-sample and positive
     # expectancy-with-CI facts. Never changes the deterministic promotion gate.
@@ -180,6 +183,7 @@ def main() -> int:
         "cost_coverage_variants": [dict(r) for r in coverage_variants],
         "strategy_attribution": strategy_attribution,
         "stress_matrix": [dict(r) for r in stress_matrix],
+        "combined_stress": dict(combined_stress),
         "statistics": statistics,
         "snapshot_time_range": {
             "first_ms": snapshots[0].source_ts_ms, "last_ms": snapshots[-1].source_ts_ms,

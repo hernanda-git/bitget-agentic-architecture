@@ -1,0 +1,270 @@
+{
+  "datasets": [
+    {
+      "baseline": {
+        "closed_trades": 45,
+        "fees": 3543.3425,
+        "funding": 7.7954,
+        "gross_pnl": -1549.5,
+        "net_pnl": -6872.3091,
+        "promotion_reason": "NEGATIVE_NET_PNL",
+        "slippage": 1417.3369,
+        "spread": 354.3342
+      },
+      "combined_stress": {
+        "baseline_closed_trades": 45,
+        "closed_trades": 41,
+        "dimension": "combined",
+        "drawdown": 8444.544,
+        "fee_bps": 7.5,
+        "fees": 4841.965,
+        "funding": 7.7954,
+        "funding_bps": 4.0,
+        "gross_pnl": -1335.2,
+        "net_pnl": -8444.544,
+        "promotion_allowed": false,
+        "promotion_status": "BLOCKED",
+        "slippage": 1936.7859,
+        "slippage_bps": 3.0,
+        "spread": 322.7976
+      },
+      "data_quality": {
+        "candle_count": 2000,
+        "data_age_ms": 18084,
+        "freshness_ok": true,
+        "funding_anomalies": 0,
+        "funding_missing": 0,
+        "gaps": 0,
+        "max_missing_bars": 0,
+        "max_single_bar_return_bps": 43.02,
+        "ok": true,
+        "zero_volume_bars": 0
+      },
+      "funding_readiness_ok": true,
+      "granularity": "1m",
+      "invariant": {
+        "combined_never_adds_trades": true,
+        "combined_promotion_blocked": true,
+        "gate_expectancy_positive_with_ci_false": true,
+        "gate_selection_blocked": true
+      },
+      "invariant_all_pass": true,
+      "symbol": "BTCUSDT",
+      "walk_forward_robustness": {
+        "adequate_sample": true,
+        "expectancy_ci": [
+          -236.22894,
+          -67.542597
+        ],
+        "expectancy_mean": -152.717979,
+        "expectancy_positive_with_ci": false,
+        "selection_blocked": true,
+        "total_closed_trades": 74
+      }
+    },
+    {
+      "baseline": {
+        "closed_trades": 245,
+        "fees": 18724.7603,
+        "funding": 59.5448,
+        "gross_pnl": 6229.6,
+        "net_pnl": -21917.0855,
+        "promotion_reason": "NEGATIVE_NET_PNL",
+        "slippage": 7489.9043,
+        "spread": 1872.4761
+      },
+      "combined_stress": {
+        "baseline_closed_trades": 245,
+        "closed_trades": 161,
+        "dimension": "combined",
+        "drawdown": 25269.3726,
+        "fee_bps": 7.5,
+        "fees": 18445.1299,
+        "funding": 62.2329,
+        "funding_bps": 4.0,
+        "gross_pnl": 4774.9,
+        "net_pnl": -22340.1906,
+        "promotion_allowed": false,
+        "promotion_status": "BLOCKED",
+        "slippage": 7378.0523,
+        "slippage_bps": 3.0,
+        "spread": 1229.6754
+      },
+      "data_quality": {
+        "candle_count": 2000,
+        "data_age_ms": 135234,
+        "freshness_ok": true,
+        "funding_anomalies": 0,
+        "funding_missing": 0,
+        "gaps": 0,
+        "max_missing_bars": 0,
+        "max_single_bar_return_bps": 181.91,
+        "ok": true,
+        "zero_volume_bars": 0
+      },
+      "funding_readiness_ok": true,
+      "granularity": "5m",
+      "invariant": {
+        "combined_never_adds_trades": true,
+        "combined_promotion_blocked": true,
+        "gate_expectancy_positive_with_ci_false": true,
+        "gate_selection_blocked": true
+      },
+      "invariant_all_pass": true,
+      "symbol": "BTCUSDT",
+      "walk_forward_robustness": {
+        "adequate_sample": true,
+        "expectancy_ci": [
+          -133.495093,
+          -45.855003
+        ],
+        "expectancy_mean": -89.457492,
+        "expectancy_positive_with_ci": false,
+        "selection_blocked": true,
+        "total_closed_trades": 124
+      }
+    },
+    {
+      "baseline": {
+        "closed_trades": 63,
+        "fees": 154.7869,
+        "funding": 0.3118,
+        "gross_pnl": -66.72,
+        "net_pnl": -299.2121,
+        "promotion_reason": "NEGATIVE_NET_PNL",
+        "slippage": 61.9148,
+        "spread": 15.4787
+      },
+      "combined_stress": {
+        "baseline_closed_trades": 63,
+        "closed_trades": 55,
+        "dimension": "combined",
+        "drawdown": 370.8636,
+        "fee_bps": 7.5,
+        "fees": 202.7262,
+        "funding": 0.3118,
+        "funding_bps": 4.0,
+        "gross_pnl": -63.2,
+        "net_pnl": -360.8435,
+        "promotion_allowed": false,
+        "promotion_status": "BLOCKED",
+        "slippage": 81.0905,
+        "slippage_bps": 3.0,
+        "spread": 13.5151
+      },
+      "data_quality": {
+        "candle_count": 2000,
+        "data_age_ms": 28465,
+        "freshness_ok": true,
+        "funding_anomalies": 0,
+        "funding_missing": 0,
+        "gaps": 0,
+        "max_missing_bars": 0,
+        "max_single_bar_return_bps": 41.91,
+        "ok": true,
+        "zero_volume_bars": 0
+      },
+      "funding_readiness_ok": true,
+      "granularity": "1m",
+      "invariant": {
+        "combined_never_adds_trades": true,
+        "combined_promotion_blocked": true,
+        "gate_expectancy_positive_with_ci_false": true,
+        "gate_selection_blocked": true
+      },
+      "invariant_all_pass": true,
+      "symbol": "ETHUSDT",
+      "walk_forward_robustness": {
+        "adequate_sample": true,
+        "expectancy_ci": [
+          -6.910949,
+          -2.591498
+        ],
+        "expectancy_mean": -4.749398,
+        "expectancy_positive_with_ci": false,
+        "selection_blocked": true,
+        "total_closed_trades": 79
+      }
+    },
+    {
+      "baseline": {
+        "closed_trades": 310,
+        "fees": 747.515,
+        "funding": 3.0245,
+        "gross_pnl": 376.66,
+        "net_pnl": -747.637,
+        "promotion_reason": "NEGATIVE_NET_PNL",
+        "slippage": 299.006,
+        "spread": 74.7515
+      },
+      "combined_stress": {
+        "baseline_closed_trades": 310,
+        "closed_trades": 199,
+        "dimension": "combined",
+        "drawdown": 1095.5981,
+        "fee_bps": 7.5,
+        "fees": 720.4891,
+        "funding": 2.2932,
+        "funding_bps": 4.0,
+        "gross_pnl": 155.73,
+        "net_pnl": -903.2806,
+        "promotion_allowed": false,
+        "promotion_status": "BLOCKED",
+        "slippage": 288.1956,
+        "slippage_bps": 3.0,
+        "spread": 48.0326
+      },
+      "data_quality": {
+        "candle_count": 2000,
+        "data_age_ms": 75212,
+        "freshness_ok": true,
+        "funding_anomalies": 0,
+        "funding_missing": 0,
+        "gaps": 0,
+        "max_missing_bars": 0,
+        "max_single_bar_return_bps": 355.13,
+        "ok": true,
+        "zero_volume_bars": 0
+      },
+      "funding_readiness_ok": true,
+      "granularity": "5m",
+      "invariant": {
+        "combined_never_adds_trades": true,
+        "combined_promotion_blocked": true,
+        "gate_expectancy_positive_with_ci_false": true,
+        "gate_selection_blocked": true
+      },
+      "invariant_all_pass": true,
+      "symbol": "ETHUSDT",
+      "walk_forward_robustness": {
+        "adequate_sample": true,
+        "expectancy_ci": [
+          -4.063025,
+          -0.625998
+        ],
+        "expectancy_mean": -2.411732,
+        "expectancy_positive_with_ci": false,
+        "selection_blocked": true,
+        "total_closed_trades": 130
+      }
+    }
+  ],
+  "generated_at_timezone": "Asia/Jakarta",
+  "generated_at_utc": "2026-08-26T20:16:50.216734+00:00",
+  "invariant_all_pass": true,
+  "limitations": [
+    "Stored public history (2000 candles/symbol/granularity) is a fixed historical snapshot; no live stream.",
+    "Historical bid/ask was unavailable from the public API; spread remains an explicit assumed half-spread (0.5 bps), never an observed quote claim.",
+    "Evaluation uses FakeExchange only; no signed/demo/testnet execution occurred, so no venue reconciliation or protection read-back is possible.",
+    "The combined stress is measurement only and never changes the deterministic promotion gate (still NEGATIVE_NET_PNL).",
+    "Public unauthenticated history does not establish live venue reconciliation; the negative baseline is a deterministic cost-inclusive replay result, not a live trading outcome.",
+    "No strategy was selected, ranked, or promoted; selection_blocked remains True throughout."
+  ],
+  "network_calls": 0,
+  "orders": 0,
+  "phase": "phase-10 (combined-stress continuation; selection remains blocked)",
+  "positions": 0,
+  "selection_blocked": true,
+  "signed_calls": 0,
+  "task": "realistic combined cost/funding/slippage stress + fail-closed stress-invariance across stored public history"
+}

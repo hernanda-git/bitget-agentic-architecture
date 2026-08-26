@@ -49,3 +49,39 @@ def run_stress_matrix(snapshots, config=BaselineConfig()):
                      "baseline_closed_trades": baseline.closed_trades,
                      "skipped_fills": result.cost_gate_skipped})
     return tuple(rows)
+
+
+def run_combined_stress(snapshots, config=BaselineConfig(), *, fee_mult=1.5,
+                        funding_mult=2.0, slippage_mult=1.5):
+    """Realistic simultaneous adverse-cost stress (measurement only, fail-closed).
+
+    Applies fee, funding, and slippage multipliers TOGETHER to model a worst-case
+    cost environment where every execution cost moves against the strategy at once.
+    This is more realistic than the isolated stress-matrix dimensions, which raise
+    one cost at a time. It never changes the deterministic promotion gate.
+    """
+    snapshots = tuple(snapshots)
+    baseline = run_baseline(snapshots, config)
+    stressed = run_baseline(snapshots, replace(
+        config, fee_bps=config.fee_bps * fee_mult,
+        funding_bps=config.funding_bps * funding_mult,
+        slippage_bps=config.slippage_bps * slippage_mult))
+    # Fail closed: a combined adverse stress can never invent trades. If this
+    # ever trips, a cost-modeling change is inflating survivorship.
+    if stressed.closed_trades > baseline.closed_trades:
+        raise AssertionError("combined stress added trades versus baseline")
+    return {
+        "dimension": "combined",
+        "fee_mult": fee_mult, "funding_mult": funding_mult, "slippage_mult": slippage_mult,
+        "fee_bps": config.fee_bps * fee_mult,
+        "funding_bps": config.funding_bps * funding_mult,
+        "slippage_bps": config.slippage_bps * slippage_mult,
+        "closed_trades": stressed.closed_trades,
+        "gross_pnl": stressed.gross_pnl, "fees": stressed.fees, "funding": stressed.funding,
+        "spread": stressed.spread, "slippage": stressed.slippage, "net_pnl": stressed.net_pnl,
+        "drawdown": _drawdown(stressed.trade_pnls),
+        "promotion_status": "BLOCKED", "promotion_allowed": stressed.promotion_allowed,
+        "promotion_reason": stressed.promotion_reason,
+        "baseline_closed_trades": baseline.closed_trades,
+        "skipped_fills": stressed.cost_gate_skipped,
+    }
