@@ -20,6 +20,18 @@ class SizingResult:
     stop_distance_usd: float = 0.0
     contract_multiplier: float = 1.0
 
+    @property
+    def venue_constrained_quantity(self) -> float:
+        return self.quantity
+
+    @property
+    def actual_notional(self) -> float:
+        return self.notional_usd
+
+    @property
+    def realized_risk_usd(self) -> float:
+        return self.effective_risk_usd
+
 
 def _finite_positive(value: float, name: str) -> None:
     if not math.isfinite(value) or value <= 0:

@@ -1,0 +1,59 @@
+{
+  "phase": 7,
+  "scope": ["7.1", "7.2", "7.3"],
+  "status": "PARKED",
+  "timestamp_timezone": "Asia/Jakarta",
+  "source_revision": "a11d2e002ab9387c39ddd9a522dfc16b8ab1b0ce",
+  "files_changed": [
+    "scripts/evaluate_real_history.py",
+    "reports/phase-7/summary.json",
+    "reports/phase-7/summary.md",
+    "reports/phase-7/public-history-runs.json"
+  ],
+  "public_history": {
+    "source": "bitget-public-history",
+    "endpoint": "https://api.bitget.com/api/v2/mix/market/candles and /api/v2/mix/market/history-fund-rate",
+    "authentication": "unauthenticated",
+    "signed_calls": 0,
+    "orders": 0,
+    "credentials_used": false,
+    "evaluation_runs": 6,
+    "symbols": ["BTCUSDT", "ETHUSDT"],
+    "intervals": ["1m", "5m"],
+    "period_designation": {"recent": "research period", "older": "untouched holdout, selected before evaluation and not used for tuning"},
+    "request_evidence": {"per_fetch_run_requests": 2, "per_fetch_run_successes": 2, "per_fetch_run_failures": 0, "per_fetch_run_rate_limits": 0, "per_fetch_run_retries": 0, "request_shape": ["candles", "history-fund-rate"], "calls_bounded": true},
+    "coverage": {"candles_per_run": 240, "funding_records_per_run": 20, "funding_missing_per_run": 0, "data_quality_failures": 0, "gap_count_per_run": 0, "zero_volume_bars_per_run": 0, "timestamp_alignment": "sorted candle timestamps, 1m or 5m boundaries, no duplicate or non-chronological timestamps", "time_ranges_ms": {"recent": [1787691900000, 1787763660000], "older_holdout": [1787432700000, 1787504400000]}},
+    "aggregate": {"closed_trades": 114, "net_pnl": -9308.642609406617, "all_runs_funding_ready": true, "all_runs_negative_net_pnl": true}
+  },
+  "promotion_gates": {
+    "positive_net_pnl_after_costs": "FLAGGED",
+    "adequate_closed_trade_sample": "NOT EVIDENCED",
+    "positive_expectancy_confidence_interval": "NOT EVIDENCED",
+    "stable_symbols_periods_regimes_parameters": "NOT EVIDENCED",
+    "survives_cost_latency_stress": "FLAGGED",
+    "data_quality_and_replay_integrity": "PROVEN",
+    "no_performance_concentration": "NOT EVIDENCED",
+    "public_shadow_consistency": "NOT EVIDENCED",
+    "decision": "PARKED",
+    "reason": "All six evaluated runs are negative after modeled fees, spread, slippage, and observed funding. Public shadow forward evidence was not available in this work unit."
+  },
+  "independent_reviews": {
+    "safety_execution": {"status": "FLAGGED", "evidence": ["scripts/audit_safety_surface.py output: forbidden_path PROVEN, credential_access PROVEN, production_product PROVEN, unignored_artifact PROVEN", "src/execution/bitget_demo.py:120 contains the signed-request implementation and is outside the public-history path", ".env and data/paper.sqlite3 were reported as sensitive filenames by the scanner"], "negative_evidence": ["No signed calls, orders, transfers, withdrawals, or credentials were used by Phase 7 public-history runs"]},
+    "data_integrity_ledger_truth": {"status": "PROVEN", "evidence": ["src/market/history.py:204-206 rejects duplicate, non-chronological, and bad-price data", "src/market/history.py:208-220 persists measured gaps, missing funding, freshness, and anomaly fields", "src/ledger/events.py:22,70-105 enforces canonical identity and payload-hash validation", "tests/test_replay_equality.py and tests/test_ledger_atomicity.py are included in the verified suite"], "negative_evidence": ["No venue reconciliation was possible because only public unauthenticated market endpoints were allowed"]},
+    "ui_truthfulness_responsive": {"status": "NOT EVIDENCED", "evidence": ["ui/index.html:6-9 labels read-only mode and ledger source", "ui/index.html:14 uses GET /api/state and reports unavailable state", "Phase 6 browser evidence covered 360x800 through 1440x900 with zero measured overflow, but only an empty local ledger"], "negative_evidence": ["Populated-cycle UI rendering and populated responsive table/card behavior were not independently evidenced in Phase 7"]}
+  },
+  "verification": {
+    "resource_guard_preflight": {"command": "python3 scripts/resource_guard.py --json", "status": "PASS", "swap_used_percent": 87.41116112919927, "violations": []},
+    "public_shadow_smoke": {"status": "PUBLIC_SHADOW_DEGRADED", "command": "python3 scripts/resource_guard.py --timeout-seconds 90 --memory-mb 768 --run python3 scripts/run_public_shadow.py --cycles 1 --symbols BTCUSDT --ledger /tmp/phase7-public-shadow.sqlite3 --reports-dir /tmp/phase7-public-shadow-reports", "run_id": "de3fc185b29a", "cycles_requested": 1, "cycles_completed": 0, "network_calls": 1, "signed_calls": 0, "orders_placed": 0, "failures": 1, "failure_samples": ["TICKER_SCHEMA"], "schema_rejections": 1, "candidate_rate": 0.0, "hold_rate": 1.0, "net_pnl_after_costs": 0.0, "interpretation": "The safe smoke reached the public endpoint but the returned ticker schema was rejected. It produced no simulated entries and cannot provide forward performance evidence."},
+    "tests": {"status": "PASS", "command": "python3 -m pytest -q --timeout=20 --timeout-method=thread", "passed": 314, "failed": 0},
+    "compileall": {"status": "PASS", "command": "python3 -m compileall -q src scripts tests"}
+  },
+  "limitations": [
+    "Historical bid/ask is unavailable from the endpoint, so spread is an explicit assumed half-spread, not observed quote history.",
+    "The six runs use bounded 240-candle windows. They establish negative evidence, not broad regime coverage.",
+    "Funding readiness passed for every claimed real-funding run, but the funding records are venue history sampled for the evaluated window and do not prove complete lifetime coverage.",
+    "The older windows are designated untouched holdout periods, but the strategy has no parameter-fitting stage in this evaluator, so statistical confidence and parameter stability remain unproven.",
+    "Safety scan remains FLAGGED for quarantined signed-request code and sensitive local artifacts. No such path was invoked."
+  ],
+  "next_gate": "RESEARCH_GATE_PARKED"
+}

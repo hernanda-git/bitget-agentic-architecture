@@ -166,5 +166,64 @@
   ],
   "walk_forward_reconciliation_checks": [
     0
-  ]
+  ],
+  "ui_readonly_verification": {
+    "status": "verified",
+    "scope": "Local server only; no exchange, credential, or network access",
+    "focused_tests": "15 passed",
+    "full_tests": "304 passed in 10.02s",
+    "http_methods": {
+      "GET /api/state": 200,
+      "POST /api/state": 405,
+      "PUT /api/state": 405,
+      "DELETE /api/state": 405,
+      "GET /api/health": 200
+    },
+    "browser": {
+      "url": "http://127.0.0.1:8765/",
+      "viewports": [
+        "360x800",
+        "390x844",
+        "768x844",
+        "1024x900",
+        "1440x900"
+      ],
+      "overflow_px_all": 0,
+      "offenders_all": 0,
+      "console_errors_all": 0,
+      "clipped_text_all": 0,
+      "read_only_above_fold": true,
+      "mobile_cards": [
+        "360x800",
+        "390x844"
+      ],
+      "gutters_px": {
+        "360x800": [
+          12,
+          12
+        ],
+        "390x844": [
+          12,
+          12
+        ],
+        "768x844": [
+          16,
+          16
+        ],
+        "1024x900": [
+          16,
+          16
+        ],
+        "1440x900": [
+          20,
+          20
+        ]
+      }
+    },
+    "limitations": [
+      "Browser exercised empty local ledger, not populated cycle rendering.",
+      "No venue facts queried by design.",
+      "Responsive table-card CSS is present but empty state has no table rows."
+    ]
+  }
 }

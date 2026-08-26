@@ -1,71 +1,78 @@
 {
-  "candidate_rate": 0.0,
-  "closed_trades": 0,
-  "cycles": 100,
-  "cycles_completed": 100,
-  "cycles_requested": 100,
-  "terminal_cycles": 100,
-  "terminal_status_counts": {
-    "HOLD": 100
+  "phase": "phase-4",
+  "work_units": ["4.1", "4.2", "4.3", "4.4"],
+  "status": "PASS",
+  "source_revision": "workspace HEAD plus pre-existing user changes; no commit made",
+  "implementation": {
+    "4.1": "Verified canonical PolicyRejectionCode/POLICY_REJECTION_CODES in src/policy/semantic.py and use by src/agentic_engine.py; added SemanticResult invariant rejecting unsafe results without a canonical code.",
+    "4.2": "Verified venue-constrained sizing and effective-risk report dimensions; added explicit aliases for venue quantity, actual notional, stop distance, realized risk, and leverage.",
+    "4.3": "Verified existing PENDING/DEGRADED/PROTECTED persistence, fresh armed monitor fallback, stale-mark parking, idempotent breach handling, provider-independent monitor, and restart restoration contracts.",
+    "4.4": "Verified persistent eight-breaker registry, fail-closed parking, and operator-only clearing."
   },
-  "decision_latency": {
-    "count": 100,
-    "max": 892.2973431181163,
-    "mean": 650.6960365641862,
-    "min": 592.58679789491,
-    "p50": 639.9039749521762
+  "tests": {
+    "focused": {
+      "command": "python3 -m pytest -q tests/test_phase4_market.py tests/test_protection_supervisor.py tests/test_mark_monitor.py tests/test_protection_reconciliation.py tests/test_reconciliation.py tests/test_breakers.py tests/test_risk_report.py tests/test_sizing.py tests/test_semantic_policy.py tests/test_engine.py",
+      "result": "44 passed in 0.21s",
+      "exit_code": 0
+    },
+    "expanded": {
+      "command": "python3 -m pytest -q tests/test_semantic_policy.py tests/test_engine.py tests/test_sizing.py tests/test_risk_report.py tests/test_protection_supervisor.py tests/test_mark_monitor.py tests/test_protection_reconciliation.py tests/test_reconciliation.py tests/test_breakers.py tests/test_provider_circuit.py tests/test_scheduler.py tests/test_restart_recovery.py",
+      "result": "47 passed in 0.11s",
+      "exit_code": 0
+    },
+    "full": {
+      "command": "python3 -m pytest -q",
+      "result": "301 passed in 9.98s",
+      "exit_code": 0
+    },
+    "compile": {
+      "command": "python3 -m compileall -q src scripts tests",
+      "result": "exit 0",
+      "exit_code": 0
+    }
   },
-  "failure_samples": [],
-  "failures": 0,
-  "freshness_distribution": {
-    "count": 100,
-    "max": 425,
-    "mean": 216.24,
-    "min": 189,
-    "p50": 211
+  "resource_guard": {
+    "command": "python3 scripts/resource_guard.py --json",
+    "result": "ok=true; violations=[]; available_memory_bytes=1048350720; swap_used_percent=68.33514433307724; disk_used_percent=43.07103932080342; inode_free_percent=52.661570258951976",
+    "exit_code": 0
   },
-  "hold_rate": 1.0,
+  "offline_paper_protection_reconciliation_smoke": {
+    "command": "python3 scripts/run_autonomous_paper.py --mode paper --cycles 1 --symbols BTCUSDT --scenario enter --ledger /tmp/phase4-paper.sqlite3 --reports-dir /tmp/phase4-reports",
+    "result": "status=PASS; integrity_ok=true; orders_placed=2; signed_calls=0; network_calls=0; open_positions=[]; PROTECTION_VERIFIED=1; POSITION_RECONCILED=1; TRADE_CLOSED=1",
+    "exit_code": 0
+  },
+  "offline_boundary": {
+    "network_calls": 0,
+    "signed_calls": 0,
+    "public_network_evaluation_performed": false,
+    "credentials_or_private_keys_read": false,
+    "live_or_demo_exchange_accessed": false
+  },
+  "files_modified_by_this_work": [
+    "src/policy/semantic.py",
+    "src/policy/sizing.py"
+  ],
+  "pre_existing_phase4_files_verified": [
+    "src/agentic_engine.py",
+    "src/policy/risk_report.py",
+    "src/policy/breakers.py",
+    "src/protection/models.py",
+    "src/protection/supervisor.py",
+    "src/protection/mark_monitor.py",
+    "src/reconcile/engine.py",
+    "tests/test_semantic_policy.py",
+    "tests/test_engine.py",
+    "tests/test_sizing.py",
+    "tests/test_risk_report.py",
+    "tests/test_protection_supervisor.py",
+    "tests/test_mark_monitor.py",
+    "tests/test_protection_reconciliation.py",
+    "tests/test_breakers.py"
+  ],
   "limitations": [
-    "public market observations only",
-    "no provider selection or execution",
-    "PnL is zero because no simulated positions were opened"
+    "No public-network evaluation or signed execution was run.",
+    "The requested protection and breaker behavior was already present in the workspace baseline and was verified rather than duplicated.",
+    "The one-cycle smoke reports runtime health as STARTING because the health minimum is three samples; this is expected and not a safety failure."
   ],
-  "mode": "public-shadow",
-  "net_pnl_after_costs": 0.0,
-  "network_calls": 400,
-  "open_positions": 0,
-  "orders_placed": 0,
-  "policy_rejections": 0,
-  "provider": {
-    "calls": 0,
-    "failures": 0
-  },
-  "provider_calls": 0,
-  "provider_failures": 0,
-  "run_id": "2c7f0bd33268",
-  "schema_rejections": 0,
-  "signed_calls": 0,
-  "simulated_entries": 0,
-  "simulated_exits": 0,
-  "source_labels": [
-    "bitget-public"
-  ],
-  "validation": {
-    "earlier_bug": "The prior validator incorrectly rejected legitimate positive mark/last prices outside the bid-ask interval, producing TICKER_IMPOSSIBLE_PRICES during the earlier shadow run.",
-    "repair": "Bid/ask ordering and positive bid, ask, and mark values are now validated independently; mark is no longer required to be inside the spread.",
-    "regression_test": "test_ticker_validation_accepts_positive_mark_outside_spread_and_rejects_invalid_values"
-  },
-  "source_timestamp_ms": {
-    "count": 100,
-    "max": 1787633247371,
-    "min": 1787633182821
-  },
-  "spread_distribution": {
-    "count": 100,
-    "max": 0.012455549259308439,
-    "mean": 0.012452210470533617,
-    "min": 0.01244908324842256,
-    "p50": 0.012451842499859391
-  },
-  "status": "PUBLIC_SHADOW_COMPLETE"
+  "next_gate": "Independent review of Phase 4 evidence and authorization of any later networked evaluation; keep signed execution disabled."
 }

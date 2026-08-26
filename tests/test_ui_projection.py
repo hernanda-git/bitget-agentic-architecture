@@ -26,6 +26,14 @@ def test_ui_has_required_projection_labels_and_jakarta_timestamping():
     assert "100vw" not in HTML
 
 
+def test_ui_evidence_drawer_is_limited_to_approved_fact_labels():
+    for label in ("Context hash", "Decision status", "Policy disposition", "Order IDs", "Fill IDs", "Fees", "Funding", "Spread", "Slippage", "Protection evidence", "Reconciliation evidence", "Terminal disposition", "Limitations"):
+        assert label in HTML
+    assert "api_key" not in HTML.lower()
+    assert "access-key" not in HTML.lower()
+    assert "fetch('/api/snapshot'" not in HTML
+
+
 def test_ui_mobile_projection_has_card_layout_and_symmetric_gutters():
     assert "@media(max-width:560px)" in HTML
     assert ".table tr" in HTML

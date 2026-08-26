@@ -1,27 +1,65 @@
-# public-shadow report
+# Phase 4 Summary
 
-- Status: `PUBLIC_SHADOW_COMPLETE`
-- Cycles: `100` requested, `100` completed, `100` terminal
-- Terminal statuses: `HOLD=100`
-- Provider calls/failures: `0/0`
-- Schema/policy rejections: `0/0`
-- HOLD/candidate rates: `1.0000` / `0.0000`
-- Simulated entries/exits: `0/0`
-- Net PnL after costs: `0.0`
+## Outcome
 
-## Distributions
+**PASS** for work units 4.1 through 4.4. No commit was made. No public-network evaluation, signed execution, credentials, private keys, transfers, withdrawals, or external exchange runtime were accessed.
 
-- Freshness: `{'count': 100, 'min': 189, 'max': 425, 'mean': 216.24, 'p50': 211}`
-- Spread: `{'count': 100, 'min': 0.01244908324842256, 'max': 0.012455549259308439, 'mean': 0.012452210470533617, 'p50': 0.012451842499859391}`
-- Decision latency: `{'count': 100, 'min': 592.58679789491, 'max': 892.2973431181163, 'mean': 650.6960365641862, 'p50': 639.9039749521762}`
+## Implemented and verified
 
-## Validation outcome
+- **4.1 Policy rejection codes:** The workspace contains the canonical `PolicyRejectionCode` vocabulary and `POLICY_REJECTION_CODES` in `src/policy/semantic.py`; `src/agentic_engine.py` uses those constants. `SemanticResult` now fails closed if an unsafe result is constructed without a canonical machine-readable code. Focused tests cover unsafe proposal rejection and the shared code set.
+- **4.2 Effective risk:** `src/policy/sizing.py` exposes venue-constrained quantity, actual notional, realized risk, stop distance, max cap, and minimum-notional distortion. `src/policy/risk_report.py` distinguishes requested risk from actual venue-sized risk, actual notional, stop distance, realized risk, equity percentage, daily-cap ratio, and implied leverage, with explicit domain aliases.
+- **4.3 Protection:** Existing workspace contracts were inspected and verified: positions begin `PENDING`; missing venue protection is `DEGRADED` unless a fresh, armed bot monitor is verified; stale marks degrade and park entries; mark breaches invoke one idempotent close path; monitoring is independent of provider availability; persisted protection state restores after restart.
+- **4.4 Breakers:** Existing persistent `BreakerRegistry` covers provider, market data, rate limit, reconciliation, protection, daily loss, drawdown, and heartbeat. Any open breaker parks entries. Model clearing is rejected; only an explicit operator actor may clear.
 
-The earlier degraded run exposed a validation bug, not bad public data: legitimate positive Bitget `markPrice`/`lastPr` values can sit outside the bid-ask interval. The repair validates positive bid/ask/mark values and `bid <= ask` independently, without requiring mark to be inside the spread. Regression coverage is in `test_ticker_validation_accepts_positive_mark_outside_spread_and_rejects_invalid_values`.
+## Exact verification commands and raw outcomes
 
-## Safety
+```text
+$ python3 -m pytest -q tests/test_phase4_market.py tests/test_protection_supervisor.py tests/test_mark_monitor.py tests/test_protection_reconciliation.py tests/test_reconciliation.py tests/test_breakers.py tests/test_risk_report.py tests/test_sizing.py tests/test_semantic_policy.py tests/test_engine.py
+............................................                             [100%]
+44 passed in 0.21s
+EXIT=0
 
-- Network calls: `400`
-- Signed calls: `0`
-- Orders placed: `0`
-- Limitations: `['public market observations only', 'no provider selection or execution', 'PnL is zero because no simulated positions were opened']`
+$ python3 -m pytest -q tests/test_semantic_policy.py tests/test_engine.py tests/test_sizing.py tests/test_risk_report.py tests/test_protection_supervisor.py tests/test_mark_monitor.py tests/test_protection_reconciliation.py tests/test_reconciliation.py tests/test_breakers.py tests/test_provider_circuit.py tests/test_scheduler.py tests/test_restart_recovery.py
+...............................................                          [100%]
+47 passed in 0.11s
+EXIT=0
+
+$ python3 -m compileall -q src scripts tests
+EXIT=0
+
+$ python3 -m pytest -q
+........................................................................ [ 23%]
+........................................................................ [ 47%]
+........................................................................ [ 71%]
+........................................................................ [ 95%]
+.............                                                            [100%]
+301 passed in 9.98s
+EXIT=0
+
+$ python3 scripts/resource_guard.py --json
+{"ok": true, "violations": [], "available_memory_bytes": 1048350720, "swap_used_percent": 68.33514433307724, "disk_used_percent": 43.07103932080342, "inode_free_percent": 52.661570258951976}
+EXIT=0
+
+$ python3 scripts/run_autonomous_paper.py --mode paper --cycles 1 --symbols BTCUSDT --scenario enter --ledger /tmp/phase4-paper.sqlite3 --reports-dir /tmp/phase4-reports
+status=PASS; integrity_ok=true; orders_placed=2; signed_calls=0; network_calls=0; open_positions=[]; PROTECTION_VERIFIED=1; POSITION_RECONCILED=1; TRADE_CLOSED=1
+EXIT=0
+```
+
+## Files changed
+
+Changes made by this work:
+
+- `src/policy/semantic.py`
+- `src/policy/sizing.py`
+- `reports/phase-4/summary.json`
+- `reports/phase-4/summary.md`
+
+The protection, reconciliation, breaker, engine, risk-report, and focused test files listed in the JSON report were pre-existing Phase 4 workspace changes and were preserved.
+
+## Limitations and next gate
+
+- No public-network evaluation or signed execution was run.
+- Protection and breaker behavior was already present in the workspace baseline, so those units were verified rather than redundantly rewritten.
+- The one-cycle smoke health projection is `STARTING` because its minimum sample threshold is three; protection, reconciliation, integrity, and terminal-close checks all passed.
+
+**Next gate:** independent review of Phase 4 evidence and explicit authorization for any later networked evaluation. Keep signed execution disabled.

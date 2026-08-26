@@ -1,7 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict, replace
 import math
+from statistics import mean
 from typing import Iterable
+from src.evaluation.statistics import bootstrap_ci
 from src.execution.fake_exchange import CloseReason, FakeExchange, OrderRequest
 from src.simulation.events import MarketEvent
 from src.strategies.base import CostAssumptions
@@ -246,6 +248,69 @@ def summarize_walk_forward(rows: Iterable[dict]) -> dict:
         "total_net_pnl": sum(net_values),
         "worst_window_net_pnl": min(net_values),
         "best_window_net_pnl": max(net_values),
+    }
+
+
+def gate_walk_forward_robustness(rows: Iterable[dict], *, trade_pnls=None,
+                                 min_closed_trades: int = 30, confidence: float = 0.95,
+                                 seed: int = 0) -> dict:
+    """Measurement-only robustness facts over walk-forward windows.
+
+    Reports the two promotion gates that Phase 7 marked NOT_EVIDENCED -- an
+    adequate closed-trade sample and positive expectancy with a supporting
+    confidence interval -- as computed, honest facts. This function NEVER
+    changes the deterministic promotion gate (``NEGATIVE_NET_PNL``) and NEVER
+    emits a promoted/selected/winner flag, so it stays compatible with the
+    always-blocked selection policy.
+
+    A positive-expectancy-with-CI claim requires BOTH an adequate sample AND a
+    confidence-interval lower bound strictly above zero. A point estimate above
+    zero with a CI straddling zero does not count, and an inadequate sample fails
+    closed regardless of how profitable it looks.
+    """
+    rows = tuple(rows)
+    if not rows:
+        raise ValueError("walk-forward robustness gate requires at least one window row")
+    if not isinstance(min_closed_trades, int) or min_closed_trades < 1:
+        raise ValueError("min_closed_trades must be a positive integer")
+    summary = summarize_walk_forward(rows)
+    total_closed = summary["closed_trades"]
+    adequate_sample = total_closed >= min_closed_trades
+
+    window_net = [float(r["net_pnl"]) for r in rows]
+    window_ci = bootstrap_ci(window_net, confidence=confidence, seed=seed)
+
+    trade_ci = None
+    trade_expectancy = None
+    if trade_pnls is not None:
+        tp = tuple(float(v) for v in trade_pnls)
+        if tp and len(tp) >= min_closed_trades:
+            trade_expectancy = mean(tp)
+            trade_ci = bootstrap_ci(tp, confidence=confidence, seed=seed)
+
+    if trade_ci is not None:
+        expectancy_ci = trade_ci
+        expectancy_mean = trade_expectancy
+    else:
+        expectancy_ci = window_ci
+        expectancy_mean = mean(window_net) if window_net else 0.0
+
+    # Fail closed: an inadequate sample can never prove positive expectancy, and
+    # the CI lower bound must be strictly above zero (no straddling zero).
+    expectancy_positive_with_ci = (
+        adequate_sample and expectancy_ci[0] is not None and expectancy_ci[0] > 0
+    )
+    return {
+        "windows": summary["windows"],
+        "windows_with_trades": summary["windows_with_trades"],
+        "profitable_windows": summary["profitable_windows"],
+        "total_closed_trades": total_closed,
+        "min_closed_trades": min_closed_trades,
+        "adequate_sample": adequate_sample,
+        "expectancy_mean": expectancy_mean,
+        "expectancy_ci": expectancy_ci,
+        "expectancy_positive_with_ci": expectancy_positive_with_ci,
+        "selection_blocked": True,
     }
 
 

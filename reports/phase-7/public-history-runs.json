@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "generated_at_timezone": "Asia/Jakarta",
+  "source": "bitget-public-history",
+  "endpoint": "https://api.bitget.com/api/v2/mix/market/candles, https://api.bitget.com/api/v2/mix/market/history-fund-rate",
+  "call_policy": {"max_candles": 240, "funding_limit": 20, "timeout_seconds": 90, "memory_mb": 768, "signed_calls": 0, "orders": 0},
+  "runs": [
+    {"id":"BTCUSDT-1m-recent","symbol":"BTCUSDT","interval":"1m","period":"research","candles":240,"funding_records":20,"funding_missing":0,"requests":2,"successes":2,"failures":0,"rate_limits":0,"retries":0,"closed_trades":7,"gross_pnl":-249.6,"fees":547.529236675292,"spread":54.7529200000281,"slippage":219.01168249596958,"funding":2.4175102,"net_pnl":-1073.3113493713245,"walk_forward_windows":8,"promotion":"PARKED:NEGATIVE_NET_PNL"},
+    {"id":"BTCUSDT-5m-recent","symbol":"BTCUSDT","interval":"5m","period":"research","candles":240,"funding_records":20,"funding_missing":0,"requests":2,"successes":2,"failures":0,"rate_limits":0,"retries":0,"closed_trades":23,"gross_pnl":-1560.8,"fees":1806.161613161614,"spread":180.6161400001729,"slippage":722.4645756078971,"funding":0.8673082,"net_pnl":-4270.9096369697445,"walk_forward_windows":8,"promotion":"PARKED:NEGATIVE_NET_PNL"},
+    {"id":"ETHUSDT-1m-recent","symbol":"ETHUSDT","interval":"1m","period":"research","candles":240,"funding_records":20,"funding_missing":0,"requests":2,"successes":2,"failures":0,"rate_limits":0,"retries":0,"closed_trades":11,"gross_pnl":-20.94,"fees":26.9012228865122,"spread":2.6901220000022477,"slippage":10.760488209399227,"funding":0.117504,"net_pnl":-61.40933709591418,"walk_forward_windows":8,"promotion":"PARKED:NEGATIVE_NET_PNL"},
+    {"id":"ETHUSDT-5m-recent","symbol":"ETHUSDT","interval":"5m","period":"research","candles":240,"funding_records":20,"funding_missing":0,"requests":2,"successes":2,"failures":0,"rate_limits":0,"retries":0,"closed_trades":27,"gross_pnl":7.1,"fees":66.2115497746155,"spread":6.621155000006183,"slippage":26.48461992899729,"funding":0.12995084,"net_pnl":-92.34727554361999,"walk_forward_windows":8,"promotion":"PARKED:NEGATIVE_NET_PNL"},
+    {"id":"BTCUSDT-5m-older-holdout","symbol":"BTCUSDT","interval":"5m","period":"untouched_holdout","candles":240,"funding_records":20,"funding_missing":0,"requests":2,"successes":2,"failures":0,"rate_limits":0,"retries":0,"closed_trades":20,"gross_pnl":-1481.4,"fees":1538.71720056217,"spread":153.87170000017795,"slippage":615.4868148139067,"funding":15.318230000000002,"net_pnl":-3804.7939453762197,"walk_forward_windows":8,"promotion":"PARKED:NEGATIVE_NET_PNL"},
+    {"id":"ETHUSDT-5m-older-holdout","symbol":"ETHUSDT","interval":"5m","period":"untouched_holdout","candles":240,"funding_records":20,"funding_missing":0,"requests":2,"successes":2,"failures":0,"rate_limits":0,"retries":0,"closed_trades":26,"gross_pnl":89.49,"fees":63.09389444468905,"spread":6.309390500007339,"slippage":25.237561105098393,"funding":0.720219,"net_pnl":-5.871065049796364,"walk_forward_windows":8,"promotion":"PARKED:NEGATIVE_NET_PNL"}
+  ],
+  "raw_console_evidence": [
+    "Each fetch printed data quality ok: candles=240 gaps=0 max_missing_bars=0 zero_volume_bars=0 funding_missing=0 funding_anomalies=0.",
+    "Each fetch printed a JSON terminal result with promotion_allowed=false and reason=NEGATIVE_NET_PNL.",
+    "Each fetch was run through scripts/resource_guard.py with a 90 second timeout and 768 MB address-space limit."
+  ]
+}

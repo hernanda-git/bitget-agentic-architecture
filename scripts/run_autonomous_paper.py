@@ -22,6 +22,7 @@ from src.providers.fake import FakeProvider
 from src.providers.ports import ProviderResponse
 from src.runtime.canonical import CanonicalOfflineRuntime
 from src.reporting import write_run_report
+from src.reporting.run_report import build_paper_run_report, resource_snapshot as report_resource_snapshot, write_paper_run_report
 from src.simulation.events import MarketEvent
 from src.health.variation import assess_runtime_health
 
@@ -42,7 +43,7 @@ def _response(symbol: str, scenario: str, now: int) -> ProviderResponse:
 
 def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: Path,
               scenario: str = "hold", inject_integrity_failure: bool = False) -> dict:
-    if cycles < 1 or not symbols:
+    if cycles < 1 or cycles > 1000 or not symbols:
         raise ValueError("cycles and symbols must be non-empty")
     ledger = EventLedger(ledger_path)
     venue = FakeExchange()
@@ -90,20 +91,36 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
     fees = sum(fill.fee for fill in venue.fills)
     net_pnl = sum(float(trade["net_pnl"]) for trade in venue.closed_trades)
     runtime_health = assess_runtime_health({"market_data": market_marks, "decisions": decision_statuses})
-    report = {"run_id": uuid.uuid4().hex[:12], "mode": "paper", "status": "PASS" if integrity_ok else "FAIL",
-              "integrity_ok": integrity_ok, "cycles_requested": cycles * len(symbols),
+    degraded_states = [] if runtime_health["status"] in {"PASS", "STARTING"} else [runtime_health["status"]]
+    run_id = uuid.uuid4().hex[:12]
+    try:
+        replay = ledger.replay_state()
+        replay_equal = bool(replay.get("replay_equal"))
+    except Exception as exc:
+        replay_equal = False
+        anomalies.append(f"LEDGER_REPLAY:{type(exc).__name__}")
+    report = {"run_id": run_id, "mode": "paper", "status": "PASS" if integrity_ok and replay_equal else "FAIL",
+              "integrity_ok": integrity_ok and replay_equal, "cycles_requested": cycles * len(symbols),
               "cycles_completed": len(results), "orders_placed": len(venue.orders), "signed_calls": 0,
               "network_calls": 0, "counts": {**counts, "cycles": len(results)},
-              "rejection_codes": dict(rejection_codes), "degraded_states": [],
-              "duplicate_prevention": {"ledger_claims": len(results), "duplicate_events": counts["CYCLE_TERMINAL"] - len(results)},
+              "rejection_codes": dict(rejection_codes), "degraded_states": degraded_states,
+              "duplicate_prevention": {"ledger_claims": len(results), "duplicate_events": counts["CYCLE_TERMINAL"] - len(results), "duplicate_client_ids_prevented": 0},
               "protection_reconciliation": {"verified": counts["PROTECTION_VERIFIED"], "reconciled": counts["POSITION_RECONCILED"]},
               "provider": {"name": "fake", "calls": len(results), "failures": 0, "latency_ms": 0},
               "open_positions": [p.__dict__ for p in venue.read_positions()],
               "closed_trades": venue.closed_trades, "fees": fees, "funding": venue.read_balance()["funding_paid"] - venue.read_balance()["funding_received"],
               "net_pnl": net_pnl, "runtime_health": runtime_health,
               "fee_inclusive_outcome": {"fees_paid": fees, "realized_pnl": net_pnl},
-              "anomalies": anomalies, "ledger_events_before": events_before, "ledger_events_after": len(events)}
-    write_run_report(report, reports_dir)
+              "anomalies": anomalies, "ledger_events_before": events_before, "ledger_events_after": len(events),
+              "next_gate": "RESEARCH_GATE" if integrity_ok and replay_equal else "REMEDIATE_PHASE_6"}
+    evidence = build_paper_run_report(
+        run_id=run_id, started_ms=now, ledger_counts=dict(counts),
+        rejection_codes=dict(rejection_codes), degraded_states=report["degraded_states"],
+        provider=report["provider"], duplicate_prevention=report["duplicate_prevention"],
+        protection_reconciliation=report["protection_reconciliation"], outcome=report["fee_inclusive_outcome"],
+        anomalies=report["anomalies"], resource_snapshot_data=report_resource_snapshot(), next_gate=report["next_gate"])
+    report.update(evidence)
+    write_paper_run_report(report, reports_dir)
     return report
 
 

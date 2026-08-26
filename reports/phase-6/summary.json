@@ -1,0 +1,37 @@
+{
+  "phase": 6,
+  "scope": ["6.1", "6.2", "6.3"],
+  "status": "PASS_WITH_LIMITATIONS",
+  "files_changed": [
+    "scripts/run_autonomous_paper.py",
+    "src/reporting/__init__.py",
+    "src/reporting/run_report.py",
+    "src/reconcile/restart.py",
+    "tests/test_restart_recovery.py",
+    "tests/test_run_report.py",
+    "tests/test_service_hygiene.py"
+  ],
+  "focused_tests": {"command": "pytest -q tests/test_run_report.py tests/test_restart_recovery.py tests/test_autonomous_paper_cli.py tests/test_service_hygiene.py", "passed": 22, "failed": 0},
+  "full_tests": {"command": "pytest -q", "passed": 314, "failed": 0},
+  "compileall": {"command": "python3 -m compileall -q src scripts", "status": "PASS"},
+  "resource_guard": {
+    "command": "python3 scripts/resource_guard.py --json",
+    "ok": true,
+    "violations": [],
+    "available_memory_bytes": 1406246912,
+    "swap_used_percent": 89.04813460476649,
+    "disk_used_percent": 43.08015160563895
+  },
+  "canonical_runs": {
+    "hold": {"run_id": "ce3548f9d468", "status": "PASS", "cycles_completed": 1, "network_calls": 0, "signed_calls": 0, "orders_placed": 0, "open_positions": [], "ledger_events": 4, "replay_exit": 0},
+    "enter": {"run_id": "d9713df503d9", "status": "PASS", "cycles_completed": 1, "network_calls": 0, "signed_calls": 0, "orders_placed": 2, "open_positions": [], "fees": 0.020999999999999998, "net_pnl": 1.957, "ledger_events": 12, "replay_exit": 0}
+  },
+  "safety": {"fake_exchange_only": true, "network_calls": 0, "signed_calls": 0, "credentials_used": false, "public_evaluation_run": false, "signed_execution_run": false},
+  "next_gate": "RESEARCH_GATE",
+  "limitations": [
+    "The canonical paper CLI requires DEMO_EXECUTION_CONFIRM=I_UNDERSTAND_DEMO_EXECUTION and fails closed without it.",
+    "The one-cycle smoke runs report runtime health STARTING because the variation monitor requires at least three samples.",
+    "Crash-stage coverage is represented by bounded recovery/idempotency tests; no live or signed execution was attempted.",
+    "Provider latency/failure fields are present, but the canonical fake provider has zero failures and zero measured latency."
+  ]
+}

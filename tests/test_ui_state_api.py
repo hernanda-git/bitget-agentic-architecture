@@ -1,4 +1,5 @@
 import json
+import inspect
 import threading
 import urllib.error
 import urllib.request
@@ -34,12 +35,29 @@ def test_state_empty_ledger_is_exact_read_only_projection(monkeypatch, tmp_path)
         "mode": "demo-readonly",
         "writable": False,
         "product_type": "SUSDT-FUTURES",
+        "sources": ["ledger"],
         "kill_switch": "unknown",
         "provider": "unknown",
         "market_data": "unknown",
         "reconciliation": "unknown",
-        "protection": "idle",
+        "protection": "unknown",
         "latest_cycle": None,
+        "latest_evidence": {
+            "context_hash": None,
+            "cycle_id": None,
+            "decision_status": None,
+            "policy_disposition": None,
+            "order_ids": [],
+            "fill_ids": [],
+            "fees": 0.0,
+            "funding": 0.0,
+            "spread": 0.0,
+            "slippage": 0.0,
+            "protection_evidence": None,
+            "reconciliation_evidence": None,
+            "terminal_disposition": None,
+            "limitations": ["No paper cycle recorded; evidence is unavailable."],
+        },
         "disposition_counts": {},
         "open_positions": [],
         "recent_events": [],
@@ -66,6 +84,32 @@ def test_state_projects_ledger_summaries_without_credentials(monkeypatch, tmp_pa
     assert body["open_positions"] == []
     assert "BITGET_API_SECRET" not in json.dumps(body)
     assert "ACCESS-KEY" not in json.dumps(body)
+
+
+def test_state_projection_contains_approved_latest_cycle_evidence_only(monkeypatch, tmp_path):
+    ledger_path = tmp_path / "ledger.sqlite3"
+    ledger = EventLedger(ledger_path)
+    ledger.claim_cycle("cycle-evidence", trace_id="trace-1", mode="paper", symbol="BTCUSDT")
+    ledger.append_event({"event_type": "CONTEXT_BUILT", "cycle_id": "cycle-evidence", "trace_id": "trace-1", "mode": "paper", "product_type": "SUSDT-FUTURES", "symbol": "BTCUSDT", "created_ms": 1000, "payload": {"context_hash": "ctx-hash", "secret": "must-not-render"}})
+    ledger.append_event({"event_type": "AGENT_DECISION", "cycle_id": "cycle-evidence", "trace_id": "trace-1", "mode": "paper", "product_type": "SUSDT-FUTURES", "symbol": "BTCUSDT", "created_ms": 1001, "payload": {"decision_status": "APPROVED", "policy_disposition": "ALLOW", "api_key": "must-not-render"}})
+    ledger.set_terminal("cycle-evidence", "COMPLETED")
+    monkeypatch.setattr(ui_server, "LEDGER_PATH", ledger_path)
+
+    body = ui_server.ledger_state()
+    evidence = body["latest_evidence"]
+    assert evidence["cycle_id"] == "cycle-evidence"
+    assert evidence["context_hash"] == "ctx-hash"
+    assert evidence["decision_status"] == "APPROVED"
+    assert evidence["policy_disposition"] == "ALLOW"
+    assert evidence["terminal_disposition"] == "COMPLETED"
+    assert "secret" not in json.dumps(body).lower()
+    assert "api_key" not in json.dumps(body).lower()
+
+
+def test_ui_server_has_no_credential_or_signed_read_surface():
+    source = inspect.getsource(ui_server)
+    for forbidden in ("signed_get", "BITGET_API_SECRET", "ACCESS-KEY", "hmac", "httpx"):
+        assert forbidden not in source
 
 
 @pytest.mark.parametrize("method", ["POST", "PUT", "DELETE"])

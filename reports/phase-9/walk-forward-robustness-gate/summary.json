@@ -1,0 +1,153 @@
+{
+  "generated_at_timezone": "Asia/Jakarta",
+  "implementation": {
+    "added_function": "src/evaluation.baseline.gate_walk_forward_robustness",
+    "notes": "Measurement only. Never sets promotion_allowed, never emits promoted/selected/best. Fails closed on empty input and on inadequate sample.",
+    "wired_into": "scripts/evaluate_real_history.py payload key 'walk_forward_robustness'"
+  },
+  "limitations": [
+    "Stored public history is 240 candles per symbol/granularity, yielding 8-16 closed trades (below the 30-trade adequate-sample threshold), so the new gate cannot yet prove (or disprove) expectancy with a confidence interval at statistical power.",
+    "Historical bid/ask was unavailable; spread remains an explicit assumed half-spread, never an observed quote claim.",
+    "Public unauthenticated history does not establish venue reconciliation; no signed/demo execution occurred.",
+    "The robustness gate is measurement only and does not change the deterministic promotion verdict (still NEGATIVE_NET_PNL).",
+    "Acquiring longer public history (more closed trades) remains an unblocked follow-up to satisfy the adequate-sample gate at power."
+  ],
+  "network_calls": 0,
+  "orders": 0,
+  "positions": 0,
+  "promotion_gate": {
+    "deterministic_baseline": "NEGATIVE across all four stored public-history datasets",
+    "phase6_bounded_llm_selection": "BLOCKED (negative baseline)",
+    "robustness_facts": "adequate_sample=False everywhere (8-16 closed trades < 30 minimum); expectancy_with_CI never proven positive"
+  },
+  "protection": "N/A (evaluation mode, FakeExchange only; no venue protection attached)",
+  "real_evidence": [
+    {
+      "adequate_sample": false,
+      "closed_trades": 8,
+      "dataset": "BTCUSDT_1m.json",
+      "expectancy_ci": [
+        -193.6224798743519,
+        -45.290066106848066
+      ],
+      "expectancy_mean": -118.75065726625435,
+      "expectancy_positive_with_ci": false,
+      "fees": 547.529236675292,
+      "funding": 2.4175102,
+      "granularity": "1m",
+      "gross_pnl": -249.60000000003492,
+      "net_pnl": -1073.3113493713245,
+      "orders": 0,
+      "profitable_windows": 1,
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "selection_blocked": true,
+      "signed_calls": 0,
+      "slippage": 219.01168249596958,
+      "snapshots": 240,
+      "spread": 54.7529200000281,
+      "symbol": "BTCUSDT",
+      "windows": 8
+    },
+    {
+      "adequate_sample": false,
+      "closed_trades": 15,
+      "dataset": "BTCUSDT_5m.json",
+      "expectancy_ci": [
+        -281.45846520921464,
+        -32.00036525990111
+      ],
+      "expectancy_mean": -156.21052447911973,
+      "expectancy_positive_with_ci": false,
+      "fees": 1538.71720056217,
+      "funding": 15.318230000000002,
+      "granularity": "5m",
+      "gross_pnl": -1481.399999999965,
+      "net_pnl": -3804.7939453762197,
+      "orders": 0,
+      "profitable_windows": 2,
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "selection_blocked": true,
+      "signed_calls": 0,
+      "slippage": 615.4868148139067,
+      "snapshots": 240,
+      "spread": 153.87170000017795,
+      "symbol": "BTCUSDT",
+      "windows": 8
+    },
+    {
+      "adequate_sample": false,
+      "closed_trades": 10,
+      "dataset": "ETHUSDT_1m.json",
+      "expectancy_ci": [
+        -10.431704393515663,
+        -1.4815378535058972
+      ],
+      "expectancy_mean": -5.564897662545082,
+      "expectancy_positive_with_ci": false,
+      "fees": 26.9012228865122,
+      "funding": 0.117504,
+      "granularity": "1m",
+      "gross_pnl": -20.94000000000051,
+      "net_pnl": -61.40933709591418,
+      "orders": 0,
+      "profitable_windows": 2,
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "selection_blocked": true,
+      "signed_calls": 0,
+      "slippage": 10.760488209399227,
+      "snapshots": 240,
+      "spread": 2.6901220000022477,
+      "symbol": "ETHUSDT",
+      "windows": 8
+    },
+    {
+      "adequate_sample": false,
+      "closed_trades": 16,
+      "dataset": "ETHUSDT_5m.json",
+      "expectancy_ci": [
+        -10.749648108249941,
+        5.421902063829206
+      ],
+      "expectancy_mean": -3.412983584914025,
+      "expectancy_positive_with_ci": false,
+      "fees": 63.09389444468905,
+      "funding": 0.720219,
+      "granularity": "5m",
+      "gross_pnl": 89.48999999999842,
+      "net_pnl": -5.871065049796364,
+      "orders": 0,
+      "profitable_windows": 2,
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "selection_blocked": true,
+      "signed_calls": 0,
+      "slippage": 25.237561105098393,
+      "snapshots": 240,
+      "spread": 6.309390500007339,
+      "symbol": "ETHUSDT",
+      "windows": 8
+    }
+  ],
+  "reconciliation": "N/A (evaluation mode)",
+  "schema_version": "phase-9-walk-forward-robustness-gate/1.0",
+  "signed_calls": 0,
+  "status": "DONE_LIMITATIONS",
+  "task": "Strengthen walk-forward evaluation with measurement-only robustness gate (adequate-sample + expectancy-with-confidence-interval) without changing the deterministic promotion gate.",
+  "tdd": {
+    "green": "7 new tests pass; full suite 321 passed",
+    "mutation_check": "Inverting the proven-positive condition (adequate_sample guard + CI sign) turned 4 of 7 tests red; reverted to green",
+    "red": "tests/test_walk_forward_robustness.py failed to import gate_walk_forward_robustness before implementation"
+  },
+  "tests": {
+    "compileall": "PASS",
+    "full_suite_passed": 321,
+    "full_suite_previous": 314,
+    "git_diff_check": "PASS",
+    "new_file": "tests/test_walk_forward_robustness.py",
+    "new_tests": 7
+  },
+  "timestamp": "2026-08-27T00:46:14+07:00"
+}

@@ -8,6 +8,8 @@ __pycache__/
 accounts.json
 config.json
 data/*.sqlite3
+data/*.sqlite3-shm
+data/*.sqlite3-wal
 logs/
 .hermes/
 reports/*.json

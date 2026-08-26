@@ -37,6 +37,7 @@ from src.market.history import (
 from src.market.bitget_public import BitgetPublicClient
 from src.evaluation.baseline import (
     BaselineConfig,
+    gate_walk_forward_robustness,
     run_baseline,
     run_cost_stress,
     run_coverage_variants,
@@ -61,7 +62,7 @@ async def fetch_dataset(args: argparse.Namespace):
     path = out_dir / f"{args.symbol}_{args.granularity}.json"
     path.write_text(json.dumps(dataset.to_dict(), indent=2, sort_keys=True) + "\n")
     print(f"stored {len(dataset.candles)} candles + {len(dataset.funding)} funding records -> {path}")
-    return dataset
+    return dataset, client
 
 
 def main() -> int:
@@ -92,8 +93,9 @@ def main() -> int:
         else:
             parser.error("no stored dataset found; pass --fetch or --dataset")
 
+    client = None
     if args.fetch:
-        dataset = asyncio.run(fetch_dataset(args))
+        dataset, client = asyncio.run(fetch_dataset(args))
     else:
         dataset = load_dataset(args.dataset)
         print(f"loaded {len(dataset.candles)} candles + {len(dataset.funding)} funding records from {args.dataset}")
@@ -141,9 +143,29 @@ def main() -> int:
     strategy_attribution = run_strategy_attribution(snapshots, config)
     stress_matrix = run_stress_matrix(snapshots, config)
     statistics = compute_statistics(baseline.trade_pnls)
+    # Measurement-only robustness gate: reports adequate-sample and positive
+    # expectancy-with-CI facts. Never changes the deterministic promotion gate.
+    walk_forward_robustness = gate_walk_forward_robustness(
+        walk_forward, trade_pnls=baseline.trade_pnls, min_closed_trades=30
+    )
 
     payload = {
         "source": "bitget-public-history",
+        "endpoint": "https://api.bitget.com/api/v2/mix/market/{candles,history-fund-rate}",
+        "request_evidence": {
+            "mode": "fetch" if client is not None else "stored-dataset",
+            "requests": client.metrics.requests if client is not None else 0,
+            "successes": client.metrics.successes if client is not None else 0,
+            "failures": client.metrics.failures if client is not None else 0,
+            "rate_limits": client.metrics.rate_limits if client is not None else 0,
+            "retries": client.metrics.retries if client is not None else 0,
+            "schema_rejections": client.metrics.schema_rejections if client is not None else 0,
+            "policy_rejections": client.metrics.policy_rejections if client is not None else 0,
+            "latency_ms": list(client.metrics.latency_ms or []) if client is not None else [],
+            "signed_calls": 0,
+            "orders": 0,
+            "credentials_used": False,
+        },
         "symbol": dataset.symbol, "product_type": dataset.product_type, "granularity": dataset.granularity,
         "fetched_at_ms": dataset.fetched_at_ms, "assumed_half_spread_bps": dataset.assumed_half_spread_bps,
         "funding_records": len(dataset.funding), "candles": len(dataset.candles),
@@ -153,6 +175,7 @@ def main() -> int:
         "baseline": {k: list(v) if isinstance(v, tuple) else v for k, v in baseline.__dict__.items()},
         "walk_forward": [dict(r) for r in walk_forward],
         "walk_forward_summary": summarize_walk_forward(walk_forward),
+        "walk_forward_robustness": walk_forward_robustness,
         "cost_stress": [dict(r) for r in cost_stress],
         "cost_coverage_variants": [dict(r) for r in coverage_variants],
         "strategy_attribution": strategy_attribution,

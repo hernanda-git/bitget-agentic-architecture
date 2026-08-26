@@ -118,6 +118,10 @@ class SemanticResult:
     code: str
     details: str = ""
 
+    def __post_init__(self) -> None:
+        if not self.approved and not is_stable_policy_code(self.code):
+            raise ValueError("unsafe semantic results require a stable policy code")
+
 
 def _reject(code: str, details: str = "") -> SemanticResult:
     return SemanticResult(False, code, details)

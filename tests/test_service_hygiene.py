@@ -59,6 +59,31 @@ def test_launcher_paper_execution_requires_explicit_confirmation(tmp_path):
     assert '"mode": "paper"' in allowed.stdout
 
 
+def test_canonical_paper_run_is_bounded_and_emits_phase6_evidence(tmp_path):
+    env = os.environ | {"DEMO_EXECUTION_CONFIRM": "I_UNDERSTAND_DEMO_EXECUTION"}
+    result = subprocess.run(
+        [sys.executable, str(LAUNCHER), "--mode", "paper", "--cycles", "1",
+         "--symbols", "BTCUSDT", "--ledger", str(tmp_path / "paper.sqlite3"),
+         "--reports-dir", str(tmp_path / "reports")],
+        cwd=ROOT, text=True, capture_output=True, timeout=20, env=env)
+    assert result.returncode == 0, result.stderr
+    report = __import__("json").loads(result.stdout)
+    assert report["network_calls"] == report["signed_calls"] == 0
+    assert report["open_positions"] == []
+    assert report["timestamp_timezone"] == "Asia/Jakarta"
+    assert "raw_ledger_counts" in report and "resource_snapshot" in report
+
+
+def test_canonical_paper_cycle_bound_is_fail_closed(tmp_path):
+    env = os.environ | {"DEMO_EXECUTION_CONFIRM": "I_UNDERSTAND_DEMO_EXECUTION"}
+    result = subprocess.run(
+        [sys.executable, str(LAUNCHER), "--mode", "paper", "--cycles", "1001",
+         "--ledger", str(tmp_path / "paper.sqlite3")], cwd=ROOT,
+        text=True, capture_output=True, timeout=20, env=env)
+    assert result.returncode != 0
+    assert "cycles" in result.stderr.lower()
+
+
 def test_launcher_rejects_production_and_capability_modes():
     for mode in ("live", "transfer", "withdraw"):
         result = subprocess.run([sys.executable, str(LAUNCHER), "--mode", mode], cwd=ROOT,

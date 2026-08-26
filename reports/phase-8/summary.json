@@ -1,0 +1,26 @@
+{
+  "phase": 8,
+  "status": "PASS_WITH_LIMITATIONS",
+  "timestamp": "2026-08-27T00:06:50+07:00",
+  "timezone": "Asia/Jakarta",
+  "repository": "/root/bitget-agentic-architecture",
+  "source_revision": "a11d2e002ab9387c39ddd9a522dfc16b8ab1b0ce",
+  "verification": {
+    "resource_guard": {"status": "PASS", "violations": []},
+    "compileall": {"status": "PASS"},
+    "full_tests": {"status": "PASS", "passed": 314, "failed": 0},
+    "launcher_status": {"status": "PASS", "network_calls": 0, "signed_calls": 0, "capabilities": ["observe", "offline-paper"]},
+    "paper_hold": {"status": "PASS", "cycles": 3, "orders": 0, "open_positions": 0, "network_calls": 0, "signed_calls": 0, "runtime_health": "DEGRADED_FLATLINE"},
+    "paper_enter": {"status": "PASS", "cycles": 1, "orders": 2, "closed_trades": 1, "open_positions": 0, "network_calls": 0, "signed_calls": 0, "protection_verified": 1, "reconciled": 1, "net_pnl": 1.957},
+    "replay": {"status": "PASS", "dispositions": {"EXECUTED": 1}, "open_positions": 0, "fees": 0.020999999999999998, "funding": 0.022, "net_pnl": 1.957, "replay_equal": true},
+    "safety_scan": {"status": "FLAGGED", "exit_code": 1, "unaccepted_p0_findings": 0, "accepted_findings": ["typed demo signing adapter", "ignored .env filename", "ignored local SQLite artifact"]},
+    "git_diff_check": "PASS",
+    "env_ignored": true
+  },
+  "research_gate": {"status": "PARKED", "public_runs": 6, "closed_trades": 114, "aggregate_net_pnl": -9308.64260940662},
+  "external_effects": {"public_read_calls": "bounded Phase 7 only", "signed_calls": 0, "orders": 0, "transfers": 0, "withdrawals": 0, "credentials_accessed": false, "funded_bot_accessed": false},
+  "uncommitted_workspace": "preserved; no commit or push performed",
+  "limitations": ["Public history and shadow evidence do not establish profitability or venue reconciliation.", "Safety scan remains flagged for intentionally retained typed demo signing and ignored local sensitive filenames.", "Populated-cycle UI browser rendering remains not evidenced; empty-state responsive rendering passed.", "Paper runtime health is intentionally degraded on flatline HOLD fixtures; this does not hide integrity status."],
+  "promotion": "BLOCKED; no demo or funded execution enabled",
+  "next_gate": "Maintain PARKED research status and require separately approved governance before any demo execution."
+}

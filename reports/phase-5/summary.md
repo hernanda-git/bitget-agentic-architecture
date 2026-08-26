@@ -95,3 +95,19 @@ python3 scripts/verify_phase5_report.py --root .
 ## Limitations and safety
 
 The fixture is synthetic and adverse; it is not evidence of live profitability or loss rates. No public market-data call, signed call, demo call, live call, order, transfer, withdrawal, or credential access occurred. The walk-forward runner evaluates replay-only test windows; it does not perform parameter fitting, venue reconciliation, or out-of-sample validation on independent market data. Funding stress is a configured deterministic rate proxy, not venue funding history; the paper exchange handles positive and negative funding directions and attributes them to closed trades. Spread is derived from the fixture's bid/ask versus mark, and execution slippage is derived from the configured fill impact beyond the quoted side. The fixture contains repeated warm-up snapshots by design; validation permits equal timestamps and does not silently deduplicate them. Candle chronology is checked for the primary and populated window sequences, but this remains replay validation rather than live venue data-quality evidence. Phase 6 bounded LLM selection remains explicitly blocked.
+
+## Phase 5 UI read-only projection verification
+
+- `scripts/ui_server.py` now reads only the local SQLite ledger. Credential loading, signed reads, public venue reads, and the former `/api/snapshot` path were removed.
+- `/api/state` exposes approved ledger-derived status plus a bounded latest-cycle evidence drawer: cycle ID, context hash, decision and policy status, order/fill IDs, fees, funding, spread, slippage, protection/reconciliation evidence, terminal disposition, and limitations.
+- Empty state is honest: `No paper cycle recorded`, `No open position`, and protection `unknown` until measured. The page visibly states `Read-only / No execution` and labels ledger source and Asia/Jakarta freshness.
+- Strict TDD evidence: the first new UI tests failed for the missing evidence projection and credential-backed surface; after implementation the focused UI/ledger set passed `15` tests.
+- Full suite: `304 passed` in `10.02s`.
+- Compile: `python3 -m compileall -q src scripts tests` exited `0`.
+- Resource guard: `ok=true`, zero violations.
+- HTTP probes against the local server: `GET /api/state=200`, `POST/PUT/DELETE /api/state=405`, `GET /api/health=200`.
+- Real Chromium verification at `360x800`, `390x844`, `768x844`, `1024x900`, and `1440x900`: zero document overflow, zero non-contained width offenders, zero console errors, zero detected clipped text, symmetric shell gutters, mobile card CSS active at the two mobile sizes, and read-only status above the fold at every size.
+
+### UI verification limitations
+
+The browser run used the empty local ledger and did not query or simulate a venue. It therefore verifies the empty-state composition and runtime wiring, not populated-cycle visual density or data variation. Responsive table-card CSS is present, but the empty page contains no table rows to transform. No commit was created.
