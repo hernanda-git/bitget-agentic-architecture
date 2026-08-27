@@ -236,7 +236,7 @@ def test_evaluator_cli_embeds_data_quality_and_passes_clean_dataset(tmp_path):
     output_path = tmp_path / "out.json"
     proc = subprocess.run(
         [sys.executable, str(ROOT / "scripts" / "evaluate_real_history.py"),
-         "--dataset", str(dataset_path), "--output", str(output_path)],
+         "--dataset", str(dataset_path), "--output", str(output_path), "--no-resource-budget"],
         capture_output=True, text=True,
     )
     assert proc.returncode == 0, proc.stderr
@@ -355,7 +355,8 @@ def test_evaluate_real_history_on_stored_dataset(tmp_path, monkeypatch):
     spec = importlib.util.spec_from_file_location("eval_real", ROOT / "scripts" / "evaluate_real_history.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store), "--output", str(out)])
+    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store),
+                            "--output", str(out), "--no-resource-budget"])
     rc = mod.main()
     assert rc == 0
     result = json.loads(out.read_text())
@@ -373,7 +374,8 @@ def test_evaluate_real_history_embeds_walk_forward_summary(tmp_path, monkeypatch
     spec = importlib.util.spec_from_file_location("eval_real", ROOT / "scripts" / "evaluate_real_history.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store), "--output", str(out)])
+    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store),
+                            "--output", str(out), "--no-resource-budget"])
     assert mod.main() == 0
     result = json.loads(out.read_text())
     expected = summarize_walk_forward(result["walk_forward"])
@@ -404,7 +406,8 @@ def test_evaluate_real_history_embeds_cost_coverage_variants(tmp_path, monkeypat
     spec = importlib.util.spec_from_file_location("eval_real", ROOT / "scripts" / "evaluate_real_history.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store), "--output", str(out)])
+    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store),
+                            "--output", str(out), "--no-resource-budget"])
     assert mod.main() == 0
     result = json.loads(out.read_text())
     variants = result["cost_coverage_variants"]
@@ -416,3 +419,33 @@ def test_evaluate_real_history_embeds_cost_coverage_variants(tmp_path, monkeypat
     assert variants[0]["orders"] == baseline["orders"]
     assert variants[0]["closed_trades"] == baseline["closed_trades"]
     assert variants[0]["net_pnl"] == pytest.approx(baseline["net_pnl"])
+
+
+def test_evaluate_real_history_allows_permissive_swap_threshold(tmp_path, monkeypatch):
+    """Determinism regression (Phase 20 SWAP_PRESSURE flakiness).
+
+    A knowingly-relaxed swap ceiling must let evaluation proceed on a host
+    under swap pressure, instead of coupling the suite to ephemeral host swap.
+    The budget stays active for memory/disk/inode; only the swap ceiling is
+    relaxed. Without this override the 4 evaluation tests fail under swap
+    pressure with ResourceBudgetExceeded, which is environmental, not a defect
+    in evaluation logic.
+    """
+    import importlib.util
+
+    dataset = _sample_dataset()
+    store = tmp_path / "ds.json"
+    store.write_text(json.dumps(dataset.to_dict(), indent=2, sort_keys=True))
+    out = tmp_path / "out.json"
+    spec = importlib.util.spec_from_file_location("eval_real", ROOT / "scripts" / "evaluate_real_history.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr("sys.argv", [
+        "evaluate_real_history.py", "--dataset", str(store), "--output", str(out),
+        "--resource-max-swap-percent", "100",
+    ])
+    assert mod.main() == 0
+    result = json.loads(out.read_text())
+    assert result["baseline"]["closed_trades"] >= 0
+    assert result["walk_forward"]
+    assert result["selection_blocked"] is True

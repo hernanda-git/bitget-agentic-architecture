@@ -91,6 +91,9 @@ def main() -> int:
                         help="enforce a continuous runtime resource budget (default on)")
     parser.add_argument("--resource-min-memory-mb", type=int, default=None,
                         help="override the minimum available memory (MB) for this run")
+    parser.add_argument("--resource-max-swap-percent", type=float, default=None,
+                        help="override the max swap-used percentage (default 90.0); relax "
+                             "knowingly on a constrained host instead of fully disabling the budget")
     parser.add_argument("--resource-interval", type=float, default=5.0,
                         help="seconds between watchdog samples (watchdog only)")
     parser.add_argument("--resource-watchdog", "--no-resource-watchdog", action=argparse.BooleanOptionalAction,
@@ -153,9 +156,12 @@ def main() -> int:
     # restarts Hermes, deployed bots, databases, or unrelated services.
     budget = None
     if args.resource_budget:
-        policy = GuardPolicy()
+        overrides: dict = {}
         if args.resource_min_memory_mb is not None:
-            policy = GuardPolicy(min_available_memory_mb=args.resource_min_memory_mb)
+            overrides["min_available_memory_mb"] = args.resource_min_memory_mb
+        if args.resource_max_swap_percent is not None:
+            overrides["max_swap_used_percent"] = args.resource_max_swap_percent
+        policy = GuardPolicy(**overrides) if overrides else GuardPolicy()
         budget = ResourceBudget(snapshot_source=host_snapshot, policy=policy,
                                 sample_interval_seconds=args.resource_interval,
                                 watchdog=args.resource_watchdog)
