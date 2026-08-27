@@ -152,3 +152,54 @@ def test_evaluate_candidate_family_real_stored_dataset_offline():
     assert out["family_wise"]["tests"] == 1
     assert out["selection_blocked"] is True
     assert "promoted" not in out
+
+
+class _RecordingBudget:
+    """Fake budget that records calls and never breaches."""
+    def __init__(self):
+        self.preflight_calls = 0
+        self.assert_calls = 0
+    def preflight(self):
+        self.preflight_calls += 1
+    def assert_within(self):
+        self.assert_calls += 1
+
+
+class _BreachingBudget:
+    """Fake budget that raises on its Nth assert_within call."""
+    def __init__(self, fail_on_call):
+        self.calls = 0
+        self.fail_on_call = fail_on_call
+    def preflight(self):
+        return None
+    def assert_within(self):
+        self.calls += 1
+        if self.calls >= self.fail_on_call:
+            from src.runtime.resource_budget import ResourceBudgetExceeded
+            raise ResourceBudgetExceeded(["LOW_AVAILABLE_MEMORY"], None, self)
+
+
+def test_evaluate_candidate_family_invokes_resource_budget_per_candidate(positive_candidates):
+    budget = _RecordingBudget()
+    evaluate_candidate_family(positive_candidates, resource_budget=budget)
+    # One preflight at entry, then one assert_within per candidate.
+    assert budget.preflight_calls == 1
+    assert budget.assert_calls == 2
+
+
+def test_evaluate_candidate_family_aborts_fail_closed_when_budget_breaches(negative_candidates, monkeypatch):
+    # Count real heavy replays so we can prove later candidates never ran.
+    calls = {"baseline": 0}
+    orig_baseline = __import__("src.evaluation.baseline", fromlist=["run_baseline"]).run_baseline
+    def counting_baseline(snapshots, config=None, **kw):
+        calls["baseline"] += 1
+        return orig_baseline(snapshots, config, **kw)
+    monkeypatch.setattr("src.evaluation.baseline.run_baseline", counting_baseline)
+
+    budget = _BreachingBudget(fail_on_call=2)  # breach before the 2nd candidate
+    from src.runtime.resource_budget import ResourceBudgetExceeded
+    with pytest.raises(ResourceBudgetExceeded):
+        evaluate_candidate_family(negative_candidates, resource_budget=budget)
+    # The breach aborted the scan before replaying the remaining candidates.
+    assert calls["baseline"] == 1
+    assert budget.calls == 2

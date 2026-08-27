@@ -44,6 +44,8 @@ from src.evaluation.baseline import (
     run_walk_forward,
     summarize_walk_forward,
 )
+from src.runtime.resource_budget import ResourceBudget
+from scripts.resource_guard import GuardPolicy, snapshot as host_snapshot
 
 # Broaden the candidate family: extend the two existing symbols to longer
 # windows and add four more liquid USDT perpetuals so the family-wise
@@ -83,6 +85,19 @@ def main() -> int:
                         help="reject a stored dataset whose newest candle is older than this span")
     parser.add_argument("--symbols", type=str, default=None,
                         help="comma-separated 'SYM,GRAN,N' overrides (e.g. BTCUSDT,5m,3000)")
+    # Continuous, fail-closed host resource budget. The heavy family-wise replay
+    # can run for a long time; abort it (never kill anything) if the host drifts
+    # into memory/swap/disk/inode pressure instead of letting it exhaust the host.
+    parser.add_argument("--resource-budget", "--no-resource-budget", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="enforce a continuous runtime resource budget (default on)")
+    parser.add_argument("--resource-min-memory-mb", type=int, default=None,
+                        help="override the minimum available memory (MB) for this run")
+    parser.add_argument("--resource-interval", type=float, default=5.0,
+                        help="seconds between watchdog samples (watchdog only)")
+    parser.add_argument("--resource-watchdog", "--no-resource-watchdog", action=argparse.BooleanOptionalAction,
+                        default=False,
+                        help="run a background watchdog that samples host resources during the run")
     args = parser.parse_args()
 
     if args.symbols:
@@ -95,6 +110,18 @@ def main() -> int:
 
     config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps,
                             slippage_bps=args.slippage_bps, real_funding=True)
+
+    # Continuous, fail-closed runtime resource budget for the heavy family-wise
+    # replay below. It only observes host state and raises; it never kills or
+    # restarts Hermes, deployed bots, databases, or unrelated services.
+    budget: "ResourceBudget | None" = None
+    if args.resource_budget:
+        policy = GuardPolicy()
+        if args.resource_min_memory_mb is not None:
+            policy = GuardPolicy(min_available_memory_mb=args.resource_min_memory_mb)
+        budget = ResourceBudget(snapshot_source=host_snapshot, policy=policy,
+                                sample_interval_seconds=args.resource_interval,
+                                watchdog=args.resource_watchdog)
 
     acquired: list[tuple[str, list, HistoryDataset]] = []
     net_metrics = Counter()
@@ -157,11 +184,14 @@ def main() -> int:
     family = evaluate_candidate_family(
         candidates, config,
         min_closed_trades=args.min_closed_trades, confidence=args.confidence,
+        resource_budget=budget,
     )
 
     # Also keep per-candidate walk-forward summaries for the report (honest facts).
     per_candidate_summary = []
     for key, ds, snaps in acquired:
+        if budget is not None:
+            budget.assert_within()
         wf = run_walk_forward(snaps, config)
         baseline = run_baseline(snaps, config)
         per_candidate_summary.append({

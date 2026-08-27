@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field, asdict, replace
 import math
 from statistics import mean
-from typing import Iterable
+from typing import Any, Iterable
 from src.evaluation.statistics import bootstrap_ci
 from src.execution.fake_exchange import CloseReason, FakeExchange, OrderRequest
 from src.simulation.events import MarketEvent
@@ -388,7 +388,7 @@ def family_wise_robustness(tests: Iterable[dict], *, alpha: float = 0.05) -> dic
 
 def evaluate_candidate_family(candidates: Iterable, config: BaselineConfig = BaselineConfig(),
                                *, min_closed_trades: int = 30, confidence: float = 0.95,
-                               seed: int = 0) -> dict:
+                               seed: int = 0, resource_budget: Any = None) -> dict:
     """Measurement-only walk-forward + family-wise correction across a candidate family.
 
     Runs the SAME cost-inclusive, walk-forward, robustness-gated engine over each
@@ -414,7 +414,14 @@ def evaluate_candidate_family(candidates: Iterable, config: BaselineConfig = Bas
     config = config or BaselineConfig()
     per_candidate: list[dict] = []
     tests: list[dict] = []
-    for name, snapshots in candidates:
+    # Fail closed before any heavy replay, and again before each candidate, so a
+    # long family-wise scan aborts itself (never kills anything) if the host
+    # drifts into memory/swap/disk/inode pressure mid-run.
+    if resource_budget is not None:
+        resource_budget.preflight()
+    for index, (name, snapshots) in enumerate(candidates):
+        if resource_budget is not None:
+            resource_budget.assert_within()
         baseline = run_baseline(snapshots, config)
         wf = run_walk_forward(snapshots, config)
         gate = gate_walk_forward_robustness(

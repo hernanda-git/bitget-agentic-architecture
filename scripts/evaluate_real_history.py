@@ -47,6 +47,8 @@ from src.evaluation.baseline import (
 )
 from src.evaluation.stress import run_stress_matrix, run_combined_stress
 from src.evaluation.statistics import compute_statistics
+from src.runtime.resource_budget import ResourceBudget
+from scripts.resource_guard import GuardPolicy, snapshot as host_snapshot
 
 
 async def fetch_dataset(args: argparse.Namespace):
@@ -82,6 +84,16 @@ def main() -> int:
     parser.add_argument("--max-data-age-ms", type=int, default=None,
                         help="if set, reject the dataset when the newest candle is older "
                              "than the fetch time by more than this span (freshness gate)")
+    parser.add_argument("--resource-budget", "--no-resource-budget", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="enforce a continuous runtime resource budget (default on)")
+    parser.add_argument("--resource-min-memory-mb", type=int, default=None,
+                        help="override the minimum available memory (MB) for this run")
+    parser.add_argument("--resource-interval", type=float, default=5.0,
+                        help="seconds between watchdog samples (watchdog only)")
+    parser.add_argument("--resource-watchdog", "--no-resource-watchdog", action=argparse.BooleanOptionalAction,
+                        default=False,
+                        help="run a background watchdog that samples host resources during the run")
     args = parser.parse_args()
 
     if args.fetch and args.dataset:
@@ -123,6 +135,18 @@ def main() -> int:
     snapshots = snapshots_from_dataset(dataset)
     config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps, slippage_bps=args.slippage_bps, real_funding=True)
 
+    # Continuous, fail-closed runtime resource budget for the heavy multi-engine
+    # replay below. It only observes host state and raises; it never kills or
+    # restarts Hermes, deployed bots, databases, or unrelated services.
+    budget = None
+    if args.resource_budget:
+        policy = GuardPolicy()
+        if args.resource_min_memory_mb is not None:
+            policy = GuardPolicy(min_available_memory_mb=args.resource_min_memory_mb)
+        budget = ResourceBudget(snapshot_source=host_snapshot, policy=policy,
+                                sample_interval_seconds=args.resource_interval,
+                                watchdog=args.resource_watchdog)
+
     # Fail closed when real funding is requested but the dataset has no usable
     # funding coverage: unmodeled funding is not the same as free funding.
     readiness = real_funding_readiness(dataset, dq)
@@ -136,21 +160,28 @@ def main() -> int:
         )
         return 3
 
-    baseline = run_baseline(snapshots, config)
-    walk_forward = run_walk_forward(snapshots, config)
-    cost_stress = run_cost_stress(snapshots, config)
-    coverage_variants = run_coverage_variants(snapshots, config, coverages=(1.0, 2.0, 3.0))
-    strategy_attribution = run_strategy_attribution(snapshots, config)
-    stress_matrix = run_stress_matrix(snapshots, config)
-    # Realistic simultaneous adverse-cost stress (fee + funding + slippage move
-    # together). Measurement only; never flips the deterministic promotion gate.
-    combined_stress = run_combined_stress(snapshots, config)
-    statistics = compute_statistics(baseline.trade_pnls)
-    # Measurement-only robustness gate: reports adequate-sample and positive
-    # expectancy-with-CI facts. Never changes the deterministic promotion gate.
-    walk_forward_robustness = gate_walk_forward_robustness(
-        walk_forward, trade_pnls=baseline.trade_pnls, min_closed_trades=30
-    )
+    class _NoBudget:
+        def __enter__(self):
+            return self
+        def __exit__(self, *exc):
+            return False
+    _ctx = budget if budget is not None else _NoBudget()
+    with _ctx:
+        baseline = run_baseline(snapshots, config)
+        walk_forward = run_walk_forward(snapshots, config)
+        cost_stress = run_cost_stress(snapshots, config)
+        coverage_variants = run_coverage_variants(snapshots, config, coverages=(1.0, 2.0, 3.0))
+        strategy_attribution = run_strategy_attribution(snapshots, config)
+        stress_matrix = run_stress_matrix(snapshots, config)
+        # Realistic simultaneous adverse-cost stress (fee + funding + slippage move
+        # together). Measurement only; never flips the deterministic promotion gate.
+        combined_stress = run_combined_stress(snapshots, config)
+        statistics = compute_statistics(baseline.trade_pnls)
+        # Measurement-only robustness gate: reports adequate-sample and positive
+        # expectancy-with-CI facts. Never changes the deterministic promotion gate.
+        walk_forward_robustness = gate_walk_forward_robustness(
+            walk_forward, trade_pnls=baseline.trade_pnls, min_closed_trades=30
+        )
 
     payload = {
         "source": "bitget-public-history",
