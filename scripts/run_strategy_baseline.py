@@ -8,7 +8,7 @@ if str(ROOT) not in sys.path: sys.path.insert(0, str(ROOT))
 from src.evaluation.baseline import BaselineConfig, run_baseline, run_walk_forward, run_cost_stress
 from src.evaluation.stress import run_stress_matrix
 from src.evaluation.statistics import compute_statistics
-from src.evaluation.report_honesty import assert_truthful
+from src.evaluation.report_honesty import assert_truthful, assert_no_suspect_constant_series
 from src.market.models import Candle, MarketSnapshot
 
 def make_series(count: int = 36):
@@ -39,6 +39,10 @@ def main() -> int:
     payload["selection_blocked"] = True
     payload["report_honest"] = True
     assert_truthful(payload)  # raises ReportHonestyError on any overclaim
+    # Flat-line layer: a derived metric that never varies is worse than no
+    # metric (it launders silence as a result). The honest baseline must not
+    # embed a dead constant series presented as a live signal.
+    assert_no_suspect_constant_series(payload)  # raises ReportHonestyError on flat-line
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x) + "\n")
     print(json.dumps(payload, sort_keys=True, default=lambda x: list(x) if isinstance(x, tuple) else x))

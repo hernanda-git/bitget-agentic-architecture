@@ -190,3 +190,63 @@ def assert_truthful(report: dict) -> None:
     claims = find_overclaims(report)
     if claims:
         raise ReportHonestyError("; ".join(claims))
+
+
+# --- flat-line (constant derived-metric series) detector --------------------
+# Build-verification lesson: a derived metric that never varies is WORSE than no
+# metric -- it launders silence as a result (e.g. `conviction=0.0` across every
+# snapshot). Any numeric series embedded in a report that is entirely constant
+# over a sufficient window is a suspect "dead metric" and must not be presented
+# as a live finding. This is the dashboard-truthfulness flat-line layer.
+FLATLINE_DEFAULT_MIN_SAMPLES = 3
+
+
+def _is_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _scan_flatline(node: Any, claims: list[str], depth: int, path: str,
+                   min_samples: int) -> None:
+    """Recursively flag constant numeric series (lists/tuples) of length>=min_samples."""
+    if depth > MAX_SCAN_DEPTH:
+        return
+    if isinstance(node, dict):
+        for key, value in node.items():
+            child = f"{path}.{key}" if path else str(key)
+            _scan_flatline(value, claims, depth + 1, child, min_samples)
+    elif isinstance(node, (list, tuple)):
+        nums = [v for v in node if _is_number(v)]
+        if len(nums) >= min_samples and len(set(nums)) == 1:
+            claims.append(
+                f"flatline_metric: '{path}' is a constant series "
+                f"({len(nums)} samples, value={nums[0]!r})"
+            )
+        for i, value in enumerate(node):
+            _scan_flatline(value, claims, depth + 1, f"{path}[{i}]", min_samples)
+
+
+def find_suspect_constant_series(report: Any, *, min_samples: int = FLATLINE_DEFAULT_MIN_SAMPLES) -> list[str]:
+    """Return suspect flat-line (constant numeric series) violations in ``report``.
+
+    An empty list means the report carries no dead constant metric series. The
+    function is pure and never mutates ``report``. It recurses into nested
+    dicts and lists (bounded by ``MAX_SCAN_DEPTH`` for termination). A series is
+    suspect only when every element is a number and all elements are identical,
+    with length >= ``min_samples`` (so short or mixed-type lists are not flagged).
+    """
+    if min_samples < 1:
+        raise ValueError("min_samples must be positive")
+    claims: list[str] = []
+    if isinstance(report, (dict, list, tuple)):
+        _scan_flatline(report, claims, depth=0, path="", min_samples=min_samples)
+    return claims
+
+
+def assert_no_suspect_constant_series(report: Any, *, min_samples: int = FLATLINE_DEFAULT_MIN_SAMPLES) -> None:
+    """Raise ``ReportHonestyError`` if ``report`` embeds a dead constant metric series.
+
+    Fail-closed: a flat-line derived metric must not be emitted as a live signal.
+    """
+    suspects = find_suspect_constant_series(report, min_samples=min_samples)
+    if suspects:
+        raise ReportHonestyError("; ".join(suspects))
