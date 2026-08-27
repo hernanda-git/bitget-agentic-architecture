@@ -49,8 +49,13 @@ class BreakerRegistry:
 
     def clear(self, name: str, *, actor: str) -> None:
         self._check_name(name)
-        if actor != "operator":
-            raise PermissionError("only operator may clear breakers")
+        # Only an operator or a verified automatic recovery (e.g. a fresh
+        # heartbeat observed by the runtime monitor) may clear a breaker. The
+        # model is never a permitted actor.
+        if actor not in ("operator", "auto_recovery"):
+            raise PermissionError(
+                "only operator or verified auto-recovery may clear breakers"
+            )
         self._state.pop(name, None)
         self.store.save(self._state)
 
