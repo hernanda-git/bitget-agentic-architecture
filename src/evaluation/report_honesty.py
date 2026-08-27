@@ -41,6 +41,27 @@ FORBIDDEN_VERDICTS = frozenset({"PASS", "POSITIVE", "APPROVED", "GO_LIVE", "WINN
 # Profitability-claim keys that contradict a non-positive net PnL.
 PROFITABILITY_KEYS = ("profitable", "positive_expectancy")
 
+# Hard cap on recursion depth. A report is a shallow, structured summary; no
+# legitimate report nests dozens of levels deep. The cap guarantees the scan
+# always terminates even on a pathological / adversarial input.
+MAX_SCAN_DEPTH = 50
+
+# Promotion / selection keys that are unambiguous overclaims WHENEVER they
+# appear, including nested. ``selected`` is deliberately EXCLUDED here: it is
+# checked only at the top level, because legitimate evaluation dicts sometimes
+# carry sub-keys such as ``selected_feature`` / ``selected_strategy`` that must
+# not be mistaken for a selection/overclaim signal.
+NESTED_FORBIDDEN_PROMOTION_KEYS = frozenset(
+    {
+        "promoted",
+        "winner",
+        "edge_confirmed",
+        "go_live_ready",
+        "phase6_promoted",
+        "promoted_candidate",
+    }
+)
+
 
 class ReportHonestyError(ValueError):
     """Raised when an evaluation report contains an overclaim (fail-closed)."""
@@ -58,29 +79,35 @@ def find_overclaims(report: dict) -> list[str]:
 
     An empty list means the report is honest (no overclaim). The function is
     pure and never mutates ``report``.
+
+    The scan recurses into nested dicts and lists so a forbidden
+    promotion/selection/verdict/profitability key buried inside an unrelated
+    sub-dict is still caught (this closed the Phase 17 limitation that the
+    guard only inspected the top level). A depth cap (``MAX_SCAN_DEPTH``)
+    guarantees termination on pathological structures.
     """
     if not isinstance(report, dict):
         raise TypeError("report must be a dict")
 
     claims: list[str] = []
+    selection_blocked = report.get("selection_blocked") is True
 
-    # (a) forbidden promotion / selection keys, regardless of context, because
-    #     no selection is ever permitted in this repo's blocked baseline.
-    for key in FORBIDDEN_PROMOTION_KEYS:
-        if key in report and _truthy(report[key]):
-            claims.append(
-                f"overclaim: '{key}' is truthy but Phase 6 selection is blocked"
-            )
-
-    # (b) forbidden verdict strings.
-    verdict = report.get("verdict")
-    if isinstance(verdict, str) and verdict.strip().upper() in FORBIDDEN_VERDICTS:
+    # Top-level-only check for ``selected``. It is intentionally NOT part of the
+    # nested recursion set, because legitimate evaluation dicts can carry
+    # sub-keys such as ``selected_feature`` / ``selected_strategy`` that must not
+    # be mistaken for a selection overclaim. Only a top-level ``selected`` is an
+    # overclaim signal.
+    if "selected" in report and _truthy(report["selected"]):
         claims.append(
-            f"overclaim: verdict='{verdict}' asserts a positive gate while selection is blocked"
+            "overclaim: 'selected' is truthy but Phase 6 selection is blocked"
         )
 
-    # (c) robust_edge requires supporting evidence (DSR positive + adequate
-    #     sample + at least one Holm-surviving window).
+    # Recurse every node for the unambiguous nested overclaim signals.
+    _scan_node(report, claims, depth=0, selection_blocked=selection_blocked)
+
+    # (c) robust_edge cross-check stays TOP LEVEL only: it needs the top-level
+    #     sibling evidence (dsr_positive / adequate_sample / holm_surviving),
+    #     which a nested dict would not carry.
     if report.get("robust_edge") is True:
         supported = (
             report.get("dsr_positive") is True
@@ -92,31 +119,66 @@ def find_overclaims(report: dict) -> list[str]:
                 "overclaim: robust_edge=True without dsr_positive + adequate_sample + holm_surviving>=1"
             )
 
-    # (d) profitability claim contradicting a non-positive net PnL.
-    for pk in PROFITABILITY_KEYS:
-        if report.get(pk) is True:
-            net = report.get("net_pnl", report.get("total_net_pnl"))
-            if net is None:
-                continue
-            try:
-                if float(net) <= 0:
-                    claims.append(
-                        f"overclaim: '{pk}'=True while net_pnl={net} <= 0"
-                    )
-            except (TypeError, ValueError):
+    return claims
+
+
+def _scan_node(node: Any, claims: list[str], depth: int, selection_blocked: bool) -> None:
+    """Recursively scan ``node`` for nested overclaim signals.
+
+    Applies rules (a) nested forbidden promotion keys, (b) forbidden verdict
+    strings, (d) nested profitability contradictions, and (e) nested
+    promotion_gate contradictions (using the top-level ``selection_blocked``
+    fact). Descends into dict values and list/tuple/set elements, bounded by
+    ``MAX_SCAN_DEPTH`` to guarantee termination.
+    """
+    if depth > MAX_SCAN_DEPTH:
+        return
+    if isinstance(node, dict):
+        # (a) unambiguous nested forbidden promotion / selection keys.
+        for key in NESTED_FORBIDDEN_PROMOTION_KEYS:
+            if key in node and _truthy(node[key]):
                 claims.append(
-                    f"overclaim: '{pk}'=True but net_pnl is not a number ({net!r})"
+                    f"overclaim[nested]: '{key}' is truthy but Phase 6 selection is blocked"
                 )
 
-    # (e) explicit promotion_gate contradiction.
-    pg = report.get("promotion_gate")
-    if pg is not None and str(pg).strip().upper() in {"POSITIVE", "PASS", "APPROVED"}:
-        if report.get("selection_blocked") is True:
+        # (b) forbidden verdict strings at any level.
+        verdict = node.get("verdict")
+        if isinstance(verdict, str) and verdict.strip().upper() in FORBIDDEN_VERDICTS:
             claims.append(
-                f"overclaim: promotion_gate='{pg}' while selection_blocked=True"
+                f"overclaim[nested]: verdict='{verdict}' asserts a positive gate while selection is blocked"
             )
 
-    return claims
+        # (d) nested profitability contradiction (uses this node's own net_pnl
+        #     if present; otherwise the check is skipped to avoid false claims
+        #     about an unrelated parent-level figure).
+        for pk in PROFITABILITY_KEYS:
+            if node.get(pk) is True:
+                net = node.get("net_pnl", node.get("total_net_pnl"))
+                if net is None:
+                    continue
+                try:
+                    if float(net) <= 0:
+                        claims.append(
+                            f"overclaim[nested]: '{pk}'=True while net_pnl={net} <= 0"
+                        )
+                except (TypeError, ValueError):
+                    claims.append(
+                        f"overclaim[nested]: '{pk}'=True but net_pnl is not a number ({net!r})"
+                    )
+
+        # (e) nested promotion_gate contradiction (uses top-level selection_blocked).
+        pg = node.get("promotion_gate")
+        if pg is not None and str(pg).strip().upper() in {"POSITIVE", "PASS", "APPROVED"}:
+            if selection_blocked:
+                claims.append(
+                    f"overclaim[nested]: promotion_gate='{pg}' while selection_blocked=True"
+                )
+
+        for value in node.values():
+            _scan_node(value, claims, depth + 1, selection_blocked)
+    elif isinstance(node, (list, tuple, set)):
+        for value in node:
+            _scan_node(value, claims, depth + 1, selection_blocked)
 
 
 def assert_truthful(report: dict) -> None:
