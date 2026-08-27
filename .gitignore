@@ -16,3 +16,5 @@ reports/*.json
 reports/*.md
 *.egg-info/
 data/history/
+scripts/_probe_*.py
+scripts/_check_*.py
