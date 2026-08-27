@@ -48,6 +48,7 @@ from src.evaluation.baseline import (
 from src.evaluation.stress import run_stress_matrix, run_combined_stress
 from src.evaluation.statistics import compute_statistics
 from src.evaluation.walk_forward_quality import gate_walk_forward_dataset
+from src.evaluation.report_honesty import ReportHonestyError, assert_truthful
 from src.runtime.resource_budget import ResourceBudget
 from scripts.resource_guard import GuardPolicy, snapshot as host_snapshot
 
@@ -233,6 +234,22 @@ def main() -> int:
             "first_ms": snapshots[0].source_ts_ms, "last_ms": snapshots[-1].source_ts_ms,
         },
     }
+    # Fail-closed honesty anchor: the deterministic promotion gate is
+    # NEGATIVE_NET_PNL and selection is always blocked in this repo, so every
+    # emitted report must carry that fact and must never contain a
+    # promotion/winner/positive-verdict overclaim. This mirrors the phase-15
+    # wiring in run_strategy_baseline.py and closes the dashboard-truthfulness
+    # parity gap for the real-history entrypoint. The guard runs BEFORE the
+    # report is written so any overclaim aborts without emitting a go-live-looking
+    # artifact. It never edits the report, never promotes, never selects, and
+    # never changes the deterministic gate.
+    payload["selection_blocked"] = True
+    payload["report_honest"] = True
+    try:
+        assert_truthful(payload)
+    except ReportHonestyError as exc:
+        print(f"REPORT_HONESTY_REJECTED: {exc}", file=sys.stderr)
+        return 5
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True, default=str) + "\n")
     print(json.dumps({
