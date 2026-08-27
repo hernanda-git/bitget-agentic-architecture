@@ -386,6 +386,59 @@ def family_wise_robustness(tests: Iterable[dict], *, alpha: float = 0.05) -> dic
     }
 
 
+def evaluate_candidate_family(candidates: Iterable, config: BaselineConfig = BaselineConfig(),
+                               *, min_closed_trades: int = 30, confidence: float = 0.95,
+                               seed: int = 0) -> dict:
+    """Measurement-only walk-forward + family-wise correction across a candidate family.
+
+    Runs the SAME cost-inclusive, walk-forward, robustness-gated engine over each
+    independent candidate dataset (e.g. several symbols) and then applies the
+    Bonferroni family-wise multiple-testing correction across the whole family.
+
+    A naive pipeline would scan many symbols and call any single spuriously
+    positive window "edge". This orchestrator reports how many candidates look
+    positive BEFORE versus AFTER the family-wise correction, so a lone lucky
+    survivor among negatives cannot masquerade as edge.
+
+    This is MEASUREMENT ONLY. ``selection_blocked`` is always True and no
+    ``promoted``/``selected``/``winner`` key is ever emitted, so it stays
+    compatible with the always-blocked Phase 6 selection policy.
+    """
+    candidates = tuple(candidates)
+    if not candidates:
+        raise ValueError("evaluate_candidate_family requires at least one candidate")
+    if not isinstance(min_closed_trades, int) or min_closed_trades < 1:
+        raise ValueError("min_closed_trades must be a positive integer")
+    if not isinstance(confidence, (int, float)) or not math.isfinite(confidence) or not 0 < confidence < 1:
+        raise ValueError("confidence must be a finite number strictly between 0 and 1")
+    config = config or BaselineConfig()
+    per_candidate: list[dict] = []
+    tests: list[dict] = []
+    for name, snapshots in candidates:
+        baseline = run_baseline(snapshots, config)
+        wf = run_walk_forward(snapshots, config)
+        gate = gate_walk_forward_robustness(
+            wf, trade_pnls=baseline.trade_pnls,
+            min_closed_trades=min_closed_trades, confidence=confidence, seed=seed,
+        )
+        per_candidate.append({"name": name, **gate})
+        tests.append({"rows": wf, "trade_pnls": baseline.trade_pnls})
+    family = family_wise_robustness(tests, alpha=1.0 - confidence)
+    # Family-level adequate-sample gate: a multi-symbol scan must not read as
+    # "robust" if any member lacks an adequate sample. A lone well-sampled
+    # survivor cannot launder a thin one.
+    total_closed_trades = sum(int(c.get("total_closed_trades", 0)) for c in per_candidate)
+    family_adequate_sample = all(bool(c.get("adequate_sample", False)) for c in per_candidate)
+    return {
+        "candidates": len(candidates),
+        "per_candidate": tuple(per_candidate),
+        "family_wise": family,
+        "total_closed_trades": total_closed_trades,
+        "family_adequate_sample": family_adequate_sample,
+        "selection_blocked": True,
+    }
+
+
 def run_cost_stress(snapshots: Iterable, config: BaselineConfig = BaselineConfig(), multipliers=(1.0, 1.5, 2.0)) -> tuple[dict, ...]:
     """Run the same replay under increasingly adverse fee, funding, and slippage assumptions."""
     multipliers = tuple(multipliers)

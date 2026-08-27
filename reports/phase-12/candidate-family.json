@@ -1,0 +1,200 @@
+{
+  "candidates_acquired": 4,
+  "config": {
+    "confidence": 0.95,
+    "fee_bps": 5.0,
+    "funding_bps": 2.0,
+    "min_closed_trades": 30,
+    "slippage_bps": 2.0
+  },
+  "deterministic_baseline_gate": "NEGATIVE_NET_PNL (unchanged) -> Phase 6 selection remains BLOCKED",
+  "endpoint": "https://api.bitget.com/api/v2/mix/market/{candles,history-fund-rate}",
+  "family_wise": {
+    "candidates": 4,
+    "family_adequate_sample": true,
+    "family_wise": {
+      "any_corrected_positive": false,
+      "any_uncorrected_positive": false,
+      "corrected_positives": 0,
+      "correction": "bonferroni",
+      "family_wise_alpha": 0.050000000000000044,
+      "selection_blocked": true,
+      "tests": 4,
+      "uncorrected_positives": 0
+    },
+    "per_candidate": [
+      {
+        "adequate_sample": true,
+        "confidence": 0.95,
+        "effective_confidence": 0.95,
+        "expectancy_ci": [
+          -236.22894004929745,
+          -67.54259674959556
+        ],
+        "expectancy_mean": -152.71797895368854,
+        "expectancy_positive_with_ci": false,
+        "min_closed_trades": 30,
+        "n_tests": 1,
+        "name": "BTCUSDT_1m",
+        "profitable_windows": 12,
+        "selection_blocked": true,
+        "total_closed_trades": 74,
+        "windows": 72,
+        "windows_with_trades": 70
+      },
+      {
+        "adequate_sample": true,
+        "confidence": 0.95,
+        "effective_confidence": 0.95,
+        "expectancy_ci": [
+          -6.910949301061436,
+          -2.5914979250744494
+        ],
+        "expectancy_mean": -4.7493982767472245,
+        "expectancy_positive_with_ci": false,
+        "min_closed_trades": 30,
+        "n_tests": 1,
+        "name": "ETHUSDT_1m",
+        "profitable_windows": 10,
+        "selection_blocked": true,
+        "total_closed_trades": 79,
+        "windows": 72,
+        "windows_with_trades": 71
+      },
+      {
+        "adequate_sample": true,
+        "confidence": 0.95,
+        "effective_confidence": 0.95,
+        "expectancy_ci": [
+          -133.49509331388805,
+          -45.855002808614266
+        ],
+        "expectancy_mean": -89.45749163327574,
+        "expectancy_positive_with_ci": false,
+        "min_closed_trades": 30,
+        "n_tests": 1,
+        "name": "BTCUSDT_5m",
+        "profitable_windows": 14,
+        "selection_blocked": true,
+        "total_closed_trades": 124,
+        "windows": 72,
+        "windows_with_trades": 61
+      },
+      {
+        "adequate_sample": true,
+        "confidence": 0.95,
+        "effective_confidence": 0.95,
+        "expectancy_ci": [
+          -4.063025274136662,
+          -0.6259977713527575
+        ],
+        "expectancy_mean": -2.4117321463745114,
+        "expectancy_positive_with_ci": false,
+        "min_closed_trades": 30,
+        "n_tests": 1,
+        "name": "ETHUSDT_5m",
+        "profitable_windows": 18,
+        "selection_blocked": true,
+        "total_closed_trades": 130,
+        "windows": 72,
+        "windows_with_trades": 67
+      }
+    ],
+    "selection_blocked": true,
+    "total_closed_trades": 407
+  },
+  "fetch_errors": [],
+  "per_candidate_summary": [
+    {
+      "baseline_closed_trades": 45,
+      "baseline_net_pnl": -6872.3091,
+      "baseline_promotion_reason": "NEGATIVE_NET_PNL",
+      "candles": 2000,
+      "funding_records": 100,
+      "granularity": "1m",
+      "name": "BTCUSDT_1m",
+      "symbol": "BTCUSDT",
+      "walk_forward_summary": {
+        "best_window_net_pnl": 129.48198258721322,
+        "closed_trades": 74,
+        "profitable_windows": 12,
+        "total_net_pnl": -9913.999849981967,
+        "windows": 72,
+        "windows_with_trades": 70,
+        "worst_window_net_pnl": -495.79608680031095
+      }
+    },
+    {
+      "baseline_closed_trades": 63,
+      "baseline_net_pnl": -299.2121,
+      "baseline_promotion_reason": "NEGATIVE_NET_PNL",
+      "candles": 2000,
+      "funding_records": 100,
+      "granularity": "1m",
+      "name": "ETHUSDT_1m",
+      "symbol": "ETHUSDT",
+      "walk_forward_summary": {
+        "best_window_net_pnl": 3.1943634029456893,
+        "closed_trades": 79,
+        "profitable_windows": 10,
+        "total_net_pnl": -313.35154863073564,
+        "windows": 72,
+        "windows_with_trades": 71,
+        "worst_window_net_pnl": -15.17950360861364
+      }
+    },
+    {
+      "baseline_closed_trades": 245,
+      "baseline_net_pnl": -21917.0855,
+      "baseline_promotion_reason": "NEGATIVE_NET_PNL",
+      "candles": 2000,
+      "funding_records": 100,
+      "granularity": "5m",
+      "name": "BTCUSDT_5m",
+      "symbol": "BTCUSDT",
+      "walk_forward_summary": {
+        "best_window_net_pnl": 685.5292884218838,
+        "closed_trades": 124,
+        "profitable_windows": 14,
+        "total_net_pnl": -16818.114356099857,
+        "windows": 72,
+        "windows_with_trades": 61,
+        "worst_window_net_pnl": -1131.5308323483898
+      }
+    },
+    {
+      "baseline_closed_trades": 310,
+      "baseline_net_pnl": -747.637,
+      "baseline_promotion_reason": "NEGATIVE_NET_PNL",
+      "candles": 2000,
+      "funding_records": 100,
+      "granularity": "5m",
+      "name": "ETHUSDT_5m",
+      "symbol": "ETHUSDT",
+      "walk_forward_summary": {
+        "best_window_net_pnl": 15.900631085119834,
+        "closed_trades": 130,
+        "profitable_windows": 18,
+        "total_net_pnl": -526.1794149264247,
+        "windows": 72,
+        "windows_with_trades": 67,
+        "worst_window_net_pnl": -54.19280038168616
+      }
+    }
+  ],
+  "request_evidence": {
+    "credentials_used": false,
+    "failures": 0,
+    "latency_ms_sample": [],
+    "mode": "stored-dataset",
+    "orders": 0,
+    "policy_rejections": 0,
+    "rate_limits": 0,
+    "requests": 0,
+    "retries": 0,
+    "schema_rejections": 0,
+    "signed_calls": 0,
+    "successes": 0
+  },
+  "source": "bitget-public-history"
+}

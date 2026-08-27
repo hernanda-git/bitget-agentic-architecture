@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import math
 import time
 from dataclasses import dataclass, field
 from typing import Iterable
@@ -294,6 +295,42 @@ def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None 
         data_age_ms=data_age_ms, max_data_age_ms=max_data_age_ms,
         max_single_bar_return_bps=max_bar_return_bps, funding_anomalies=funding_anomalies,
     )
+
+
+def coverage_gate(report: DataQualityReport, *, max_missing_fraction: float = 0.25,
+                  max_single_gap_bars: int | None = None) -> bool:
+    """Fail-closed coverage gate: reject datasets with too many missing bars.
+
+    Walk-forward time indices assume a near-continuous candle series. A dataset
+    with large holes (missing bars between consecutive candles) distorts those
+    indices and quietly biases the replay. The structural ``ok`` gate ignores
+    gaps, so this gate exists to fail closed on sparse series.
+
+    Returns ``False`` (reject) when the missing-bar fraction exceeds
+    ``max_missing_fraction`` (relative sparseness) OR a single gap is larger than
+    ``max_single_gap_bars`` (absolute hole size, when provided). Returns ``True``
+    only when neither condition is violated. A missing fraction means the series
+    would be distorted; fail closed, never silently proceed.
+
+    ``max_missing_fraction`` is the fraction of *expected* total bars that are
+    absent; ``max_single_gap_bars`` caps the largest single hole in bars.
+    """
+    if not isinstance(max_missing_fraction, (int, float)) or not math.isfinite(max_missing_fraction) \
+            or not 0.0 <= max_missing_fraction <= 1.0:
+        raise ValueError("max_missing_fraction must be a finite number in [0, 1]")
+    if max_single_gap_bars is not None and (not isinstance(max_single_gap_bars, int)
+                                            or max_single_gap_bars < 0):
+        raise ValueError("max_single_gap_bars must be a non-negative integer")
+
+    total_missing = sum(int(g["missing_bars"]) for g in report.gaps)
+    expected = report.candle_count + total_missing
+    if expected <= 0:
+        return True  # nothing to measure; the structural gate handles emptiness
+    if total_missing / expected > max_missing_fraction:
+        return False
+    if max_single_gap_bars is not None and report.max_missing_bars > max_single_gap_bars:
+        return False
+    return True
 
 
 @dataclass(frozen=True)
