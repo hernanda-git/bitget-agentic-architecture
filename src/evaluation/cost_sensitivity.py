@@ -25,7 +25,9 @@ and never emit a promotion/winner/positive-verdict overclaim.
 from __future__ import annotations
 
 import math
+import statistics
 from dataclasses import replace
+from itertools import product
 
 from .baseline import BaselineConfig, run_baseline
 
@@ -173,4 +175,103 @@ def break_even_fee_bps(snapshots, config: BaselineConfig = BaselineConfig(),
         "zero_cost_net": detail["zero_cost_net"],
         "verdict": verdict,
         "selection_blocked": True,
+    }
+
+
+def _cell_drawdown(trade_pnls) -> float:
+    """Peak-to-trough drawdown over a closed-trade PnL sequence."""
+    equity = peak = dd = 0.0
+    for pnl in trade_pnls:
+        equity += pnl
+        if equity > peak:
+            peak = equity
+        if peak - equity > dd:
+            dd = peak - equity
+    return dd
+
+
+def cost_envelope_sweep(snapshots, config: BaselineConfig = BaselineConfig(),
+                        fee_mults=(0.5, 1.0, 1.5, 2.0),
+                        funding_mults=(0.5, 1.0, 2.0),
+                        slippage_mults=(0.5, 1.0, 1.5, 2.0)) -> dict:
+    """Full cost sensitivity envelope across independent fee/funding/slippage grids.
+
+    Unlike ``cost_sensitivity_sweep`` (one all-cost multiplier ladder) or
+    ``run_stress_matrix`` (one dimension at a time), this sweeps the Cartesian
+    product of the three cost ladders and reports the FULL envelope: minimum,
+    maximum, and median net PnL across every grid cell, plus the single worst
+    (most adverse) cell and the best cell. This is the sensitivity envelope the
+    strategy review asked for: a range of spread/latency/partial-fill/funding
+    assumptions reported together, not a single point estimate.
+
+    Measurement only. It never changes the deterministic promotion gate and
+    always carries ``selection_blocked=True`` and ``promotion_blocked=True``. No
+    ``winner`` / ``promoted`` / ``selected`` / ``go_live`` / ``positive_edge`` key
+    is ever emitted. Fail-closed on empty input and on any non-finite / negative
+    multiplier, and a cost stress cell may never invent trades versus baseline.
+    """
+    snapshots = tuple(snapshots)
+    if not snapshots:
+        raise ValueError("cost envelope sweep requires snapshots")
+
+    def _check(mults, name):
+        mults = tuple(mults)
+        if not mults or any(not isinstance(m, (int, float)) or not math.isfinite(m) or m < 0
+                            for m in mults):
+            raise ValueError(f"{name} multipliers must be finite and >= 0")
+        return mults
+
+    fee_mults = _check(fee_mults, "fee")
+    funding_mults = _check(funding_mults, "funding")
+    slippage_mults = _check(slippage_mults, "slippage")
+
+    baseline = run_baseline(snapshots, config)
+    cells = []
+    for f, fd, s in product(fee_mults, funding_mults, slippage_mults):
+        scaled = replace(config, fee_bps=config.fee_bps * f,
+                         funding_bps=config.funding_bps * fd,
+                         slippage_bps=config.slippage_bps * s)
+        r = run_baseline(snapshots, scaled)
+        # Fail closed: a cost stress can never invent trades versus baseline.
+        if r.closed_trades > baseline.closed_trades:
+            raise AssertionError("cost envelope cell added trades versus baseline")
+        cells.append({
+            "fee_mult": f, "funding_mult": fd, "slippage_mult": s,
+            "fee_bps": config.fee_bps * f,
+            "funding_bps": config.funding_bps * fd,
+            "slippage_bps": config.slippage_bps * s,
+            "closed_trades": r.closed_trades,
+            "gross_pnl": r.gross_pnl,
+            "fees": r.fees, "spread": r.spread, "slippage": r.slippage,
+            "funding": r.funding, "net_pnl": r.net_pnl,
+            "drawdown": _cell_drawdown(r.trade_pnls),
+        })
+
+    nets = [c["net_pnl"] for c in cells]
+    min_net = min(nets)
+    max_net = max(nets)
+    median_net = statistics.median(nets) if nets else 0.0
+    worst_cell = min(cells, key=lambda c: c["net_pnl"])
+    best_cell = max(cells, key=lambda c: c["net_pnl"])
+    any_profitable = any(n > 0 for n in nets)
+    return {
+        "baseline_net": baseline.net_pnl,
+        "baseline_closed_trades": baseline.closed_trades,
+        "base_fee_bps": config.fee_bps,
+        "base_funding_bps": config.funding_bps,
+        "base_slippage_bps": config.slippage_bps,
+        "fee_mults": list(fee_mults),
+        "funding_mults": list(funding_mults),
+        "slippage_mults": list(slippage_mults),
+        "n_cells": len(cells),
+        "cells": cells,
+        "min_net": min_net,
+        "max_net": max_net,
+        "median_net": median_net,
+        "worst_cell": worst_cell,
+        "best_cell": best_cell,
+        "any_profitable": any_profitable,
+        "all_blocked": not any_profitable,
+        "selection_blocked": True,
+        "promotion_blocked": True,
     }
