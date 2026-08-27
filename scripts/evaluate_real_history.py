@@ -124,8 +124,8 @@ def main() -> int:
         message = (
             f"DATA_QUALITY_REJECTED: duplicate_timestamps={dq.duplicate_timestamps} "
             f"non_chronological={dq.non_chronological} bad_prices={dq.bad_prices} "
-            f"funding_anomalies={dq.funding_anomalies} data_age_ms={dq.data_age_ms} "
-            f"freshness_ok={dq.freshness_ok}"
+            f"funding_anomalies={dq.funding_anomalies} future_dated={dq.future_dated} "
+            f"data_age_ms={dq.data_age_ms} freshness_ok={dq.freshness_ok}"
         )
         print(message, file=sys.stderr)
         return 2

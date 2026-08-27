@@ -262,6 +262,35 @@ def test_evaluator_cli_fails_closed_on_structurally_bad_dataset(tmp_path):
     assert not output_path.exists()
 
 
+def test_evaluate_real_history_fails_closed_on_future_dated(tmp_path, monkeypatch, capsys):
+    """End-to-end: a candle stamped after the fetch time trips the gate and aborts.
+
+    The CLI must fail closed (non-zero return, no output artifact) when any
+    candle is future-dated relative to the fetch time, and the rejection line
+    must report the ``future_dated=`` count so the cause is observable.
+    """
+    import importlib.util
+
+    candles = tuple(Candle("1m", 100 + i, 101 + i, 99 + i, 100.5 + i, 5, 1_000 + i * 60_000)
+                    for i in range(40))
+    future = Candle("1m", 200, 201, 199, 200.5, 5, 9_999_999_999_999)  # year ~2287
+    bad = HistoryDataset("BTCUSDT", "SUSDT-FUTURES", "1m",
+                         candles[-1].source_ts_ms + 60_000, candles + (future,),
+                         (FundingRecord(1_000, 0.0001),), 0.5)
+    store = tmp_path / "future.json"
+    store.write_text(json.dumps(bad.to_dict(), indent=2, sort_keys=True))
+    out = tmp_path / "out.json"
+    spec = importlib.util.spec_from_file_location("eval_real", ROOT / "scripts" / "evaluate_real_history.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr("sys.argv", ["evaluate_real_history.py", "--dataset", str(store),
+                            "--output", str(out), "--no-resource-budget"])
+    rc = mod.main()
+    assert rc != 0
+    assert not out.exists()
+    assert "future_dated=1" in capsys.readouterr().err
+
+
 def test_candle_history_stops_at_max_candles():
     from src.market.history import fetch_candle_history
 
@@ -296,8 +325,12 @@ def _sample_dataset() -> HistoryDataset:
     candles = tuple(Candle("1m", 100 + i, 101 + i, 99 + i, 100.5 + i, 5, 1_000 + i * 60_000)
                     for i in range(40))
     funding = (FundingRecord(1_000, 0.0001), FundingRecord(2_000, 0.0002))
+    # Realistic fetch time: just after the most recent candle. (A placeholder of
+    # 9_999 made every candle "future-dated" relative to the fetch and would now
+    # be rejected by the structural data-quality gate.)
+    fetched_at_ms = candles[-1].source_ts_ms + 60_000
     return HistoryDataset(symbol="BTCUSDT", product_type="SUSDT-FUTURES", granularity="1m",
-                          fetched_at_ms=9_999, candles=candles, funding=funding,
+                          fetched_at_ms=fetched_at_ms, candles=candles, funding=funding,
                           assumed_half_spread_bps=0.5)
 
 

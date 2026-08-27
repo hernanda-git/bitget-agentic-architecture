@@ -192,6 +192,7 @@ class DataQualityReport:
     max_data_age_ms: int | None
     max_single_bar_return_bps: float
     funding_anomalies: int
+    future_dated: int
 
     @property
     def price_integrity_ok(self) -> bool:
@@ -203,8 +204,12 @@ class DataQualityReport:
 
     @property
     def ok(self) -> bool:
+        # Structural soundness: chronology + price + time integrity. A candle
+        # stamped after the fetch time is an integrity violation (clock skew or
+        # forged data) that would also poison freshness math and walk-forward
+        # ordering, so it fails closed like duplicate/non-chronological bars.
         return (self.duplicate_timestamps == 0 and self.non_chronological == 0
-                and self.bad_prices == 0)
+                and self.bad_prices == 0 and self.future_dated == 0)
 
     def as_dict(self) -> dict:
         return {
@@ -219,6 +224,7 @@ class DataQualityReport:
             "max_data_age_ms": self.max_data_age_ms, "freshness_ok": self.freshness_ok,
             "max_single_bar_return_bps": self.max_single_bar_return_bps,
             "funding_anomalies": self.funding_anomalies,
+            "future_dated": self.future_dated,
         }
 
 
@@ -275,6 +281,11 @@ def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None 
 
     zero_volume = sum(1 for c in candles if c.volume == 0.0)
 
+    # Time integrity: a candle stamped after the dataset was fetched is either
+    # source clock skew or forged/corrupted data. It is also impossible by
+    # construction of a backward paginated fetch, so any such bar is a defect.
+    future_dated = sum(1 for c in candles if c.source_ts_ms > dataset.fetched_at_ms)
+
     first_ts = min(c.source_ts_ms for c in candles)
     last_ts = max(c.source_ts_ms for c in candles)
     data_age_ms = dataset.fetched_at_ms - last_ts
@@ -294,6 +305,7 @@ def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None 
         funding_records_in_range=in_range, funding_missing=funding_missing,
         data_age_ms=data_age_ms, max_data_age_ms=max_data_age_ms,
         max_single_bar_return_bps=max_bar_return_bps, funding_anomalies=funding_anomalies,
+        future_dated=future_dated,
     )
 
 

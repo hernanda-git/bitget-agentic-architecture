@@ -143,3 +143,37 @@ def test_data_quality_as_dict_includes_new_fields():
                 "max_data_age_ms", "freshness_ok", "max_single_bar_return_bps",
                 "funding_anomalies"):
         assert key in d
+
+
+def test_data_quality_flags_future_dated_candles():
+    """A candle stamped after the fetch time is an integrity violation (fail-closed).
+
+    A ``source_ts_ms`` later than ``fetched_at_ms`` means source clock skew or
+    forged/corrupted data. It also poisons freshness math (negative age) and
+    walk-forward ordering. The structural ``ok`` gate must reject it, just like
+    duplicate or non-chronological timestamps.
+    """
+    # Base series ends at t=600_000; fetched at t=600_000 (no slack).
+    candles = [_mk_candle(60_000 * i) for i in range(1, 11)]
+    # Inject one candle whose source timestamp is in the future relative to fetch.
+    future = Candle("1m", 100.0, 101.0, 99.0, 100.0, 5.0, 999_000_000)
+    dataset = _mk_dataset(candles + [future], fetched_at_ms=600_000)
+    report = data_quality_report(dataset)
+    assert report.future_dated == 1
+    # Structural ok must reject future-dated bars (fail-closed), independently of
+    # any freshness gate.
+    assert report.ok is False
+    # No future bars -> ok stays True.
+    sane = data_quality_report(_mk_dataset(candles, fetched_at_ms=600_000))
+    assert sane.future_dated == 0
+    assert sane.ok is True
+
+
+def test_data_quality_as_dict_includes_future_dated():
+    """The serialized report exposes the future-dated count for downstream gates."""
+    candles = [_mk_candle(60_000 * i) for i in range(1, 11)]
+    future = Candle("1m", 100.0, 101.0, 99.0, 100.0, 5.0, 999_000_000)
+    report = data_quality_report(_mk_dataset(candles + [future], fetched_at_ms=600_000))
+    d = report.as_dict()
+    assert "future_dated" in d
+    assert d["future_dated"] == 1
