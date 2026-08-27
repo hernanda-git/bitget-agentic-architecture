@@ -47,6 +47,7 @@ from src.evaluation.baseline import (
 )
 from src.evaluation.stress import run_stress_matrix, run_combined_stress
 from src.evaluation.statistics import compute_statistics
+from src.evaluation.walk_forward_quality import gate_walk_forward_dataset
 from src.runtime.resource_budget import ResourceBudget
 from scripts.resource_guard import GuardPolicy, snapshot as host_snapshot
 
@@ -135,6 +136,17 @@ def main() -> int:
     snapshots = snapshots_from_dataset(dataset)
     config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps, slippage_bps=args.slippage_bps, real_funding=True)
 
+    # Fail closed on any walk-forward window that contains a gap or bad price.
+    # A global data-quality pass can hide a hole inside a single test window,
+    # and we trade on those windows, so each must be structurally sound and
+    # gap-free. This runs before the heavy replay so a holey dataset is
+    # rejected without inventing any trade.
+    wf_quality = gate_walk_forward_dataset(dataset, config, max_missing_fraction=0.25)
+    if not wf_quality.all_ok:
+        print(f"WALK_FORWARD_QUALITY_REJECTED: {wf_quality.reject_reason}", file=sys.stderr)
+        return 4
+    print(f"walk-forward window quality ok: windows={wf_quality.windows}, failed={wf_quality.failed_windows}")
+
     # Continuous, fail-closed runtime resource budget for the heavy multi-engine
     # replay below. It only observes host state and raises; it never kills or
     # restarts Hermes, deployed bots, databases, or unrelated services.
@@ -206,6 +218,7 @@ def main() -> int:
         "config": {"fee_bps": args.fee_bps, "funding_bps": args.funding_bps, "slippage_bps": args.slippage_bps},
         "data_quality": dq.as_dict(),
         "funding_readiness": readiness.as_dict(),
+        "walk_forward_window_quality": wf_quality.as_dict(),
         "baseline": {k: list(v) if isinstance(v, tuple) else v for k, v in baseline.__dict__.items()},
         "walk_forward": [dict(r) for r in walk_forward],
         "walk_forward_summary": summarize_walk_forward(walk_forward),
