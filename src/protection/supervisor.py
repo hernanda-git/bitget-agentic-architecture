@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from .models import InMemoryProtectionStore, ProtectionRecord, ProtectionState
+from src.reconcile.engine import reconcile_protection
 
 
 class ProtectionSupervisor:
@@ -28,20 +29,20 @@ class ProtectionSupervisor:
     def get(self, symbol: str) -> ProtectionRecord:
         return self._records[symbol]
 
-    def verify(self, symbol: str, venue: dict | None = None, *, bot_monitor_armed: bool = False, bot_monitor_fresh: bool = False) -> ProtectionRecord:
+    def verify(self, symbol: str, venue: dict | None = None, *, bot_monitor_armed: bool = False, bot_monitor_fresh: bool = False, mark: float | None = None) -> ProtectionRecord:
         record = self.get(symbol)
         venue = venue or {}
-        venue_ok = (venue.get("stop_loss") is not None and venue.get("take_profit") is not None and
-                    venue.get("stop_loss") == record.stop_loss and venue.get("take_profit") == record.take_profit)
-        bot_ok = (record.stop_loss is not None and record.take_profit is not None and
-                  bot_monitor_armed and bot_monitor_fresh)
-        if venue_ok or bot_ok:
-            state = ProtectionState.PROTECTED
-        elif venue.get("stop_loss") is None or venue.get("take_profit") is None:
-            state = ProtectionState.DEGRADED
-        else:
-            state = ProtectionState.UNKNOWN
-        return self._save(ProtectionRecord(**{**record.to_dict(), "state": state}))
+        # Delegate to the canonical Layer 7 read-back check so the live path cannot
+        # diverge from reconcile_protection (single source of truth). This also gains
+        # the wrong-side-stop direction validation that the old inline logic lacked.
+        result = reconcile_protection(
+            intended={"stop_loss": record.stop_loss, "take_profit": record.take_profit},
+            venue=venue,
+            bot_side={"armed": bot_monitor_armed, "fresh": bot_monitor_fresh,
+                      "stop_loss": record.stop_loss, "take_profit": record.take_profit},
+            mark=mark, side=record.side,
+        )
+        return self._save(ProtectionRecord(**{**record.to_dict(), "state": result.state, "reasons": result.reasons}))
 
     def mark_unknown(self, symbol: str) -> ProtectionRecord:
         record = self.get(symbol)

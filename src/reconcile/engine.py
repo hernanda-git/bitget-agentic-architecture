@@ -40,6 +40,7 @@ def reconcile_protection(*, intended: dict, venue: dict | None = None, bot_side:
     sl, tp = intended.get("stop_loss"), intended.get("take_profit")
     venue_complete = venue.get("stop_loss") == sl and venue.get("take_profit") == tp and sl is not None and tp is not None
     bot_complete = (bot_side.get("armed") and bot_side.get("fresh") and
+                    sl is not None and tp is not None and
                     bot_side.get("stop_loss") == sl and bot_side.get("take_profit") == tp)
     if not venue_complete:
         reasons.append("VENUE_PROTECTION_MISSING")
@@ -49,7 +50,18 @@ def reconcile_protection(*, intended: dict, venue: dict | None = None, bot_side:
         wrong_side = (side.upper() == "LONG" and liquidation_price >= sl) or (side.upper() == "SHORT" and liquidation_price <= sl)
         if wrong_side:
             reasons.append("LIQUIDATION_GE_STOP" if side.upper() == "LONG" else "LIQUIDATION_LE_STOP")
-    state = ProtectionState.PROTECTED if (venue_complete or bot_complete) and not any(r.startswith("LIQUIDATION_") for r in reasons) else ProtectionState.DEGRADED
+    # A protective stop must sit on the adverse side of the current mark for the
+    # position side: LONG stop strictly below mark, SHORT stop strictly above mark.
+    # A stop at or across mark (e.g. a misconfigured/garbled stop echoed back by the
+    # venue) provides no downside protection and must never read as PROTECTED.
+    if side and mark is not None and sl is not None:
+        su = side.upper()
+        if su == "LONG" and sl >= mark:
+            reasons.append("WRONG_SIDE_STOP")
+        elif su == "SHORT" and sl <= mark:
+            reasons.append("WRONG_SIDE_STOP")
+    _fatal = any(r.startswith("LIQUIDATION_") or r == "WRONG_SIDE_STOP" for r in reasons)
+    state = ProtectionState.PROTECTED if (venue_complete or bot_complete) and not _fatal else ProtectionState.DEGRADED
     return ProtectionReconcileResult(state, tuple(reasons))
 
 

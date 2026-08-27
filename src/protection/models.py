@@ -26,6 +26,7 @@ class ProtectionRecord:
     stop_loss: float | None
     take_profit: float | None
     state: ProtectionState = ProtectionState.PENDING
+    reasons: tuple[str, ...] = ()
     updated_at: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
@@ -37,6 +38,7 @@ class ProtectionRecord:
     def from_dict(cls, data: dict[str, Any]) -> "ProtectionRecord":
         data = dict(data)
         data["state"] = ProtectionState(data["state"])
+        data.setdefault("reasons", ())
         return cls(**data)
 
 
