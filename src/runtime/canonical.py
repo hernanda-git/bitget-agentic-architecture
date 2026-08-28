@@ -5,6 +5,7 @@ to the existing runtime. It intentionally does not implement an exchange or ledg
 """
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from typing import Any
 
@@ -17,6 +18,7 @@ from src.market.models import MarketSnapshot
 from src.policy.breakers import BreakerRegistry
 from src.providers.ports import AgentProvider
 from src.runtime.heartbeat import HeartbeatMonitor
+from src.runtime.monitor_watchdog import MonitorWatchdog
 from src.runtime.paper_runtime import AutonomousPaperRuntime
 from src.runtime.resource_monitor import ResourceMonitor
 
@@ -30,17 +32,27 @@ class CanonicalOfflineRuntime:
     paper_runtime: AutonomousPaperRuntime | None = None
     _heartbeat: HeartbeatMonitor | None = None
     _resource_monitor: ResourceMonitor | None = None
+    monitor_watchdog: MonitorWatchdog | None = None
 
     @classmethod
     def paper(cls, provider: AgentProvider, policy: Policy, ledger: EventLedger,
               exchange: FakeExchange | None = None, *, breakers: BreakerRegistry | None = None,
               heartbeat: HeartbeatMonitor | None = None,
               resource_monitor: ResourceMonitor | None = None,
+              monitor_interval_seconds: float | None = None,
               **runtime_options: Any) -> "CanonicalOfflineRuntime":
-        return cls("paper", ledger, AutonomousPaperRuntime(
+        rt = AutonomousPaperRuntime(
             provider, policy, ledger, exchange, breakers=breakers,
             heartbeat=heartbeat, resource_monitor=resource_monitor, **runtime_options
-        ))
+        )
+        canon = cls("paper", ledger, rt, _heartbeat=heartbeat, _resource_monitor=resource_monitor)
+        # Independent monitor watchdog (P1-2): drives rt.tick_monitors on a timer so a
+        # stalled runtime trips the heartbeat breaker live, not just under injected tests.
+        if monitor_interval_seconds is not None:
+            canon.monitor_watchdog = MonitorWatchdog(
+                rt.tick_monitors, interval_seconds=float(monitor_interval_seconds)
+            )
+        return canon
 
     @classmethod
     def fixture_shadow(cls, ledger: EventLedger, *, heartbeat: HeartbeatMonitor | None = None,
@@ -90,3 +102,19 @@ class CanonicalOfflineRuntime:
                 self._heartbeat.tick()
             if self._resource_monitor is not None:
                 self._resource_monitor.tick()
+
+    async def run_monitor_loop(self, poll_seconds: float = 0.05) -> None:
+        """Drive the monitor watchdog on its timer until stopped.
+
+        A daemon loop runs this concurrently with ``process`` so a stall (no cycles)
+        trips the heartbeat breaker fail-closed. Raises if no watchdog was configured.
+        """
+        if self.monitor_watchdog is None:
+            raise RuntimeError("monitor_watchdog not configured; pass monitor_interval_seconds to paper()")
+        await self.monitor_watchdog.run(poll_seconds=poll_seconds)
+
+    def start_monitor_loop(self) -> "asyncio.Task[None]":
+        """Start ``run_monitor_loop`` as a task (caller owns cancellation/lifecycle)."""
+        if self.monitor_watchdog is None:
+            raise RuntimeError("monitor_watchdog not configured; pass monitor_interval_seconds to paper()")
+        return asyncio.create_task(self.monitor_watchdog.run())
