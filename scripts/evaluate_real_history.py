@@ -49,6 +49,10 @@ from src.evaluation.baseline import (
 from src.evaluation.stress import run_stress_matrix, run_combined_stress
 from src.evaluation.statistics import compute_statistics
 from src.evaluation.walk_forward_quality import gate_walk_forward_dataset
+from src.evaluation.walk_forward_coverage import (
+    plan_walk_forward_coverage,
+    require_wf_coverage_exit_code,
+)
 from src.evaluation.report_honesty import ReportHonestyError, assert_truthful
 from src.runtime.resource_budget import ResourceBudget
 from scripts.resource_guard import GuardPolicy, snapshot as host_snapshot
@@ -102,6 +106,19 @@ def main() -> int:
                              "knowingly on a constrained host instead of fully disabling the budget")
     parser.add_argument("--resource-interval", type=float, default=5.0,
                         help="seconds between watchdog samples (watchdog only)")
+    parser.add_argument("--require-wf-coverage", action="store_true",
+                        help="fail closed (exit 6) when the dataset yields too few / too-short "
+                             "walk-forward test windows to support a meaningful out-of-sample verdict")
+    parser.add_argument("--min-wf-windows", type=int, default=5,
+                        help="minimum number of complete walk-forward test windows for adequate coverage")
+    parser.add_argument("--min-wf-bars-per-window", type=int, default=50,
+                        help="minimum number of bars per test window for adequate coverage")
+    parser.add_argument("--test-window", type=int, default=10,
+                        help="walk-forward test-window length (bars) used for the coverage count and "
+                             "the replayed out-of-sample windows. Raised above the default 10 so the "
+                             "--require-wf-coverage gate can actually pass when the corpus is long enough; "
+                             "the default 10 is below the default min-wf-bars-per-window=50, so the gate "
+                             "stays fail-closed under defaults until a longer window is requested.")
     parser.add_argument("--resource-watchdog", "--no-resource-watchdog", action=argparse.BooleanOptionalAction,
                         default=False,
                         help="run a background watchdog that samples host resources during the run")
@@ -147,7 +164,8 @@ def main() -> int:
 
     snapshots = snapshots_from_dataset(dataset)
     config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps, slippage_bps=args.slippage_bps,
-                            real_funding=True, max_position_notional_usd=args.notional_usd)
+                            real_funding=True, max_position_notional_usd=args.notional_usd,
+                            test_window=args.test_window)
 
     # Fail closed on any walk-forward window that contains a gap or bad price.
     # A global data-quality pass can hide a hole inside a single test window,
@@ -159,6 +177,27 @@ def main() -> int:
         print(f"WALK_FORWARD_QUALITY_REJECTED: {wf_quality.reject_reason}", file=sys.stderr)
         return 4
     print(f"walk-forward window quality ok: windows={wf_quality.windows}, failed={wf_quality.failed_windows}")
+
+    # Fail closed on statistically inadequate walk-forward coverage. A dataset
+    # that yields too few / too-short test windows cannot support a meaningful
+    # out-of-sample verdict, yet the engine would happily trade a handful of bars
+    # and laud the aggregate. When --require-wf-coverage is set we reject (exit 6)
+    # BEFORE any heavy replay so a thin corpus is never laundered into a verdict.
+    # The verdict is always computed (measurement only) and reported in the
+    # payload below, regardless of the flag, so dashboards carry the coverage fact.
+    wf_coverage = plan_walk_forward_coverage(
+        dataset, config, min_windows=args.min_wf_windows,
+        min_bars_per_window=args.min_wf_bars_per_window,
+    )
+    if args.require_wf_coverage and not wf_coverage.adequate:
+        print(
+            f"WALK_FORWARD_COVERAGE_REJECTED: windows={wf_coverage.windows} "
+            f"(min {args.min_wf_windows}) test_bars_per_window={wf_coverage.test_bars_per_window} "
+            f"(min {args.min_wf_bars_per_window}) adequate={wf_coverage.adequate} "
+            f"recommended_test_window={wf_coverage.recommended_test_window}",
+            file=sys.stderr,
+        )
+        return 6
 
     # Continuous, fail-closed runtime resource budget for the heavy multi-engine
     # replay below. It only observes host state and raises; it never kills or
@@ -235,6 +274,7 @@ def main() -> int:
         "data_quality": dq.as_dict(),
         "funding_readiness": readiness.as_dict(),
         "walk_forward_window_quality": wf_quality.as_dict(),
+        "walk_forward_coverage": wf_coverage.as_dict(),
         "baseline": {k: list(v) if isinstance(v, tuple) else v for k, v in baseline.__dict__.items()},
         "walk_forward": [dict(r) for r in walk_forward],
         "walk_forward_summary": summarize_walk_forward(walk_forward),
