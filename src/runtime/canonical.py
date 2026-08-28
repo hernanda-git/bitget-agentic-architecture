@@ -14,8 +14,11 @@ from src.execution.fake_exchange import FakeExchange
 from src.ledger.sqlite import EventLedger
 from src.ledger.events import RuntimeEvent
 from src.market.models import MarketSnapshot
+from src.policy.breakers import BreakerRegistry
 from src.providers.ports import AgentProvider
+from src.runtime.heartbeat import HeartbeatMonitor
 from src.runtime.paper_runtime import AutonomousPaperRuntime
+from src.runtime.resource_monitor import ResourceMonitor
 
 
 @dataclass
@@ -25,17 +28,27 @@ class CanonicalOfflineRuntime:
     mode: str
     ledger: EventLedger
     paper_runtime: AutonomousPaperRuntime | None = None
+    _heartbeat: HeartbeatMonitor | None = None
+    _resource_monitor: ResourceMonitor | None = None
 
     @classmethod
     def paper(cls, provider: AgentProvider, policy: Policy, ledger: EventLedger,
-              exchange: FakeExchange | None = None, **runtime_options: Any) -> "CanonicalOfflineRuntime":
+              exchange: FakeExchange | None = None, *, breakers: BreakerRegistry | None = None,
+              heartbeat: HeartbeatMonitor | None = None,
+              resource_monitor: ResourceMonitor | None = None,
+              **runtime_options: Any) -> "CanonicalOfflineRuntime":
         return cls("paper", ledger, AutonomousPaperRuntime(
-            provider, policy, ledger, exchange, **runtime_options
+            provider, policy, ledger, exchange, breakers=breakers,
+            heartbeat=heartbeat, resource_monitor=resource_monitor, **runtime_options
         ))
 
     @classmethod
-    def fixture_shadow(cls, ledger: EventLedger) -> "CanonicalOfflineRuntime":
-        return cls("fixture-shadow", ledger)
+    def fixture_shadow(cls, ledger: EventLedger, *, heartbeat: HeartbeatMonitor | None = None,
+                      resource_monitor: ResourceMonitor | None = None) -> "CanonicalOfflineRuntime":
+        rt = cls("fixture-shadow", ledger)
+        rt._heartbeat = heartbeat
+        rt._resource_monitor = resource_monitor
+        return rt
 
     async def process(self, snapshot: MarketSnapshot, portfolio: PortfolioView | None = None,
                       now_ts_ms: int | None = None, attach_protection: bool = True) -> dict[str, Any]:
@@ -63,3 +76,17 @@ class CanonicalOfflineRuntime:
         self.ledger.set_terminal(cycle_id, "SHADOW_ONLY")
         return {"status": "SHADOW_ONLY", "mode": self.mode, "cycle_id": cycle_id,
                 "orders_placed": 0, "network_calls": 0, "signed_calls": 0}
+
+    def tick_monitors(self) -> None:
+        """Live monitor-loop step.
+
+        For paper mode it delegates to the runtime; for fixture-shadow it ticks
+        the monitors attached at construction. No signed calls, no credentials.
+        """
+        if self.paper_runtime is not None:
+            self.paper_runtime.tick_monitors()
+        else:
+            if self._heartbeat is not None:
+                self._heartbeat.tick()
+            if self._resource_monitor is not None:
+                self._resource_monitor.tick()

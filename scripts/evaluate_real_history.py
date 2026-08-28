@@ -33,6 +33,7 @@ from src.market.history import (
     load_dataset,
     real_funding_readiness,
     snapshots_from_dataset,
+    wick_spike_gate,
 )
 from src.market.bitget_public import BitgetPublicClient
 from src.evaluation.baseline import (
@@ -88,6 +89,9 @@ def main() -> int:
     parser.add_argument("--max-data-age-ms", type=int, default=None,
                         help="if set, reject the dataset when the newest candle is older "
                              "than the fetch time by more than this span (freshness gate)")
+    parser.add_argument("--max-wick-spike-bps", type=float, default=5000.0,
+                        help="fail-closed wick-spike gate: reject the dataset when the worst "
+                             "observed wick (vs prior close) exceeds this many bps (default 5000 = 50%%)")
     parser.add_argument("--resource-budget", "--no-resource-budget", action=argparse.BooleanOptionalAction,
                         default=True,
                         help="enforce a continuous runtime resource budget (default on)")
@@ -122,12 +126,14 @@ def main() -> int:
     # Fail closed on structurally unsound datasets before any evaluation.
     dq = data_quality_report(dataset, max_data_age_ms=args.max_data_age_ms)
     stale_rejected = args.max_data_age_ms is not None and not dq.freshness_ok
-    if not dq.ok or stale_rejected:
+    wick_rejected = not wick_spike_gate(dq, max_wick_spike_bps=args.max_wick_spike_bps)
+    if not dq.ok or stale_rejected or wick_rejected:
         message = (
             f"DATA_QUALITY_REJECTED: duplicate_timestamps={dq.duplicate_timestamps} "
             f"non_chronological={dq.non_chronological} bad_prices={dq.bad_prices} "
             f"funding_anomalies={dq.funding_anomalies} future_dated={dq.future_dated} "
-            f"data_age_ms={dq.data_age_ms} freshness_ok={dq.freshness_ok}"
+            f"data_age_ms={dq.data_age_ms} freshness_ok={dq.freshness_ok} "
+            f"max_wick_spike_bps={round(dq.max_wick_spike_bps, 2)} wick_rejected={wick_rejected}"
         )
         print(message, file=sys.stderr)
         return 2

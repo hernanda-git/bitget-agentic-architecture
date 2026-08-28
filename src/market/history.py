@@ -193,6 +193,8 @@ class DataQualityReport:
     max_single_bar_return_bps: float
     funding_anomalies: int
     future_dated: int
+    wick_spike_bars: int
+    max_wick_spike_bps: float
 
     @property
     def price_integrity_ok(self) -> bool:
@@ -225,11 +227,14 @@ class DataQualityReport:
             "max_single_bar_return_bps": self.max_single_bar_return_bps,
             "funding_anomalies": self.funding_anomalies,
             "future_dated": self.future_dated,
+            "wick_spike_bars": self.wick_spike_bars,
+            "max_wick_spike_bps": self.max_wick_spike_bps,
         }
 
 
 def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None = None,
-                        max_funding_rate: float = 0.05) -> DataQualityReport:
+                        max_funding_rate: float = 0.05,
+                        wick_spike_threshold_bps: float = 5000.0) -> DataQualityReport:
     """Measure structural quality of a stored dataset without mutating it.
 
     ``max_data_age_ms`` enables a freshness gate: if set, ``freshness_ok`` is
@@ -259,10 +264,27 @@ def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None 
     bad_prices = 0
     prev_close: float | None = None
     max_bar_return_bps = 0.0
+    wick_spike_bars = 0
+    max_wick_bps = 0.0
+    if wick_spike_threshold_bps < 0:
+        raise ValueError("wick_spike_threshold_bps must be >= 0")
     for candle in candles:
         if not all(math.isfinite(v) for v in
                    (candle.open, candle.high, candle.low, candle.close, candle.volume)):
             bad_prices += 1
+        # Wick spike: upper/lower wick vs the prevailing price (prior close, with
+        # a first-candle fallback to its own close). A valid-geometry candle can
+        # still carry a phantom wick (high far above the body) that poisons
+        # volatility bands, breakout triggers, and liquidation-price math.
+        ref = prev_close if (prev_close is not None and prev_close > 0) else candle.close
+        if ref > 0:
+            up_wick = (candle.high - max(candle.open, candle.close)) / ref
+            dn_wick = (min(candle.open, candle.close) - candle.low) / ref
+            wick_bps = max(up_wick, dn_wick) * 10_000
+            if wick_bps > max_wick_bps:
+                max_wick_bps = wick_bps
+            if wick_bps > wick_spike_threshold_bps:
+                wick_spike_bars += 1
         if prev_close is not None and prev_close > 0:
             move_bps = abs(candle.close - prev_close) / prev_close * 10_000
             if move_bps > max_bar_return_bps:
@@ -305,7 +327,8 @@ def data_quality_report(dataset: HistoryDataset, *, max_data_age_ms: int | None 
         funding_records_in_range=in_range, funding_missing=funding_missing,
         data_age_ms=data_age_ms, max_data_age_ms=max_data_age_ms,
         max_single_bar_return_bps=max_bar_return_bps, funding_anomalies=funding_anomalies,
-        future_dated=future_dated,
+        future_dated=future_dated, wick_spike_bars=wick_spike_bars,
+        max_wick_spike_bps=max_wick_bps,
     )
 
 
@@ -343,6 +366,27 @@ def coverage_gate(report: DataQualityReport, *, max_missing_fraction: float = 0.
     if max_single_gap_bars is not None and report.max_missing_bars > max_single_gap_bars:
         return False
     return True
+
+
+def wick_spike_gate(report: DataQualityReport, *, max_wick_spike_bps: float = 5000.0) -> bool:
+    """Fail-closed guard against implausible phantom wicks (data glitches/forgery).
+
+    A candle can have valid OHLC geometry yet carry a wick far above/below the
+    body relative to the prevailing price (e.g. a high 2x the prior close). Such
+    phantom wicks poison volatility-band, breakout, and liquidation-price math in
+    walk-forward replay. This gate rejects a dataset whose worst observed wick
+    (``report.max_wick_spike_bps``) exceeds ``max_wick_spike_bps``.
+
+    Fail-closed: ``False`` (reject) whenever the measured worst wick is larger than
+    the bound. A measured wick can never be ``None``, so a dataset with any
+    out-of-range wick is always refused rather than silently accepted. The default
+    bound of 5000 bps (50% of price) is far beyond legitimate crypto volatility,
+    so it only flags garbage/forged bars, never real market moves.
+    """
+    if not isinstance(max_wick_spike_bps, (int, float)) or not math.isfinite(max_wick_spike_bps) \
+            or max_wick_spike_bps < 0:
+        raise ValueError("max_wick_spike_bps must be a finite number >= 0")
+    return report.max_wick_spike_bps <= max_wick_spike_bps
 
 
 @dataclass(frozen=True)

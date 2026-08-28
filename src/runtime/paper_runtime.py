@@ -16,13 +16,17 @@ from src.providers.ports import AgentProvider, ProviderResponse
 from src.reconcile.engine import reconcile_positions, verify_protection
 from src.policy.breakers import BreakerRegistry
 from src.policy.sizing import size_for_risk
+from src.runtime.heartbeat import HeartbeatMonitor
+from src.runtime.resource_monitor import ResourceMonitor
 
 
 class AutonomousPaperRuntime:
     def __init__(self, provider: AgentProvider, policy: Policy, ledger: EventLedger,
                  exchange: FakeExchange | None = None, *, provider_timeout_seconds: float = 8.0,
                  provider_failure_threshold: int = 3,
-                 breakers: BreakerRegistry | None = None) -> None:
+                 breakers: BreakerRegistry | None = None,
+                 heartbeat: HeartbeatMonitor | None = None,
+                 resource_monitor: ResourceMonitor | None = None) -> None:
         self.policy = policy
         self.ledger = ledger
         self.exchange = exchange or FakeExchange()
@@ -34,6 +38,8 @@ class AutonomousPaperRuntime:
         # market_data, heartbeat, resource, ...) new entries are parked. The model
         # can never open or clear a breaker; this is a deterministic policy control.
         self.breakers = breakers
+        self._heartbeat = heartbeat
+        self._resource_monitor = resource_monitor
         self._event_context: dict[str, Any] = {}
 
     async def process(self, snapshot: MarketSnapshot, portfolio: PortfolioView | None = None,
@@ -41,6 +47,11 @@ class AutonomousPaperRuntime:
         portfolio = portfolio or PortfolioView()
         now_ts_ms = now_ts_ms if now_ts_ms is not None else snapshot.observed_ts_ms
         cycle_id = snapshot.snapshot_hash or snapshot.computed_hash()
+        # Record liveness for this cycle (auto-recovers a prior monitor-raised
+        # stall) and evaluate the live monitors so a currently-tripped breaker
+        # parks this entry fail-closed. The model can never clear a breaker.
+        self._beat()
+        self._evaluate_monitors()
         self._event_context = {
             "cycle_id": cycle_id,
             "trace_id": cycle_id,
@@ -116,6 +127,32 @@ class AutonomousPaperRuntime:
         self._append("POSITION_RECONCILED", {"cycle_id": cycle_id, "in_sync": rec.in_sync, "reasons": rec.reasons})
         status = "EXECUTED" if protected and rec.in_sync else "DEGRADED"
         return self._terminal(cycle_id, status, "", protection=protection_reason, reconciled=rec.in_sync)
+
+    def _beat(self) -> None:
+        """Record a heartbeat (a completed cycle) so liveness is observed."""
+        if self._heartbeat is not None:
+            self._heartbeat.beat()
+
+    def _evaluate_monitors(self) -> None:
+        """Trip/clear the breaker registry from the live monitors.
+
+        Safe to call on every cycle: a fresh beat (see ``_beat``) keeps the
+        heartbeat healthy, while a resource sample trips the ``resource``
+        breaker fail-closed under pressure. The model never clears a breaker.
+        """
+        if self._heartbeat is not None:
+            self._heartbeat.tick()
+        if self._resource_monitor is not None:
+            self._resource_monitor.tick()
+
+    def tick_monitors(self) -> None:
+        """Live monitor-loop step (call on a timer from a daemon/production loop).
+
+        Independent of ``process``: if cycles stop arriving, this trips the
+        ``heartbeat`` breaker after ``max_gap_ms`` and parks new entries. No
+        signed calls, no credentials, no orders.
+        """
+        self._evaluate_monitors()
 
     def _claim(self, cycle_id: str) -> bool:
         return bool(self.ledger.claim_cycle(cycle_id))
