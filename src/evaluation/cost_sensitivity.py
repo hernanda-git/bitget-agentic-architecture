@@ -26,10 +26,17 @@ from __future__ import annotations
 
 import math
 import statistics
+from collections import defaultdict
 from dataclasses import replace
 from itertools import product
 
 from .baseline import BaselineConfig, run_baseline
+from src.evaluation.symbol_cost_table import (
+    LiquidityTier,
+    ObservedCostTable,
+    liquidity_tier,
+    recalibrate_snapshots_by_symbol,
+)
 
 DEFAULT_MULTIPLIERS = (0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0)
 
@@ -272,6 +279,61 @@ def cost_envelope_sweep(snapshots, config: BaselineConfig = BaselineConfig(),
         "best_cell": best_cell,
         "any_profitable": any_profitable,
         "all_blocked": not any_profitable,
+        "selection_blocked": True,
+        "promotion_blocked": True,
+    }
+
+
+def cost_envelope_per_tier(symbol_snapshots, table: ObservedCostTable,
+                           config: BaselineConfig = BaselineConfig(),
+                           *, fee_mults=(1.0,), funding_mults=(1.0,),
+                           slippage_mults=(1.0,)) -> dict:
+    """Per-liquidity-tier cost-stress envelope calibrated to OBSERVED spreads.
+
+    For each ``(symbol, snapshots)`` it recalibrates the symbol's bid/ask to the
+    observed real-venue spread (fail-closed if the symbol is absent from the
+    table), runs the existing ``cost_envelope_sweep`` over that symbol, then
+    aggregates every cell's net PnL per liquidity tier. Symbols with no observed
+    spread are reported under ``unknown_symbols`` and excluded from every tier
+    (never priced as cheap).
+
+    This is the Phase 36 recommendation made concrete: instead of one global
+    assumed spread, the cost-stress envelope now runs per liquidity tier with the
+    observed per-symbol spread as the floor. Measurement only: always
+    ``selection_blocked=True`` / ``promotion_blocked=True``. No winner / promoted
+    / selected / go_live / positive_edge key is ever emitted.
+    """
+    if not isinstance(table, ObservedCostTable):
+        raise TypeError("cost_envelope_per_tier requires an ObservedCostTable")
+    items = list(symbol_snapshots)
+    grouped: dict[LiquidityTier, list[tuple[str, dict]]] = defaultdict(list)
+    unknown: list[str] = []
+    for symbol, snaps in items:
+        if symbol not in table.spreads_bps:
+            unknown.append(symbol)
+            continue
+        recal = recalibrate_snapshots_by_symbol(snaps, table)
+        env = cost_envelope_sweep(recal, config, fee_mults=fee_mults,
+                                  funding_mults=funding_mults, slippage_mults=slippage_mults)
+        grouped[liquidity_tier(table.spread_for(symbol))].append((symbol, env))
+
+    tiers_out: dict[str, dict] = {}
+    for tier, entries in grouped.items():
+        all_nets = [c["net_pnl"] for _, env in entries for c in env["cells"]]
+        tiers_out[tier.value] = {
+            "symbols": sorted({sym for sym, _ in entries}),
+            "n_symbols": len(entries),
+            "n_cells": len(all_nets),
+            "min_net": min(all_nets) if all_nets else 0.0,
+            "median_net": statistics.median(all_nets) if all_nets else 0.0,
+            "max_net": max(all_nets) if all_nets else 0.0,
+            "any_profitable": any(n > 0 for n in all_nets),
+            "all_blocked": all(n <= 0 for n in all_nets),
+        }
+    return {
+        "tiers": tiers_out,
+        "unknown_symbols": sorted(unknown),
+        "n_symbols_total": len(items),
         "selection_blocked": True,
         "promotion_blocked": True,
     }

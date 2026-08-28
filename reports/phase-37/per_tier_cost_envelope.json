@@ -1,0 +1,75 @@
+{
+  "tiers": {
+    "TIER_WIDE": {
+      "symbols": [
+        "ADAUSDT",
+        "AVAXUSDT",
+        "NEARUSDT",
+        "SUIUSDT"
+      ],
+      "n_symbols": 4,
+      "n_cells": 32,
+      "min_net": -0.13200893389499788,
+      "median_net": -0.023056727254343094,
+      "max_net": -0.0013694718712155699,
+      "any_profitable": false,
+      "all_blocked": true
+    },
+    "TIER_TIGHT": {
+      "symbols": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT"
+      ],
+      "n_symbols": 5,
+      "n_cells": 40,
+      "min_net": -2622.587537877577,
+      "median_net": -61.81565024865739,
+      "max_net": 954.4046877424413,
+      "any_profitable": true,
+      "all_blocked": false
+    },
+    "TIER_MODERATE": {
+      "symbols": [
+        "XRPUSDT"
+      ],
+      "n_symbols": 1,
+      "n_cells": 8,
+      "min_net": -0.11866372870108605,
+      "median_net": -0.10916449791230634,
+      "max_net": -0.10246722369686354,
+      "any_profitable": false,
+      "all_blocked": true
+    }
+  },
+  "unknown_symbols": [
+    "AAVEUSDT",
+    "APTUSDT",
+    "ARBUSDT",
+    "ATOMUSDT",
+    "BCHUSDT",
+    "BNBUSDT",
+    "DOGEUSDT",
+    "DOTUSDT",
+    "ETCUSDT",
+    "FILUSDT",
+    "INJUSDT",
+    "LINKUSDT",
+    "LTCUSDT",
+    "OPUSDT",
+    "TINYUSDT",
+    "TRXUSDT",
+    "UNIUSDT",
+    "XLMUSDT"
+  ],
+  "n_symbols_total": 28,
+  "selection_blocked": true,
+  "promotion_blocked": true,
+  "history_dir": "data/history",
+  "table_path": "reports/phase-36/orderbook_calibration.json",
+  "n_snapshots_per_symbol": 300,
+  "n_symbols_replayed": 28,
+  "skipped_symbols": [
+    "TINY"
+  ]
+}
