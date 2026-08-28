@@ -1,0 +1,104 @@
+{
+  "aggregate_promotion_allowed": false,
+  "aggregate_promotion_reason": "POSITIVE_EVIDENCE_REQUIRED",
+  "overall_closed_trades": 807,
+  "overall_net_pnl": -5340.724914196526,
+  "per_symbol": [
+    {
+      "adequate_sample": true,
+      "candles": 2500,
+      "closed_trades": 52,
+      "granularity": "1m",
+      "net_pnl": -46.9303667748869,
+      "product_type": "SUSDT-FUTURES",
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "symbol": "BNBUSDT",
+      "walk_forward_windows": 90
+    },
+    {
+      "adequate_sample": true,
+      "candles": 2500,
+      "closed_trades": 44,
+      "granularity": "1m",
+      "net_pnl": -5014.240335276398,
+      "product_type": "SUSDT-FUTURES",
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "symbol": "BTCUSDT",
+      "walk_forward_windows": 90
+    },
+    {
+      "adequate_sample": true,
+      "candles": 2500,
+      "closed_trades": 80,
+      "granularity": "1m",
+      "net_pnl": -262.0990970515039,
+      "product_type": "SUSDT-FUTURES",
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "symbol": "ETHUSDT",
+      "walk_forward_windows": 90
+    },
+    {
+      "adequate_sample": true,
+      "candles": 2500,
+      "closed_trades": 145,
+      "granularity": "1m",
+      "net_pnl": -14.374176151533925,
+      "product_type": "SUSDT-FUTURES",
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "symbol": "SOLUSDT",
+      "walk_forward_windows": 90
+    },
+    {
+      "adequate_sample": true,
+      "candles": 2500,
+      "closed_trades": 149,
+      "granularity": "1m",
+      "net_pnl": -0.01688466770715178,
+      "product_type": "SUSDT-FUTURES",
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "symbol": "DOGEUSDT",
+      "walk_forward_windows": 90
+    },
+    {
+      "adequate_sample": true,
+      "candles": 2500,
+      "closed_trades": 143,
+      "granularity": "1m",
+      "net_pnl": -2.6505104799107184,
+      "product_type": "SUSDT-FUTURES",
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "symbol": "LINKUSDT",
+      "walk_forward_windows": 90
+    },
+    {
+      "adequate_sample": true,
+      "candles": 2500,
+      "closed_trades": 194,
+      "granularity": "1m",
+      "net_pnl": -0.4135437945852147,
+      "product_type": "SUSDT-FUTURES",
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "symbol": "XRPUSDT",
+      "walk_forward_windows": 90
+    }
+  ],
+  "report_honest": true,
+  "robust_edge": false,
+  "selection_blocked": true,
+  "symbols": [
+    "BNBUSDT",
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "DOGEUSDT",
+    "LINKUSDT",
+    "XRPUSDT"
+  ]
+}
