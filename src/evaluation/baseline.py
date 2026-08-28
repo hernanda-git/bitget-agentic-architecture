@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, asdict, replace
 import math
+from decimal import Decimal, ROUND_DOWN
 from statistics import mean
 from typing import Any, Iterable
 from src.evaluation.statistics import bootstrap_ci
@@ -23,6 +24,11 @@ class BaselineConfig:
     test_window: int = 10
     real_funding: bool = False
     min_edge_coverage: float = 1.0
+    # Notional cap used to DERIVE order quantity from the mark price. Mirrors the
+    # live policy `max_position_notional_usd`. Disabled by default (0.0) so callers
+    # that pass an explicit `quantity` keep their existing semantics; opt in by
+    # setting a positive cap (the evaluation scripts set 25.0 to match live policy).
+    max_position_notional_usd: float = 0.0
 
 @dataclass(frozen=True)
 class BaselineResult:
@@ -49,6 +55,47 @@ class BaselineResult:
     promotion_reason: str = ""
     replay_hash: str = ""
     trade_pnls: tuple[float, ...] = ()
+    position_notional_usd: float = 25.0
+
+
+def effective_quantity(config: BaselineConfig, mark_price: float) -> float:
+    """Derive the order quantity from the configured notional cap.
+
+    Returns ``min(config.quantity, notional / mark)`` when a positive notional
+    cap is configured and the mark is positive. Otherwise (cap disabled or a
+    degenerate mark) it returns the configured ``quantity`` unchanged, so a
+    missing/notional-agnostic config still trades a fixed size.
+
+    Fail-closed: any degenerate input (non-positive notional, non-positive mark,
+    non-finite values, a zero-division) falls back to the configured quantity
+    rather than raising or emitting a nonsensical size.
+    """
+    if not config.max_position_notional_usd or mark_price <= 0:
+        return config.quantity
+    try:
+        notional_qty = config.max_position_notional_usd / float(mark_price)
+    except (ZeroDivisionError, TypeError, ValueError):
+        return config.quantity
+    if not math.isfinite(notional_qty):
+        return config.quantity
+    return min(config.quantity, notional_qty)
+
+
+def _floor_to_step(qty: float, step: float) -> float:
+    """Floor a quantity to a multiple of the venue's contract step.
+
+    Real venues reject orders whose quantity is not an integer multiple of the
+    contract step, so a notional-derived quantity must be snapped down to a
+    valid size before submission. Flooring (not rounding) keeps the position
+    notional at or below the configured cap.
+    """
+    if not step or step <= 0:
+        return qty
+    try:
+        q = (Decimal(str(qty)) / Decimal(str(step))).to_integral_value(rounding=ROUND_DOWN)
+        return float(q * Decimal(str(step)))
+    except (ArithmeticError, ValueError):
+        return qty
 
 
 def _splits(n: int, fraction: float, embargo: int) -> tuple[dict, ...]:
@@ -118,6 +165,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
     generators = strategies if strategies is not None else ALL_STRATEGIES
     strategy = {name: _empty() for name, _ in generators}; regime = {r.value: _empty() for r in Regime}
     total_fees = total_spread = total_slippage = total_funding = total_gross = 0.0; closed = orders = end_of_replay_closes = protection_attachments = 0
+    notional_sum = 0.0; notional_n = 0
     reconciliation_checks = 0
     cost_gate_skipped = 0
     # One open position per strategy: a real bot cannot stack overlapping
@@ -130,10 +178,17 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
         if index < evaluation_start or index > evaluation_end:
             continue
         replay_parts.append(snapshot.snapshot_hash or snapshot.computed_hash())
+        # Size each position from the notional cap (mirrors the live policy's
+        # max_position_notional_usd) so cost/reward scale to the real system
+        # instead of a hardcoded 1.0 contract.
+        eff_qty = effective_quantity(config, snapshot.mark_price)
         for name, generator in generators:
             if index <= busy_until.get(name, -1):
                 continue
             venue = FakeExchange(fee_bps=config.fee_bps, slippage_bps=config.slippage_bps)
+            # Snap the notional-derived size down to a valid contract multiple so
+            # the (deterministic) venue accepts the order; never exceed the cap.
+            order_qty = _floor_to_step(eff_qty, venue.venue.quantity_step)
             candidates = generator(snapshot, costs)
             if not candidates: continue
             candidate = candidates[0]
@@ -142,7 +197,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
                 continue
             venue.market_prices[snapshot.symbol] = (snapshot.bid, snapshot.ask, snapshot.mark_price)
             oid = f"baseline-{name}-{index}"
-            order = venue.submit_order(OrderRequest(oid, snapshot.symbol, candidate.side, config.quantity, None))
+            order = venue.submit_order(OrderRequest(oid, snapshot.symbol, candidate.side, order_qty, None))
             if not order.filled_quantity: continue
             orders += 1
             venue.set_protection(snapshot.symbol, candidate.stop_loss, candidate.take_profit)
@@ -165,6 +220,7 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
             trades = venue.closed_trades
             if not trades: continue
             trade = trades[-1]
+            notional_sum += order_qty * snapshot.mark_price; notional_n += 1
             # FakeExchange supplies closed-trade fees and gross PnL. Funding is charged
             # deterministically over the holding events and included in net PnL.
             funding = _funding_cost(venue.read_balance())
@@ -188,7 +244,8 @@ def run_baseline(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),
                           strategy, regime, splits,
                           cost_gate_skipped=cost_gate_skipped,
                           promotion_allowed=False, promotion_reason=reason, replay_hash=replay_hash,
-                          trade_pnls=tuple(trade_pnls))
+                          trade_pnls=tuple(trade_pnls),
+                          position_notional_usd=notional_sum / notional_n if notional_n else 0.0)
 
 
 def run_walk_forward(snapshots: Iterable, config: BaselineConfig = BaselineConfig(),

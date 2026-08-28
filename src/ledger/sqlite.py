@@ -16,14 +16,22 @@ REQUIRED = ("cycle_id", "trace_id", "created_ms", "mode", "product_type", "symbo
 TABLES = ("cycles", "events", "orders", "fills", "positions", "protection", "reconciliation", "runtime_state", "portfolio_snapshots")
 
 
+# Run-scoping column. Every event carries the run_id that produced it so PnL and
+# projections are never blended across distinct runs/code versions (fail-closed:
+# a row without a run_id belongs to the global/legacy scope and is excluded when a
+# run_id is supplied, instead of silently inflating a newer run's numbers).
+RUN_SCOPE_COLUMN = "run_id"
+
+
 def _now() -> int:
     return int(time.time() * 1000)
 
 
 class EventLedger:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, run_id: str | None = None):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.run_id = run_id
         self._init()
 
     def _connect(self) -> sqlite3.Connection:
@@ -41,19 +49,19 @@ class EventLedger:
                   mode TEXT NOT NULL DEFAULT 'system', product_type TEXT NOT NULL DEFAULT 'system', symbol TEXT NOT NULL DEFAULT '',
                   payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1);
                 CREATE TABLE IF NOT EXISTS cycles (cycle_id TEXT PRIMARY KEY, terminal_status TEXT, created_ms INTEGER NOT NULL,
-                  trace_id TEXT NOT NULL DEFAULT '', mode TEXT NOT NULL DEFAULT 'paper', product_type TEXT NOT NULL DEFAULT 'SUSDT-FUTURES', symbol TEXT NOT NULL DEFAULT '', payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1);
+                  trace_id TEXT NOT NULL DEFAULT '', mode TEXT NOT NULL DEFAULT 'paper', product_type TEXT NOT NULL DEFAULT 'SUSDT-FUTURES', symbol TEXT NOT NULL DEFAULT '', payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1, run_id TEXT NOT NULL DEFAULT '');
                 CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL, event_json TEXT NOT NULL, created_ms INTEGER NOT NULL,
-                  cycle_id TEXT NOT NULL DEFAULT '', trace_id TEXT NOT NULL DEFAULT '', mode TEXT NOT NULL DEFAULT 'paper', product_type TEXT NOT NULL DEFAULT 'SUSDT-FUTURES', symbol TEXT NOT NULL DEFAULT '', payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1);
+                  cycle_id TEXT NOT NULL DEFAULT '', trace_id TEXT NOT NULL DEFAULT '', mode TEXT NOT NULL DEFAULT 'paper', product_type TEXT NOT NULL DEFAULT 'SUSDT-FUTURES', symbol TEXT NOT NULL DEFAULT '', payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1, run_id TEXT NOT NULL DEFAULT '');
                 CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY AUTOINCREMENT, client_order_id TEXT NOT NULL UNIQUE, venue_order_id TEXT UNIQUE, event_json TEXT NOT NULL,
-                  cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
+                  cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL, run_id TEXT NOT NULL DEFAULT '');
                 CREATE TABLE IF NOT EXISTS fills (id INTEGER PRIMARY KEY AUTOINCREMENT, fill_id TEXT NOT NULL UNIQUE, client_order_id TEXT, event_json TEXT NOT NULL,
-                  cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
+                  cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL, run_id TEXT NOT NULL DEFAULT '');
                 CREATE TABLE IF NOT EXISTS positions (id INTEGER PRIMARY KEY AUTOINCREMENT, position_id TEXT NOT NULL UNIQUE, event_json TEXT NOT NULL,
-                  cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
-                CREATE TABLE IF NOT EXISTS protection (id INTEGER PRIMARY KEY AUTOINCREMENT, event_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
-                CREATE TABLE IF NOT EXISTS reconciliation (id INTEGER PRIMARY KEY AUTOINCREMENT, event_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
-                CREATE TABLE IF NOT EXISTS runtime_state (key TEXT PRIMARY KEY, value_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL);
-                CREATE TABLE IF NOT EXISTS portfolio_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, snapshot_json TEXT NOT NULL, created_ms INTEGER NOT NULL, cycle_id TEXT NOT NULL DEFAULT '', trace_id TEXT NOT NULL DEFAULT '', mode TEXT NOT NULL DEFAULT 'paper', product_type TEXT NOT NULL DEFAULT 'SUSDT-FUTURES', symbol TEXT NOT NULL DEFAULT '', payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1);
+                  cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL, run_id TEXT NOT NULL DEFAULT '');
+                CREATE TABLE IF NOT EXISTS protection (id INTEGER PRIMARY KEY AUTOINCREMENT, event_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL, run_id TEXT NOT NULL DEFAULT '');
+                CREATE TABLE IF NOT EXISTS reconciliation (id INTEGER PRIMARY KEY AUTOINCREMENT, event_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL, run_id TEXT NOT NULL DEFAULT '');
+                CREATE TABLE IF NOT EXISTS runtime_state (key TEXT PRIMARY KEY, value_json TEXT NOT NULL, cycle_id TEXT NOT NULL, trace_id TEXT NOT NULL, created_ms INTEGER NOT NULL, mode TEXT NOT NULL, product_type TEXT NOT NULL, symbol TEXT NOT NULL, payload_hash TEXT NOT NULL, schema_version INTEGER NOT NULL, run_id TEXT NOT NULL DEFAULT '');
+                CREATE TABLE IF NOT EXISTS portfolio_snapshots (id INTEGER PRIMARY KEY AUTOINCREMENT, snapshot_json TEXT NOT NULL, created_ms INTEGER NOT NULL, cycle_id TEXT NOT NULL DEFAULT '', trace_id TEXT NOT NULL DEFAULT '', mode TEXT NOT NULL DEFAULT 'paper', product_type TEXT NOT NULL DEFAULT 'SUSDT-FUTURES', symbol TEXT NOT NULL DEFAULT '', payload_hash TEXT NOT NULL DEFAULT '', schema_version INTEGER NOT NULL DEFAULT 1, run_id TEXT NOT NULL DEFAULT '');
             """)
             for table in TABLES:
                 columns = {row[1] for row in db.execute(f"PRAGMA table_info({table})")}
@@ -62,6 +70,8 @@ class EventLedger:
                         default = "1" if column == "schema_version" else ("0" if column == "created_ms" else "''")
                         typ = "INTEGER" if column in ("created_ms", "schema_version") else "TEXT"
                         db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {typ} NOT NULL DEFAULT {default}")
+                if RUN_SCOPE_COLUMN not in columns:
+                    db.execute(f"ALTER TABLE {table} ADD COLUMN {RUN_SCOPE_COLUMN} TEXT NOT NULL DEFAULT ''")
             if db.execute("SELECT 1 FROM schema_migrations WHERE version=1").fetchone() is None:
                 db.execute("INSERT INTO schema_migrations(version, applied_ms) VALUES(1, ?)", (_now(),))
 
@@ -121,9 +131,10 @@ class EventLedger:
         return self.append_legacy(event_type, payload)
 
     def _insert_event(self, db: sqlite3.Connection, event: RuntimeEvent) -> int:
+        rid = self.run_id or ""
         d = event.to_dict()
-        cur = db.execute("INSERT INTO events(event_type,event_json,created_ms,cycle_id,trace_id,mode,product_type,symbol,payload_hash,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                         (event.event_type, json.dumps(d, sort_keys=True), event.created_ms, event.cycle_id, event.trace_id, event.mode, event.product_type, event.symbol, event.payload_hash, event.schema_version))
+        cur = db.execute("INSERT INTO events(event_type,event_json,created_ms,cycle_id,trace_id,mode,product_type,symbol,payload_hash,schema_version,run_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                         (event.event_type, json.dumps(d, sort_keys=True), event.created_ms, event.cycle_id, event.trace_id, event.mode, event.product_type, event.symbol, event.payload_hash, event.schema_version, rid))
         return int(cur.lastrowid)
 
     def append_event(self, value: RuntimeEvent | Mapping[str, Any]) -> int:
@@ -148,15 +159,16 @@ class EventLedger:
 
     def _insert_projection(self, db, table, event, payload):
         p = dict(payload)
-        common = (json.dumps(p, sort_keys=True), event.cycle_id, event.trace_id, event.created_ms, event.mode, event.product_type, event.symbol, event.payload_hash, event.schema_version)
+        rid = self.run_id or ""
+        common = (json.dumps(p, sort_keys=True), event.cycle_id, event.trace_id, event.created_ms, event.mode, event.product_type, event.symbol, event.payload_hash, event.schema_version, rid)
         if table == "orders":
-            db.execute("INSERT INTO orders(client_order_id,venue_order_id,event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?)", (p["client_order_id"], p.get("venue_order_id"), *common))
+            db.execute("INSERT INTO orders(client_order_id,venue_order_id,event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version,run_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (p["client_order_id"], p.get("venue_order_id"), *common))
         elif table == "fills":
-            db.execute("INSERT INTO fills(fill_id,client_order_id,event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?,?)", (p["fill_id"], p.get("client_order_id"), *common))
+            db.execute("INSERT INTO fills(fill_id,client_order_id,event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version,run_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (p["fill_id"], p.get("client_order_id"), *common))
         elif table == "positions":
-            db.execute("INSERT INTO positions(position_id,event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version) VALUES(?,?,?,?,?,?,?,?,?,?)", (p["position_id"], *common))
+            db.execute("INSERT INTO positions(position_id,event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version,run_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)", (p["position_id"], *common))
         else:
-            db.execute(f"INSERT INTO {table}(event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version) VALUES(?,?,?,?,?,?,?,?,?)", common)
+            db.execute(f"INSERT INTO {table}(event_json,cycle_id,trace_id,created_ms,mode,product_type,symbol,payload_hash,schema_version,run_id) VALUES(?,?,?,?,?,?,?,?,?,?)", common)
 
     def _record(self, table, value):
         event = self._event(value)
@@ -176,12 +188,12 @@ class EventLedger:
 
     def recent_events(self, limit=50):
         with self._connect() as db:
-            sql = "SELECT id,event_type,event_json,created_ms,cycle_id,trace_id,mode,product_type,symbol,payload_hash,schema_version FROM events ORDER BY id DESC"
+            sql = "SELECT id,event_type,event_json,created_ms,cycle_id,trace_id,mode,product_type,symbol,payload_hash,schema_version,run_id FROM events ORDER BY id DESC"
             rows = db.execute(sql + (" LIMIT ?" if limit is not None else ""), (limit,) if limit is not None else ()).fetchall()
         result = []
         for row in reversed(rows):
             data = json.loads(row[2]); payload = data.pop("payload", data)
-            result.append({"id": row[0], "event_type": row[1], "payload": payload, "created_ms": row[3], "cycle_id": row[4], "trace_id": row[5], "mode": row[6], "product_type": row[7], "symbol": row[8], "payload_hash": row[9], "schema_version": row[10], **data})
+            result.append({"id": row[0], "event_type": row[1], "payload": payload, "created_ms": row[3], "cycle_id": row[4], "trace_id": row[5], "mode": row[6], "product_type": row[7], "symbol": row[8], "payload_hash": row[9], "schema_version": row[10], "run_id": row[11], **data})
         return result
 
     def _rows(self, table):
@@ -193,15 +205,21 @@ class EventLedger:
     def table_rows(self, table): return self._rows(table)
     def latest_cycle(self):
         rows = self._rows("cycles"); return rows[-1] if rows else None
-    def disposition_counts(self):
+    def disposition_counts(self, run_id: str | None = None):
+        rid = run_id if run_id is not None else self.run_id
         counts = {}
         for e in self.all():
+            if rid and e.get("run_id") != rid:
+                continue
             value = e["payload"].get("disposition")
             if value: counts[value] = counts.get(value, 0) + 1
         return counts
-    def open_positions(self):
+    def open_positions(self, run_id: str | None = None):
+        rid = run_id if run_id is not None else self.run_id
         result = []
         for row in self._rows("positions"):
+            if rid and row.get("run_id") != rid:
+                continue
             payload = json.loads(row.pop("event_json"))
             if payload.get("status") == "OPEN": result.append(row | payload)
         return result
@@ -210,21 +228,47 @@ class EventLedger:
         if not rows: return None
         row = rows[-1]; return row | json.loads(row.pop("event_json"))
     def closed_trades(self): return [r | json.loads(r.pop("event_json")) for r in self._rows("positions") if json.loads(r["event_json"]).get("status") == "CLOSED"]
-    def realized_pnl(self):
-        values = [float(json.loads(r["event_json"]).get("realized_pnl", 0)) for r in self._rows("fills")]
-        if not values:
-            values = [float(e["payload"].get("net_pnl", 0)) for e in self.all() if e["event_type"] == "TRADE_CLOSED"]
-        return sum(values)
-    def fees(self):
-        values = [float(json.loads(r["event_json"]).get("fee", 0)) for r in self._rows("fills")]
-        if not values:
-            values = [float(e["payload"].get("fee", 0)) for e in self.all() if e["event_type"] == "FILL_OBSERVED"]
-        return sum(values)
-    def funding(self):
-        values = [float(json.loads(r["event_json"]).get("funding", 0)) for r in self._rows("fills")]
-        if values:
-            return sum(values)
-        return sum(float(e["payload"].get("funding", 0)) for e in self.all() if e["event_type"] == "TRADE_CLOSED")
+    def realized_pnl(self, run_id: str | None = None):
+        rid = run_id if run_id is not None else self.run_id
+        return sum(float(e["payload"].get("net_pnl", 0)) for e in self.all()
+                  if e["event_type"] == "TRADE_CLOSED" and (not rid or e.get("run_id") == rid))
+
+    def fees(self, run_id: str | None = None):
+        # Mirror replay_events: fees are sourced from FILL_OBSERVED fill fees
+        # only, never also from TRADE_CLOSED entry/exit fees (that would
+        # double-count the same cost and break replay integrity).
+        rid = run_id if run_id is not None else self.run_id
+        return sum(float(e["payload"].get("fee", 0)) for e in self.all()
+                  if e["event_type"] == "FILL_OBSERVED" and (not rid or e.get("run_id") == rid))
+
+    def funding(self, run_id: str | None = None):
+        # Mirror replay_events exactly: sum FILL_OBSERVED funding when present,
+        # otherwise fall back to TRADE_CLOSED funding (keeps replay integrity).
+        rid = run_id if run_id is not None else self.run_id
+        total = 0.0
+        fill_funding_seen = False
+        for e in self.all():
+            if rid and e.get("run_id") != rid:
+                continue
+            if e["event_type"] == "FILL_OBSERVED":
+                f = float(e["payload"].get("funding", 0.0))
+                total += f
+                if "funding" in e["payload"]:
+                    fill_funding_seen = True
+        if not fill_funding_seen:
+            for e in self.all():
+                if rid and e.get("run_id") != rid:
+                    continue
+                if e["event_type"] == "TRADE_CLOSED":
+                    total += float(e["payload"].get("funding", 0.0))
+        return total
+
+    def reset(self) -> None:
+        """Delete every durable row in this ledger (used by the run scripts' --reset
+        flag). Append-only integrity is preserved within a run; only full restart clears it."""
+        with self._connect() as db:
+            for table in TABLES + ("schema_migrations",):
+                db.execute(f"DELETE FROM {table}")
     def latest_protection_status(self): return self._latest("protection")
     def latest_reconciliation_status(self): return self._latest("reconciliation")
     def active_breakers(self): return [e for e in self.all() if e["event_type"] in {"CIRCUIT_BREAKER", "RISK_BREAKER_OPEN"} and e["payload"].get("status", "OPEN") != "CLOSED"]
@@ -238,17 +282,20 @@ class EventLedger:
             row = db.execute("SELECT snapshot_json FROM portfolio_snapshots ORDER BY id DESC LIMIT 1").fetchone()
         return PortfolioSnapshot.from_dict(json.loads(row[0])) if row else None
 
-    def runtime_status(self):
-        return {"latest_cycle": self.latest_cycle(), "disposition_counts": self.disposition_counts(), "open_positions": self.open_positions(), "closed_trades": self.closed_trades(), "realized_pnl": self.realized_pnl(), "fees": self.fees(), "funding": self.funding(), "protection": self.latest_protection_status(), "reconciliation": self.latest_reconciliation_status(), "active_breakers": self.active_breakers(), "recent_events": self.recent_events(), "portfolio": self.latest_portfolio_snapshot()}
+    def runtime_status(self, run_id: str | None = None):
+        return {"latest_cycle": self.latest_cycle(), "disposition_counts": self.disposition_counts(), "open_positions": self.open_positions(), "closed_trades": self.closed_trades(), "realized_pnl": self.realized_pnl(run_id), "fees": self.fees(run_id), "funding": self.funding(run_id), "protection": self.latest_protection_status(), "reconciliation": self.latest_reconciliation_status(), "active_breakers": self.active_breakers(), "recent_events": self.recent_events(), "portfolio": self.latest_portfolio_snapshot()}
 
-    def replay_state(self):
+    def replay_state(self, run_id: str | None = None):
         from scripts.replay_ledger import assert_replay_equal, replay_events
-        replayed = replay_events(self.all())
-        expected = {"dispositions": self.disposition_counts(),
-                    "positions": {p.get("symbol"): p for p in self.open_positions()},
+        events = self.all()
+        if run_id:
+            events = [e for e in events if e.get("run_id") == run_id]
+        replayed = replay_events(events)
+        expected = {"dispositions": self.disposition_counts(run_id),
+                    "positions": {p.get("symbol"): p for p in self.open_positions(run_id)},
                     "protection": replayed["protection"], "reconciliation": replayed["reconciliation"],
-                    "risk_breaker": replayed["risk_breaker"], "fees": self.fees(),
-                    "funding": self.funding(), "net_pnl": sum(float(e["payload"].get("net_pnl", 0)) for e in self.all() if e["event_type"] == "TRADE_CLOSED"),
-                    "closed_trades": [e["payload"] for e in self.all() if e["event_type"] == "TRADE_CLOSED"]}
+                    "risk_breaker": replayed["risk_breaker"], "fees": self.fees(run_id),
+                    "funding": self.funding(run_id), "net_pnl": sum(float(e["payload"].get("net_pnl", 0)) for e in events if e["event_type"] == "TRADE_CLOSED"),
+                    "closed_trades": [e["payload"] for e in events if e["event_type"] == "TRADE_CLOSED"]}
         assert_replay_equal(expected, replayed)
         return replayed | {"replay_equal": True}

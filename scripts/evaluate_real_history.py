@@ -83,6 +83,8 @@ def main() -> int:
     parser.add_argument("--fee-bps", type=float, default=5.0)
     parser.add_argument("--funding-bps", type=float, default=2.0)
     parser.add_argument("--slippage-bps", type=float, default=2.0)
+    parser.add_argument("--notional-usd", type=float, default=25.0,
+                        help="max position notional used to derive order quantity (mirrors live policy max_position_notional_usd)")
     parser.add_argument("--max-data-age-ms", type=int, default=None,
                         help="if set, reject the dataset when the newest candle is older "
                              "than the fetch time by more than this span (freshness gate)")
@@ -138,7 +140,8 @@ def main() -> int:
     )
 
     snapshots = snapshots_from_dataset(dataset)
-    config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps, slippage_bps=args.slippage_bps, real_funding=True)
+    config = BaselineConfig(fee_bps=args.fee_bps, funding_bps=args.funding_bps, slippage_bps=args.slippage_bps,
+                            real_funding=True, max_position_notional_usd=args.notional_usd)
 
     # Fail closed on any walk-forward window that contains a gap or bad price.
     # A global data-quality pass can hide a hole inside a single test window,

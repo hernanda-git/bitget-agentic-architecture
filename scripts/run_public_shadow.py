@@ -19,7 +19,8 @@ from src.reporting import write_shadow_report
 
 
 async def run_public_shadow(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: Path,
-                            client_factory=None, provider=None) -> dict:
+                            client_factory=None, provider=None, run_id: str | None = None,
+                            reset: bool = False) -> dict:
     if cycles < 1 or not symbols:
         raise ValueError("cycles and symbols must be non-empty")
     client_factory = client_factory or (lambda: BitgetPublicClient(venue="bitget", product_type="SUSDT-FUTURES"))
@@ -31,7 +32,9 @@ async def run_public_shadow(cycles: int, symbols: list[str], ledger_path: Path, 
             async def fetch_snapshot(self, symbol, **kwargs):
                 raise RuntimeError("PUBLIC_CLIENT_UNAVAILABLE")
         client = NullClient()
-    ledger = EventLedger(ledger_path)
+    ledger = EventLedger(ledger_path, run_id=run_id)
+    if reset:
+        ledger.reset()
     freshness, spreads, latencies, source_timestamps = [], [], [], []
     completed = 0
     errors = []
@@ -93,9 +96,11 @@ def main() -> None:
     parser.add_argument("--symbols", default="BTCUSDT")
     parser.add_argument("--ledger", default="data/public-shadow.sqlite3")
     parser.add_argument("--reports-dir", default="reports/phase-4")
+    parser.add_argument("--run-id", default=None)
+    parser.add_argument("--reset", action="store_true")
     args = parser.parse_args()
     report = asyncio.run(run_public_shadow(args.cycles, [s.strip().upper() for s in args.symbols.split(",") if s.strip()],
-                                           Path(args.ledger), Path(args.reports_dir)))
+                                           Path(args.ledger), Path(args.reports_dir), run_id=args.run_id, reset=args.reset))
     print(json.dumps(report, sort_keys=True))
 
 

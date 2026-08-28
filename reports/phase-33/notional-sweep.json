@@ -1,0 +1,540 @@
+{
+  "generated_ms": 1787901195657,
+  "mode": "real-history-baseline-sweep",
+  "notional_usd": 25.0,
+  "report_honest": true,
+  "results": [
+    {
+      "closed_trades": 0,
+      "elapsed_s": 1.42,
+      "expectancy": null,
+      "fees": 0.0,
+      "funding": 0.0,
+      "granularity": "1m",
+      "gross_pnl": 0.0,
+      "net_pnl": 0.0,
+      "position_notional_usd": 0.0,
+      "profit_factor": null,
+      "promotion_allowed": false,
+      "promotion_reason": "INCONCLUSIVE_NO_CLOSED_TRADES",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "RANGING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.0,
+      "snapshots": 2500,
+      "spread": 0.0,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "symbol": "BTCUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 1,
+      "elapsed_s": 1.43,
+      "expectancy": null,
+      "fees": 0.0251,
+      "funding": 0.0,
+      "granularity": "1m",
+      "gross_pnl": 0.1157,
+      "net_pnl": 0.0781,
+      "position_notional_usd": 25.0,
+      "profit_factor": null,
+      "promotion_allowed": false,
+      "promotion_reason": "POSITIVE_EVIDENCE_REQUIRED",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 1,
+          "net_pnl": 0.0781
+        },
+        "RANGING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.01,
+      "snapshots": 2500,
+      "spread": 0.0025,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 1,
+          "net_pnl": 0.0781
+        }
+      },
+      "symbol": "ETHUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 0,
+      "elapsed_s": 1.56,
+      "expectancy": null,
+      "fees": 0.0,
+      "funding": 0.0,
+      "granularity": "1m",
+      "gross_pnl": 0.0,
+      "net_pnl": 0.0,
+      "position_notional_usd": 0.0,
+      "profit_factor": null,
+      "promotion_allowed": false,
+      "promotion_reason": "INCONCLUSIVE_NO_CLOSED_TRADES",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "RANGING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.0,
+      "snapshots": 2500,
+      "spread": 0.0,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "symbol": "SOLUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 194,
+      "elapsed_s": 1.44,
+      "expectancy": -0.0021316690442536837,
+      "fees": 0.2761,
+      "funding": 0.0007,
+      "granularity": "1m",
+      "gross_pnl": 0.0013,
+      "net_pnl": -0.4135,
+      "position_notional_usd": 1.4230350515463919,
+      "profit_factor": 0.4168767235718323,
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 1,
+          "net_pnl": -0.007
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 79,
+          "net_pnl": -0.1961
+        },
+        "RANGING": {
+          "closed_trades": 114,
+          "net_pnl": -0.2104
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.1104,
+      "snapshots": 2500,
+      "spread": 0.0276,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 27,
+          "net_pnl": -0.0054
+        },
+        "trend_continuation": {
+          "closed_trades": 62,
+          "net_pnl": -0.1694
+        },
+        "volatility_breakout": {
+          "closed_trades": 105,
+          "net_pnl": -0.2388
+        }
+      },
+      "symbol": "XRPUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 149,
+      "elapsed_s": 1.45,
+      "expectancy": -0.00011331991749766299,
+      "fees": 0.013,
+      "funding": 0.0,
+      "granularity": "1m",
+      "gross_pnl": 0.0027,
+      "net_pnl": -0.0169,
+      "position_notional_usd": 0.08744140939597314,
+      "profit_factor": 0.4821721163058469,
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 1,
+          "net_pnl": -0.0004
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 79,
+          "net_pnl": -0.0109
+        },
+        "RANGING": {
+          "closed_trades": 69,
+          "net_pnl": -0.0056
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.0052,
+      "snapshots": 2500,
+      "spread": 0.0013,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 13,
+          "net_pnl": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 31,
+          "net_pnl": -0.0032
+        },
+        "volatility_breakout": {
+          "closed_trades": 105,
+          "net_pnl": -0.0137
+        }
+      },
+      "symbol": "DOGEUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 143,
+      "elapsed_s": 1.36,
+      "expectancy": -0.018535038321053972,
+      "fees": 1.6581,
+      "funding": 0.0054,
+      "granularity": "1m",
+      "gross_pnl": -0.158,
+      "net_pnl": -2.6505,
+      "position_notional_usd": 11.595384615384615,
+      "profit_factor": 0.41887426673910094,
+      "promotion_allowed": false,
+      "promotion_reason": "NEGATIVE_NET_PNL",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 1,
+          "net_pnl": -0.0522
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 76,
+          "net_pnl": -1.0194
+        },
+        "RANGING": {
+          "closed_trades": 66,
+          "net_pnl": -1.579
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.6632,
+      "snapshots": 2500,
+      "spread": 0.1658,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 12,
+          "net_pnl": -0.1493
+        },
+        "trend_continuation": {
+          "closed_trades": 29,
+          "net_pnl": -0.8173
+        },
+        "volatility_breakout": {
+          "closed_trades": 102,
+          "net_pnl": -1.6838
+        }
+      },
+      "symbol": "LINKUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 0,
+      "elapsed_s": 1.28,
+      "expectancy": null,
+      "fees": 0.0,
+      "funding": 0.0,
+      "granularity": "1m",
+      "gross_pnl": 0.0,
+      "net_pnl": 0.0,
+      "position_notional_usd": 0.0,
+      "profit_factor": null,
+      "promotion_allowed": false,
+      "promotion_reason": "INCONCLUSIVE_NO_CLOSED_TRADES",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "RANGING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.0,
+      "snapshots": 2500,
+      "spread": 0.0,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "symbol": "BNBUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 0,
+      "elapsed_s": 1.1,
+      "expectancy": null,
+      "fees": 0.0,
+      "funding": 0.0,
+      "granularity": "5m",
+      "gross_pnl": 0.0,
+      "net_pnl": 0.0,
+      "position_notional_usd": 0.0,
+      "profit_factor": null,
+      "promotion_allowed": false,
+      "promotion_reason": "INCONCLUSIVE_NO_CLOSED_TRADES",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "RANGING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.0,
+      "snapshots": 2000,
+      "spread": 0.0,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "symbol": "BTCUSDT",
+      "walk_forward_windows": 1
+    },
+    {
+      "closed_trades": 0,
+      "elapsed_s": 1.15,
+      "expectancy": null,
+      "fees": 0.0,
+      "funding": 0.0,
+      "granularity": "5m",
+      "gross_pnl": 0.0,
+      "net_pnl": 0.0,
+      "position_notional_usd": 0.0,
+      "profit_factor": null,
+      "promotion_allowed": false,
+      "promotion_reason": "INCONCLUSIVE_NO_CLOSED_TRADES",
+      "regime_breakdown": {
+        "DATA_DEGRADED": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "HIGH_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LIQUIDATION_EVENT": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "LOW_VOLATILITY": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "RANGING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "TRENDING": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "slippage": 0.0,
+      "snapshots": 2000,
+      "spread": 0.0,
+      "strategy_breakdown": {
+        "mean_reversion": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "trend_continuation": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        },
+        "volatility_breakout": {
+          "closed_trades": 0,
+          "net_pnl": 0.0
+        }
+      },
+      "symbol": "ETHUSDT",
+      "walk_forward_windows": 1
+    }
+  ],
+  "selection_blocked": true
+}

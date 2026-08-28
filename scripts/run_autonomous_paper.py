@@ -42,10 +42,13 @@ def _response(symbol: str, scenario: str, now: int) -> ProviderResponse:
 
 
 def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: Path,
-              scenario: str = "hold", inject_integrity_failure: bool = False) -> dict:
+              scenario: str = "hold", inject_integrity_failure: bool = False,
+              run_id: str | None = None, reset: bool = False) -> dict:
     if cycles < 1 or cycles > 1000 or not symbols:
         raise ValueError("cycles and symbols must be non-empty")
-    ledger = EventLedger(ledger_path)
+    ledger = EventLedger(ledger_path, run_id=run_id)
+    if reset:
+        ledger.reset()
     venue = FakeExchange()
     policy = Policy(frozenset(symbols), 3, 1_000, 50, 10, kill_switch=False)
     events_before = len(ledger.all())
@@ -99,7 +102,7 @@ def run_paper(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: P
     except Exception as exc:
         replay_equal = False
         anomalies.append(f"LEDGER_REPLAY:{type(exc).__name__}")
-    report = {"run_id": run_id, "mode": "paper", "status": "PASS" if integrity_ok and replay_equal else "FAIL",
+    report = {"run_id": run_id or uuid.uuid4().hex[:12], "mode": "paper", "status": "PASS" if integrity_ok and replay_equal else "FAIL",
               "integrity_ok": integrity_ok and replay_equal, "cycles_requested": cycles * len(symbols),
               "cycles_completed": len(results), "orders_placed": len(venue.orders), "signed_calls": 0,
               "network_calls": 0, "counts": {**counts, "cycles": len(results)},
@@ -133,11 +136,14 @@ def main() -> None:
     parser.add_argument("--ledger", default="data/autonomous-paper.sqlite3")
     parser.add_argument("--reports-dir", default="reports")
     parser.add_argument("--inject-integrity-failure", action="store_true")
+    parser.add_argument("--run-id", default=None, help="tag this run so ledger PnL is scoped, not blended with prior runs")
+    parser.add_argument("--reset", action="store_true", help="delete all prior ledger rows before this run")
     args = parser.parse_args()
     try:
         symbols = [symbol.strip().upper() for value in args.symbols for symbol in value.split(",") if symbol.strip()]
         report = run_paper(args.cycles, symbols,
-                           Path(args.ledger), Path(args.reports_dir), args.scenario, args.inject_integrity_failure)
+                           Path(args.ledger), Path(args.reports_dir), args.scenario, args.inject_integrity_failure,
+                           run_id=args.run_id, reset=args.reset)
     except Exception as exc:
         parser.error(str(exc))
     print(json.dumps(report, sort_keys=True))

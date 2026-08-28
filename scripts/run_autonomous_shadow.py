@@ -19,10 +19,13 @@ from src.runtime.canonical import CanonicalOfflineRuntime
 from src.reporting import write_run_report
 
 
-def run_shadow(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: Path) -> dict:
+def run_shadow(cycles: int, symbols: list[str], ledger_path: Path, reports_dir: Path,
+              run_id: str | None = None, reset: bool = False) -> dict:
     if cycles < 1 or not symbols:
         raise ValueError("cycles and symbols must be non-empty")
-    ledger = EventLedger(ledger_path)
+    ledger = EventLedger(ledger_path, run_id=run_id)
+    if reset:
+        ledger.reset()
     runtime = CanonicalOfflineRuntime.fixture_shadow(ledger)
     for cycle in range(cycles):
         for symbol in symbols:
@@ -52,12 +55,14 @@ def main() -> None:
     parser.add_argument("--ledger", default="data/autonomous-shadow.sqlite3")
     parser.add_argument("--reports-dir", default="reports")
     parser.add_argument("--signed", action="store_true", help="rejected: signed execution is not implemented")
+    parser.add_argument("--run-id", default=None, help="tag this run so ledger PnL is scoped, not blended with prior runs")
+    parser.add_argument("--reset", action="store_true", help="delete all prior ledger rows before this run")
     args = parser.parse_args()
     if args.signed:
         parser.error("signed execution is not implemented; shadow mode is observation-only")
     try:
         report = run_shadow(args.cycles, [s.strip().upper() for s in args.symbols.split(",") if s.strip()],
-                            Path(args.ledger), Path(args.reports_dir))
+                            Path(args.ledger), Path(args.reports_dir), run_id=args.run_id, reset=args.reset)
     except Exception as exc:
         parser.error(str(exc))
     print(json.dumps(report, sort_keys=True))
