@@ -8,7 +8,7 @@ from typing import Mapping
 
 BREAKER_NAMES = (
     "provider", "market_data", "rate_limit", "reconciliation",
-    "protection", "daily_loss", "drawdown", "heartbeat",
+    "protection", "daily_loss", "drawdown", "heartbeat", "resource",
 )
 
 

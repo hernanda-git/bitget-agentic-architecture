@@ -13,6 +13,7 @@ from src.ledger.sqlite import EventLedger
 
 def _serve(monkeypatch, tmp_path):
     monkeypatch.setattr(ui_server, "LEDGER_PATH", tmp_path / "ledger.sqlite3")
+    monkeypatch.setattr(ui_server, "BREAKER_PATH", tmp_path / "breakers.json")
     server = ui_server.ThreadingHTTPServer(("127.0.0.1", 0), ui_server.Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -41,6 +42,7 @@ def test_state_empty_ledger_is_exact_read_only_projection(monkeypatch, tmp_path)
         "market_data": "unknown",
         "reconciliation": "unknown",
         "protection": "unknown",
+        "breakers": {"open": [], "reason_codes": [], "path_present": False},
         "latest_cycle": None,
         "latest_evidence": {
             "context_hash": None,
@@ -134,3 +136,29 @@ def test_health_is_explicitly_read_only(monkeypatch, tmp_path):
         server.shutdown()
     assert status == 200
     assert body == {"mode": "demo-readonly", "product_type": "SUSDT-FUTURES", "writable": False, "ok": True}
+
+
+def test_state_includes_breaker_status_surface(monkeypatch, tmp_path):
+    monkeypatch.setattr(ui_server, "LEDGER_PATH", tmp_path / "ledger.sqlite3")
+    monkeypatch.setattr(ui_server, "BREAKER_PATH", tmp_path / "breakers.json")
+    body = ui_server.ledger_state()
+    assert "breakers" in body
+    assert body["breakers"]["open"] == []
+    assert body["breakers"]["path_present"] is False
+    assert "BITGET_API_SECRET" not in json.dumps(body)
+
+
+def test_state_projects_open_resource_breaker_when_present(monkeypatch, tmp_path):
+    from src.policy.breakers import BreakerRegistry, BreakerStore
+
+    monkeypatch.setattr(ui_server, "LEDGER_PATH", tmp_path / "ledger.sqlite3")
+    breaker_path = tmp_path / "breakers.json"
+    monkeypatch.setattr(ui_server, "BREAKER_PATH", breaker_path)
+    reg = BreakerRegistry(BreakerStore(breaker_path))
+    reg.trip("resource", "resource pressure: LOW_AVAILABLE_MEMORY")
+    body = ui_server.ledger_state()
+    assert body["breakers"]["open"] == ["resource"]
+    assert "RESOURCE_BREAKER" in body["breakers"]["reason_codes"]
+    assert body["breakers"]["path_present"] is True
+    # Still no credentials or signed-call surface, only a local breaker read.
+    assert "BITGET_API_SECRET" not in json.dumps(body)

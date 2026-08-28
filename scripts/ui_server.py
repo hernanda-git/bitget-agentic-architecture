@@ -12,9 +12,13 @@ ROOT = Path(__file__).resolve().parents[1]
 if __package__ in (None, ""):
     sys.path.insert(0, str(ROOT))
 from src.ledger.sqlite import EventLedger
+from src.policy.breakers import BreakerRegistry, BreakerStore
 
 PRODUCT = "SUSDT-FUTURES"
 LEDGER_PATH = ROOT / "data" / "paper.sqlite3"
+# Same breaker store the autonomous runtime writes open fail-closed breakers to
+# (provider, market_data, heartbeat, resource, ...). The dashboard only reads it.
+BREAKER_PATH = ROOT / "data" / "breakers.json"
 
 
 def _status(events, names, default="unknown"):
@@ -25,6 +29,25 @@ def _status(events, names, default="unknown"):
             if value:
                 return str(value).lower()
     return default
+
+
+def _breaker_state():
+    """Truthfully project the open fail-closed breakers (e.g. resource pressure).
+
+    Reads the same breaker store the runtime writes. If the store is absent or
+    unreadable, reports ``path_present=False`` rather than inventing a state.
+    No signed calls, no credentials: this is a pure local-file read.
+    """
+    try:
+        reg = BreakerRegistry(BreakerStore(BREAKER_PATH))
+        open_breakers = sorted(reg.snapshot().keys())
+        return {
+            "open": open_breakers,
+            "reason_codes": reg.reason_codes(),
+            "path_present": BREAKER_PATH.exists(),
+        }
+    except Exception:
+        return {"open": [], "reason_codes": [], "path_present": False, "error": "unavailable"}
 
 
 def _approved(value):
@@ -125,7 +148,7 @@ def ledger_state():
             break
     counts = ledger.disposition_counts()
     recent = [{"event_type": event["event_type"], "created_ms": event["created_ms"], "source": "ledger"} for event in events[-8:]]
-    return {"mode": "demo-readonly", "writable": False, "product_type": PRODUCT, "sources": ["ledger"], "kill_switch": kill_switch, "provider": provider, "market_data": market_data, "reconciliation": reconciliation, "protection": protection, "latest_cycle": _approved(latest_cycle), "latest_evidence": _cycle_evidence(ledger, latest_cycle), "disposition_counts": counts, "open_positions": _approved(positions), "recent_events": recent}
+    return {"mode": "demo-readonly", "writable": False, "product_type": PRODUCT, "sources": ["ledger"], "kill_switch": kill_switch, "provider": provider, "market_data": market_data, "reconciliation": reconciliation, "protection": protection, "breakers": _breaker_state(), "latest_cycle": _approved(latest_cycle), "latest_evidence": _cycle_evidence(ledger, latest_cycle), "disposition_counts": counts, "open_positions": _approved(positions), "recent_events": recent}
 
 
 class Handler(SimpleHTTPRequestHandler):

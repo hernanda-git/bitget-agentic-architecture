@@ -14,13 +14,15 @@ from src.market.models import MarketSnapshot
 from src.providers.circuit import ProviderCircuit
 from src.providers.ports import AgentProvider, ProviderResponse
 from src.reconcile.engine import reconcile_positions, verify_protection
+from src.policy.breakers import BreakerRegistry
 from src.policy.sizing import size_for_risk
 
 
 class AutonomousPaperRuntime:
     def __init__(self, provider: AgentProvider, policy: Policy, ledger: EventLedger,
                  exchange: FakeExchange | None = None, *, provider_timeout_seconds: float = 8.0,
-                 provider_failure_threshold: int = 3) -> None:
+                 provider_failure_threshold: int = 3,
+                 breakers: BreakerRegistry | None = None) -> None:
         self.policy = policy
         self.ledger = ledger
         self.exchange = exchange or FakeExchange()
@@ -28,6 +30,10 @@ class AutonomousPaperRuntime:
             raise TypeError("AutonomousPaperRuntime accepts FakeExchange only")
         self.circuit = provider if isinstance(provider, ProviderCircuit) else ProviderCircuit(
             provider, provider_timeout_seconds, provider_failure_threshold)
+        # Optional fail-closed entry circuit: when any breaker is open (provider,
+        # market_data, heartbeat, resource, ...) new entries are parked. The model
+        # can never open or clear a breaker; this is a deterministic policy control.
+        self.breakers = breakers
         self._event_context: dict[str, Any] = {}
 
     async def process(self, snapshot: MarketSnapshot, portfolio: PortfolioView | None = None,
@@ -47,6 +53,8 @@ class AutonomousPaperRuntime:
             self._append("CYCLE_TERMINAL", {"cycle_id": cycle_id, "disposition": "SKIPPED", "reason": "DUPLICATE_CYCLE"})
             return {"status": "SKIPPED", "reason": "DUPLICATE_CYCLE", "cycle_id": cycle_id}
         self._append("MARKET_OBSERVED", {"cycle_id": cycle_id, "symbol": snapshot.symbol, "snapshot_hash": cycle_id})
+        if self.breakers is not None and self.breakers.entries_parked():
+            return self._terminal(cycle_id, "PARKED", "BREAKER_OPEN")
         freshness = check_freshness(snapshot, now_ts_ms, self.policy.max_snapshot_age_seconds)
         if not freshness.ok:
             return self._terminal(cycle_id, "PARKED", freshness.reason)
