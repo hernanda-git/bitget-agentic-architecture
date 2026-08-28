@@ -1,0 +1,98 @@
+{
+  "generated_ms": 1787922357893,
+  "mode": "observed-public-orderbook (read-only, no execution)",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "XRPUSDT",
+    "ADAUSDT",
+    "AVAXUSDT",
+    "SUIUSDT",
+    "NEARUSDT"
+  ],
+  "snapshots_per_symbol": 3,
+  "limit": 20,
+  "calibration": {
+    "BTCUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 0.012590533807889956,
+      "spread_bps_mean": 0.012590533807889956,
+      "mid_mean": 79424.75,
+      "depth_5bps_mean": 122.01210000000007,
+      "depth_60bps_mean": 122.01210000000007
+    },
+    "ETHUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 0.039953893206294055,
+      "spread_bps_mean": 0.039953893206294055,
+      "mid_mean": 2502.885,
+      "depth_5bps_mean": 5252.630000000001,
+      "depth_60bps_mean": 10045.943333333336
+    },
+    "SOLUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 0.09518325155551086,
+      "spread_bps_mean": 0.09518264757691682,
+      "mid_mean": 105.06116666666667,
+      "depth_5bps_mean": 28048.60000000001,
+      "depth_60bps_mean": 115272.79999999999
+    },
+    "XRPUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 0.7028641714987803,
+      "spread_bps_mean": 0.7028477053880051,
+      "mid_mean": 1.4227833333333333,
+      "depth_5bps_mean": 1134179.3333333333,
+      "depth_60bps_mean": 26366088.0
+    },
+    "ADAUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 4.797313504436987,
+      "spread_bps_mean": 4.797313504436987,
+      "mid_mean": 0.20845,
+      "depth_5bps_mean": 179446.0,
+      "depth_60bps_mean": 23722516.666666668
+    },
+    "AVAXUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 1.3499831252113854,
+      "spread_bps_mean": 1.3500438818947138,
+      "mid_mean": 7.407166666666666,
+      "depth_5bps_mean": 3747.566666666667,
+      "depth_60bps_mean": 238359.66666666666
+    },
+    "SUIUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 1.318130890397271,
+      "spread_bps_mean": 1.318130890397271,
+      "mid_mean": 0.7586499999999999,
+      "depth_5bps_mean": 331353.2,
+      "depth_60bps_mean": 7730083.2
+    },
+    "NEARUSDT": {
+      "n": 3,
+      "n_valid": 3,
+      "rejected": 0,
+      "spread_bps_median": 1.60939888951578,
+      "spread_bps_mean": 1.788192211057316,
+      "mid_mean": 1.8640999999999999,
+      "depth_5bps_mean": 16739.0,
+      "depth_60bps_mean": 1463546.6666666667
+    }
+  }
+}

@@ -12,6 +12,7 @@ from typing import Any
 import httpx
 
 from src.market.models import Candle, MarketSnapshot
+from src.market.orderbook import OrderBook, OrderBookError, parse_order_book
 
 
 class PublicMarketError(RuntimeError):
@@ -35,7 +36,7 @@ class RequestMetrics:
 
 
 class BitgetPublicClient:
-    CATEGORIES = ("ticker", "candles", "funding", "open_interest")
+    CATEGORIES = ("ticker", "candles", "funding", "open_interest", "orderbook")
 
     def __init__(self, base_url: str = "https://api.bitget.com", product_type: str | None = None,
                  timeout_seconds: float = 5.0, min_interval_seconds: float = 0.05,
@@ -188,6 +189,28 @@ class BitgetPublicClient:
         if any(a.source_ts_ms > b.source_ts_ms for a, b in zip(candles, candles[1:])):
             raise PublicMarketError("CANDLE_TIMESTAMP_REGRESSION")
         return candles
+
+    async def get_order_book(self, symbol: str, limit: int = 20) -> OrderBook:
+        """Fetch the live public order book for a symbol and normalize it (read-only).
+
+        Uses ``GET /api/v2/mix/market/orderbook`` with ``productType`` bound to the
+        client's product type (``SUSDT-FUTURES``). Returns a validated ``OrderBook``.
+        Fail-closed on a missing/!00000 payload or on a book that cannot be normalized.
+        """
+        if limit < 1 or limit > 200:
+            raise PublicMarketError("ORDERBOOK_LIMIT")
+        params = {"symbol": symbol, "productType": self.product_type, "type": "step0", "limit": str(limit)}
+        data = await self._get("/api/v2/mix/market/orderbook", params, "orderbook")
+        if not isinstance(data, dict) or "bids" not in data or "asks" not in data:
+            self.metrics.schema_rejections += 1
+            raise PublicMarketError("ORDERBOOK_SCHEMA")
+        try:
+            ts = int(data.get("ts", 0) or 0)
+            ob = parse_order_book(symbol, data, ts_ms=ts)
+        except (OrderBookError, TypeError, ValueError) as exc:
+            self.metrics.schema_rejections += 1
+            raise PublicMarketError("ORDERBOOK_VALUES") from exc
+        return ob
 
     async def fetch_snapshot(self, symbol: str, observed_ts_ms: int | None = None, windows: tuple[str, ...] = ("1m",), limit: int = 100) -> MarketSnapshot:
         ticker = await self.fetch_ticker(symbol)
