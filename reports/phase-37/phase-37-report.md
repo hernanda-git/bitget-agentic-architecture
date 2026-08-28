@@ -28,23 +28,35 @@ A half-written, uncommitted Phase 37 already existed from a prior session (`src/
 - **RED:** `tests/test_run_cost_envelope_per_tier.py` written first; `from scripts.run_cost_envelope_per_tier import build_per_tier_report` -> `ModuleNotFoundError`. 2 failed.
 - **GREEN:** implemented `build_per_tier_report` (loads the committed Phase 36 table + every local `data/history/*.json`, passes all symbols through `cost_envelope_per_tier`, which recalibrates only observed-spread symbols and reports the rest under `unknown_symbols`) + `main()` (argparse, writes JSON + markdown). 2 passed with a synthetic in-repo dataset (no network, no secrets).
 
+### C. Corpus data-quality scanner (`scripts/check_corpus_quality.py`)
+- **RED:** `tests/test_check_corpus_quality.py` written first; `from scripts.check_corpus_quality import scan_corpus` -> `ModuleNotFoundError`. 3 failed.
+- **GREEN:** implemented `scan_corpus` (loads every `data/history/*.json`, validates symbol format, integrity hash, assumed spread, candle non-emptiness; ignores the manifest; never crashes on one bad file) + `main()` (writes JSON, **exit 1 when any defect is found** — fail-closed so a dirty corpus cannot be laundered into "clean"). 3 passed with synthetic in-repo datasets (valid / invalid-symbol / tampered-integrity / malformed / manifest).
+- **Mutation check:** temporarily changed `if not VALID_SYMBOL.match(sym):` -> `if False:` so an invalid symbol is no longer flagged; `test_scan_corpus_flags_defects` failed (1 failed), reverted to 3 passed. Proves the defect assertion binds.
+
 ## What this run added / changed
 - `src/evaluation/symbol_cost_table.py` — NEW (carried over + finalized): `ObservedCostTable`, `load_observed_spread_table` (fail-closed), `liquidity_tier`, `classify_symbols`, `tier_median_spread`, `recalibrate_spread`, `recalibrate_snapshots_by_symbol`.
 - `src/evaluation/cost_sensitivity.py` — MODIFIED (+62 lines): `cost_envelope_per_tier` recalibrates each symbol to its observed spread, groups net PnL per liquidity tier, and is always `selection_blocked=True` / `promotion_blocked=True`.
 - `scripts/run_cost_envelope_per_tier.py` — NEW: offline, reproducible per-tier envelope runner.
-- `tests/test_symbol_cost_table.py` (13), `tests/test_cost_envelope_per_tier.py` (3, repaired), `tests/test_run_cost_envelope_per_tier.py` (2) — NEW TDD suites.
-- `reports/phase-37/per_tier_cost_envelope.json` + `.md` — committed evidence over the real corpus.
+- `scripts/check_corpus_quality.py` — NEW: offline, fail-closed corpus data-quality scanner (surfaced the real `TINY_1m.json` invalid-symbol defect).
+- `tests/test_symbol_cost_table.py` (13), `tests/test_cost_envelope_per_tier.py` (3, repaired), `tests/test_run_cost_envelope_per_tier.py` (2), `tests/test_check_corpus_quality.py` (3) — NEW TDD suites.
+- `reports/phase-37/phase-37-report.md`, `reports/phase-37/per_tier_cost_envelope.json` + `.md`, `reports/phase-37/corpus_quality.json` — committed evidence.
 
 ## Raw tests (executed this run)
 ```text
 pytest tests/test_symbol_cost_table.py tests/test_cost_envelope_per_tier.py -q  -> 16 passed
 pytest tests/test_run_cost_envelope_per_tier.py -q                              -> 2 passed
+pytest tests/test_check_corpus_quality.py -q                                   -> 3 passed
 python3 -m compileall -q src scripts tests                                     -> exit 0 (clean)
-pytest tests/ -q                                                               -> 589 passed, 0 failed (full suite, no regressions)
-# mutation check (temporary, reverted):
+pytest tests/ -q                                                               -> 591 passed, 0 failed (full suite, no regressions)
+# mutation checks (temporary, reverted):
 #   any(n>0)->any(n>9999) in cost_sensitivity + ask half-sign flip in symbol_cost_table
-#   -> 4 failed / 12 passed ; reverted -> 16 passed
+#     -> 4 failed / 12 passed ; reverted -> 16 passed
+#   VALID_SYMBOL.match(sym) guard in check_corpus_quality disabled
+#     -> 1 failed / 2 passed ; reverted -> 3 passed
 ```
+
+## Offline corpus-quality scan (no egress)
+Invoked `scripts/check_corpus_quality.py` over `data/history/*.json` (already-local public corpus). It scanned 30 files, found **1 defect**: `TINY_1m.json` has symbol `TINY` (not upper-case `USDT`-suffixed) and is therefore excluded from every replay. The scanner exits 1 (fail-closed) so a dirty corpus can never be reported clean. Evidence: `reports/phase-37/corpus_quality.json`.
 
 ## Offline replay over the real corpus (no egress)
 Invoked `scripts/run_cost_envelope_per_tier.py --limit 300` over `data/history/*.json` (already-local public Bitget 1m candles, git-ignored corpus) and the committed `reports/phase-36/orderbook_calibration.json` table.
@@ -81,6 +93,6 @@ Invoked `scripts/run_cost_envelope_per_tier.py --limit 300` over `data/history/*
 - **Still BLOCKED.** This phase is purely cost-surface realism. The deterministic baseline remains negative; no promotion action was taken and none is authorized while the baseline is negative.
 
 ## Commit / push
-- New/changed: `src/evaluation/symbol_cost_table.py`, `src/evaluation/cost_sensitivity.py`, `scripts/run_cost_envelope_per_tier.py`, `tests/test_symbol_cost_table.py`, `tests/test_cost_envelope_per_tier.py`, `tests/test_run_cost_envelope_per_tier.py`, `reports/phase-37/phase-37-report.md`, `reports/phase-37/per_tier_cost_envelope.json`, `reports/phase-37/per_tier_cost_envelope.md`.
+- New/changed: `src/evaluation/symbol_cost_table.py`, `src/evaluation/cost_sensitivity.py`, `scripts/run_cost_envelope_per_tier.py`, `scripts/check_corpus_quality.py`, `tests/test_symbol_cost_table.py`, `tests/test_cost_envelope_per_tier.py`, `tests/test_run_cost_envelope_per_tier.py`, `tests/test_check_corpus_quality.py`, `reports/phase-37/phase-37-report.md`, `reports/phase-37/per_tier_cost_envelope.json`, `reports/phase-37/per_tier_cost_envelope.md`, `reports/phase-37/corpus_quality.json`.
 - Git identity verified: `user.name=𝕧𝕒𝕝𝕒𝕣𝕚𝕠𝕟`, `user.email=42990222+hernanda-git@users.noreply.github.com` (matches `gh api`).
-- Secret scan: `.env` is git-ignored; content scan over tracked + new text found **0 secret hits**. Verified repeatable, network-free, secret-free command: `pytest tests/test_symbol_cost_table.py tests/test_cost_envelope_per_tier.py tests/test_run_cost_envelope_per_tier.py -q`.
+- Secret scan: `.env` is git-ignored; content scan over tracked + new text found **0 secret hits**. Verified repeatable, network-free, secret-free command: `pytest tests/test_symbol_cost_table.py tests/test_cost_envelope_per_tier.py tests/test_run_cost_envelope_per_tier.py tests/test_check_corpus_quality.py -q`.

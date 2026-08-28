@@ -1,0 +1,219 @@
+{
+  "history_dir": "data/history",
+  "n_files": 30,
+  "n_problems": 1,
+  "ok": false,
+  "problems": [
+    "TINY_1m.json"
+  ],
+  "files": {
+    "AAVEUSDT_1m.json": {
+      "path": "AAVEUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "AAVEUSDT"
+    },
+    "ADAUSDT_1m.json": {
+      "path": "ADAUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "ADAUSDT"
+    },
+    "APTUSDT_1m.json": {
+      "path": "APTUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "APTUSDT"
+    },
+    "ARBUSDT_1m.json": {
+      "path": "ARBUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "ARBUSDT"
+    },
+    "ATOMUSDT_1m.json": {
+      "path": "ATOMUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "ATOMUSDT"
+    },
+    "AVAXUSDT_1m.json": {
+      "path": "AVAXUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "AVAXUSDT"
+    },
+    "BCHUSDT_1m.json": {
+      "path": "BCHUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "BCHUSDT"
+    },
+    "BNBUSDT_1m.json": {
+      "path": "BNBUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "BNBUSDT"
+    },
+    "BTCUSDT_1m.json": {
+      "path": "BTCUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "BTCUSDT"
+    },
+    "BTCUSDT_5m.json": {
+      "path": "BTCUSDT_5m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2000,
+      "symbol": "BTCUSDT"
+    },
+    "DOGEUSDT_1m.json": {
+      "path": "DOGEUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "DOGEUSDT"
+    },
+    "DOTUSDT_1m.json": {
+      "path": "DOTUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "DOTUSDT"
+    },
+    "ETCUSDT_1m.json": {
+      "path": "ETCUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "ETCUSDT"
+    },
+    "ETHUSDT_1m.json": {
+      "path": "ETHUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "ETHUSDT"
+    },
+    "ETHUSDT_5m.json": {
+      "path": "ETHUSDT_5m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2000,
+      "symbol": "ETHUSDT"
+    },
+    "FILUSDT_1m.json": {
+      "path": "FILUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "FILUSDT"
+    },
+    "INJUSDT_1m.json": {
+      "path": "INJUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "INJUSDT"
+    },
+    "LINKUSDT_1m.json": {
+      "path": "LINKUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "LINKUSDT"
+    },
+    "LTCUSDT_1m.json": {
+      "path": "LTCUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "LTCUSDT"
+    },
+    "NEARUSDT_1m.json": {
+      "path": "NEARUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "NEARUSDT"
+    },
+    "OPUSDT_1m.json": {
+      "path": "OPUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "OPUSDT"
+    },
+    "SOLUSDT_1m.json": {
+      "path": "SOLUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "SOLUSDT"
+    },
+    "SUIUSDT_1m.json": {
+      "path": "SUIUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "SUIUSDT"
+    },
+    "TINYUSDT_1m.json": {
+      "path": "TINYUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 150,
+      "symbol": "TINYUSDT"
+    },
+    "TINY_1m.json": {
+      "path": "TINY_1m.json",
+      "status": "invalid_symbol",
+      "issues": [
+        "symbol 'TINY' is not upper-case USDT-suffixed"
+      ]
+    },
+    "TRXUSDT_1m.json": {
+      "path": "TRXUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "TRXUSDT"
+    },
+    "UNIUSDT_1m.json": {
+      "path": "UNIUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "UNIUSDT"
+    },
+    "XLMUSDT_1m.json": {
+      "path": "XLMUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "XLMUSDT"
+    },
+    "XRPUSDT_1m.json": {
+      "path": "XRPUSDT_1m.json",
+      "status": "ok",
+      "issues": [],
+      "n_candles": 2500,
+      "symbol": "XRPUSDT"
+    },
+    "corpus_manifest.json": {
+      "path": "corpus_manifest.json",
+      "status": "ignored_non_dataset",
+      "issues": []
+    }
+  }
+}
