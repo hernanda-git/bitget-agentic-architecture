@@ -155,3 +155,135 @@ def attribute_performance(
             "dominant_net_contributor": dominant_net_name,
         },
     }
+
+
+def attribute_performance_by_regime(
+    strategy_returns: Dict[str, List[float]],
+    regime_labels: List[str],
+    *,
+    min_samples: int = 30,
+    confidence: float = 0.95,
+    bootstrap_samples: int = 2000,
+    seed: int = 0,
+) -> dict:
+    """Decompose measured per-strategy returns by market regime (descriptive).
+
+    Slices the SAME aligned per-step return stream by an externally supplied
+    ``regime_labels`` series (one label per shared timestep, produced by
+    ``src.strategies.regime.classify_regime`` in the real pipeline) and reports,
+    fail-closed and descriptively:
+
+    * per-regime equal-weight blend expectancy + bootstrap CI + sample size
+    * per-strategy / per-regime expectancy matrix
+    * edge concentration: which regime carries the most |net| and its share
+
+    This answers the honest-edge question the family-level attribution cannot:
+    *is the edge concentrated in one regime?* A strategy whose aggregate is
+    positive only because of a single lucky regime is fragile, and a lone
+    dominant regime can launder a spurious edge past the cross-sectional
+    dispersion check.
+
+    It never emits a winner / promotion / selection flag and ``selection_blocked``
+    is always ``True``, so it cannot change the deterministic Phase 6 promotion
+    gate (which stays blocked in this repository). No network, no credentials,
+    no signed calls, no orders.
+
+    ``regime_labels`` must be aligned (same length) to every strategy series.
+    """
+    if len(strategy_returns) < 2:
+        raise ValueError("need at least 2 strategies for regime attribution")
+    n_steps = len(regime_labels)
+    if n_steps < 1:
+        raise ValueError("regime_labels must be non-empty")
+
+    # Fail-closed input validation: alignment + finiteness.
+    cleaned: "Dict[str, List[float]]" = {}
+    for name, series in strategy_returns.items():
+        if not series:
+            raise ValueError("empty return series for strategy %s" % name)
+        if len(series) != n_steps:
+            raise ValueError(
+                "strategy %s series length %d is not aligned to %d regime labels"
+                % (name, len(series), n_steps)
+            )
+        for v in series:
+            if not _FINITE(v):
+                raise ValueError("non-finite return for strategy %s" % name)
+        cleaned[name] = [float(v) for v in series]
+
+    # Gather every strategy's return at each regime's steps (the equal-weight
+    # blend is the concatenation; it equals the per-step cross-strategy mean).
+    regime_order: List[str] = []
+    regime_returns: "Dict[str, List[float]]" = {}
+    for i, reg in enumerate(regime_labels):
+        if reg not in regime_returns:
+            regime_returns[reg] = []
+            regime_order.append(reg)
+        for name in cleaned:
+            regime_returns[reg].append(cleaned[name][i])
+
+    regimes: "Dict[str, dict]" = {}
+    total_abs_net = 0.0
+    for reg in regime_order:
+        rets = regime_returns[reg]
+        net = sum(rets)
+        expectancy = net / len(rets) if rets else 0.0
+        ci = bootstrap_ci(rets, samples=bootstrap_samples, confidence=confidence, seed=seed)
+        n_strategies = sum(
+            1 for name in cleaned if any(regime_labels[i] == reg for i in range(n_steps))
+        )
+        regimes[reg] = {
+            "n": len(rets),
+            "n_strategies": n_strategies,
+            "expectancy": expectancy,
+            "bootstrap_ci": list(ci),
+            "net": net,
+            "share_of_abs_net": None,  # filled after total_abs_net known
+        }
+        total_abs_net += abs(net)
+
+    for reg in regimes:
+        regimes[reg]["share_of_abs_net"] = (
+            (abs(regimes[reg]["net"]) / total_abs_net) if total_abs_net > 0 else None
+        )
+
+    # Per-strategy / per-regime expectancy matrix.
+    strategies: "Dict[str, Dict[str, dict]]" = {}
+    for name in sorted(cleaned):
+        strategies[name] = {}
+        for reg in regime_order:
+            rs = [cleaned[name][i] for i in range(n_steps) if regime_labels[i] == reg]
+            net_s = sum(rs)
+            expectancy_s = net_s / len(rs) if rs else 0.0
+            ci_s = bootstrap_ci(rs, samples=bootstrap_samples, confidence=confidence, seed=seed)
+            strategies[name][reg] = {
+                "n": len(rs),
+                "expectancy": expectancy_s,
+                "bootstrap_ci": list(ci_s),
+            }
+
+    # Edge concentration: which regime carries the most |net|, and its share.
+    if regimes:
+        dominant_name, dominant = max(regimes.items(), key=lambda kv: abs(kv[1]["net"]))
+        dominant_regime = dominant_name
+        dominant_share = dominant["share_of_abs_net"]
+        positive_count = sum(1 for r in regimes.values() if r["expectancy"] > 0)
+    else:
+        dominant_regime = None
+        dominant_share = None
+        positive_count = 0
+
+    return {
+        "selection_blocked": True,
+        "attribution_is_descriptive": True,
+        "n_strategies": len(cleaned),
+        "n_steps": n_steps,
+        "regimes": regimes,
+        "strategies": strategies,
+        "edge_concentration": {
+            "dominant_regime": dominant_regime,
+            "dominant_share_abs": dominant_share,
+            "regimes_with_positive_expectancy": positive_count,
+        },
+        "regime_labels_observed": sorted(regimes.keys()),
+    }
