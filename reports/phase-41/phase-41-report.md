@@ -67,7 +67,10 @@ venue actually bills.
   `_per_bar_funding` helper; imports `is_settlement_timestamp`, `settlement_funding_leg`.
 - `src/market/history.py` — funding-attachment comment/semantics clarified (no behavior change).
 - `tests/test_funding_model.py` — NEW `test_settlement_funding_leg_matches_position_funding_direction`.
-- `tests/test_phase2_exchange.py` — NEW settlement-accrual + proxy-fallback + short-mirror tests.
+- `tests/test_phase2_exchange.py` — NEW settlement-accrual + proxy-fallback + short-mirror tests,
+  and `test_dense_per_bar_funding_accrues_only_at_settlements` (the anti-overstatement
+  invariant: a 48h position with funding-bearing events only at 8h settlement boundaries
+  accrues exactly 5 legs, far below the old per-bar proxy's 48).
 - `reports/phase-41/phase-41-report.md` — this report.
 
 ## Raw tests (executed this run)

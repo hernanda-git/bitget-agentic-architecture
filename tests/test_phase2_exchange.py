@@ -198,6 +198,32 @@ def test_funding_settlement_short_receives_positive_rate():
     assert exchange.read_balance()["funding_received"] == pytest.approx(0.01)
 
 
+def test_dense_per_bar_funding_accrues_only_at_settlements():
+    """Phase 41 anti-overstatement invariant, mirroring the real-replay contract.
+
+    In real replay, ``snapshots_from_dataset`` attaches ``funding_rate`` ONLY to the
+    settlement-crossing snapshot (one per settlement), and ``baseline`` forwards that
+    snapshot's ``source_ts_ms`` -- an exact 8h boundary -- as the MarketEvent
+    timestamp. So a position spanning 48h sees funding-bearing events only at the
+    settlement boundaries (8h, 16h, 24h, 32h, 40h within (0, 48h]) and accrues exactly
+    5 settlement legs via the shared model, never one per bar. This asserts that
+    contract: feed funding only on settlement-timestamped events."""
+    exchange = FakeExchange(fee_bps=0)
+    exchange.submit_order(OrderRequest("open", "BTCUSDT", "BUY", 1.0, None))
+    settlement_hours = [8, 16, 24, 32, 40]  # 8h multiples within (0, 48h]
+    for hour in settlement_hours:
+        ts = hour * 3600 * 1000  # exact 8h boundary -> is_settlement_timestamp True
+        exchange.apply_market_event(
+            MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=100.0, sequence=hour,
+                        timestamp_ms=ts, funding_rate=0.0001)
+        )
+    # Exactly 5 settlement legs, qty 1, mark 100 => 5 * 1 * 100 * 0.0001 = 0.05.
+    assert exchange.read_balance()["funding_paid"] == pytest.approx(5 * 1.0 * 100.0 * 0.0001)
+    assert exchange.read_balance()["funding_received"] == pytest.approx(0.0)
+    # Far smaller than the old per-bar proxy would have charged on a dense 48-bar series.
+    assert exchange.read_balance()["funding_paid"] < 48 * 1.0 * 100.0 * 0.0001
+
+
 def test_accounting_includes_fees_funding_slippage_and_return_on_margin():
     result = calculate_trade(side="BUY", quantity=1, entry_price=100, exit_price=110,
                              entry_fee=0.05, exit_fee=0.055, funding_paid=0.1,
