@@ -241,6 +241,33 @@ class EventLedger:
         return sum(float(e["payload"].get("fee", 0)) for e in self.all()
                   if e["event_type"] == "FILL_OBSERVED" and (not rid or e.get("run_id") == rid))
 
+    def reconcile_funding(self, legs, run_id: str | None = None) -> dict:
+        """Bind the ledger's recorded funding to the realistic settlement model.
+
+        ``legs`` is a sequence of :class:`~src.evaluation.funding_model.FundingLeg`
+        (e.g. produced by ``position_funding`` / ``reconcile_funding_legs``). The
+        model's net funding is compared against the funding summed from every
+        ``FILL_OBSERVED`` row in scope. When they agree (within float tolerance) the
+        ledger is consistent with the settlement-accurate model; on any discrepancy
+        the result is fail-closed (``in_sync=False``) so a drift can never be
+        laundered into "balanced". No network, no signed calls.
+
+        This closes the Phase 41 loop on the ledger side: the exchange now accrues
+        funding via the shared model, and the ledger records/verifies it the same way.
+        """
+        from src.evaluation.funding_model import reconcile_funding_legs
+        rid = run_id if run_id is not None else self.run_id
+        model_net = reconcile_funding_legs(list(legs))
+        ledger_net = 0.0
+        for e in self.all():
+            if rid and e.get("run_id") != rid:
+                continue
+            if e["event_type"] == "FILL_OBSERVED":
+                ledger_net += float(e["payload"].get("funding", 0.0))
+        in_sync = abs(model_net - ledger_net) <= 1e-9
+        return {"in_sync": in_sync, "model_net": model_net, "ledger_net": ledger_net,
+                "legs": len(legs)}
+
     def funding(self, run_id: str | None = None):
         # Mirror replay_events exactly: sum FILL_OBSERVED funding when present,
         # otherwise fall back to TRADE_CLOSED funding (keeps replay integrity).

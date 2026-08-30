@@ -95,9 +95,10 @@ def test_cost_envelope_per_tier_recalibrates_observed_spread():
 
 
 def test_cost_envelope_per_tier_real_history_blocked():
-    """Honest real-shaped check over already-local public history (no egress):
-    recalibrate BTCUSDT + ADAUSDT to their observed spreads and confirm the
-    per-tier envelope stays fully blocked."""
+    """Honest real-shaped check over committed public-history fixtures (no egress,
+    deterministic): recalibrate BTCUSDT + ADAUSDT to their observed spreads and
+    confirm the per-tier envelope stays fully blocked. Using committed fixtures
+    avoids depending on the git-ignored live corpus that drifts over time."""
     from pathlib import Path
     from src.market.history import load_dataset, snapshots_from_dataset
     from src.evaluation.cost_sensitivity import cost_envelope_per_tier
@@ -106,8 +107,8 @@ def test_cost_envelope_per_tier_real_history_blocked():
         spreads_bps={"BTCUSDT": 0.012590533807889956, "ADAUSDT": 4.797313504436987},
         source="phase-36")
     sym_snaps = []
-    for sym, path in (("BTCUSDT", "data/history/BTCUSDT_1m.json"),
-                      ("ADAUSDT", "data/history/ADAUSDT_1m.json")):
+    for sym, path in (("BTCUSDT", "tests/fixtures/BTCUSDT_1m.json"),
+                      ("ADAUSDT", "tests/fixtures/ADAUSDT_1m.json")):
         snaps = snapshots_from_dataset(load_dataset(Path(path)))[:300]
         sym_snaps.append((sym, snaps))
     res = cost_envelope_per_tier(sym_snaps, tbl, BaselineConfig(real_funding=False),

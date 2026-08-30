@@ -93,13 +93,16 @@ def test_break_even_absent_when_gross_edge_below_spread():
 
 
 def test_break_even_absent_on_real_history_even_at_zero_scalable_cost():
-    """Honest real-data result: over stored public ETHUSDT 1m history the assumed
-    per-trade spread dominates the gross edge, so even at zero taker/slippage/
-    funding cost the zero-cost net is NEGATIVE. No break-even exists and the
-    selection gate stays blocked. This is a MEASUREMENT FACT about the strategy,
-    not a market verdict, and must never be flipped into a go-live claim."""
+    """Honest real-shaped result over a committed, deterministic public-history
+    fixture (``tests/fixtures/ETHUSDT_1m.json`` — no egress, stable across runs):
+    the assumed per-trade spread dominates the gross edge, so even at zero
+    taker/slippage/funding cost the zero-cost net is NEGATIVE. No break-even
+    exists and the selection gate stays blocked. This is a MEASUREMENT FACT about
+    the strategy, not a market verdict, and must never be flipped into a go-live
+    claim. Using a committed fixture keeps the assertion deterministic instead of
+    depending on a git-ignored live corpus that drifts over time."""
     cfg = BaselineConfig(real_funding=False)
-    snapshots = snapshots_from_dataset(load_dataset(Path("data/history/ETHUSDT_1m.json")))
+    snapshots = snapshots_from_dataset(load_dataset(Path("tests/fixtures/ETHUSDT_1m.json")))
 
     res = break_even_fee_bps(snapshots, cfg)
     assert res["has_break_even"] is False
