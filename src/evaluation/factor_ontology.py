@@ -94,3 +94,30 @@ def all_categories(registry: "object") -> set[str]:
         if cat in _PRESENT:
             seen.add(cat)
     return seen
+
+
+def list_factors(category: str) -> tuple[str, ...]:
+    """Return the concrete factors enumerated under a canonical category.
+
+    Fail-closed: an unknown category raises ``FactorOntologyError`` rather than
+    returning an empty/default list.
+    """
+    cat = normalize_category(category)
+    return FACTOR_CATEGORIES[cat]
+
+
+def validate_factor(category: str, factor: str) -> str:
+    """Return ``factor`` if it is a member of the given canonical category.
+
+    Fail-closed: an unknown category raises ``FactorOntologyError``, and a factor
+    that is listed under a *different* category is rejected (never coerced or
+    aliased into the requested category). This makes each concrete factor
+    first-class and challengeable per directive sec. 3.
+    """
+    cat = normalize_category(category)
+    if factor not in FACTOR_CATEGORIES[cat]:
+        raise FactorOntologyError(
+            f"factor {factor!r} is not a member of category {cat!r}"
+        )
+    return factor
+

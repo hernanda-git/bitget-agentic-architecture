@@ -12,6 +12,8 @@ from src.evaluation.factor_ontology import (
     FactorOntologyError,
     normalize_category,
     coverage_summary,
+    list_factors,
+    validate_factor,
 )
 from src.evaluation.hypotheses import Hypothesis, HypothesisRegistry
 
@@ -112,3 +114,38 @@ def test_coverage_gate_turns_ready_only_when_all_seven_represented():
     assert summary["unrepresented_count"] == 0
     assert summary["represented_categories"] == sorted(DIRECTIVE_CATEGORIES)
     assert summary["promotion_ready"] is True
+
+
+def test_list_factors_returns_members_of_a_known_category():
+    # The concrete factors enumerated under a category must be retrievable,
+    # supporting the sec.3 "challenge/prune" mandate on individual factors.
+    members = list_factors("onchain")
+    assert "MVRV_NUPL" in members
+    assert "exchange_in_out_flows" in members
+    assert len(members) >= 1
+
+
+def test_list_factors_rejects_unknown_category():
+    # Unknown categories fail closed rather than returning an empty/default list.
+    with pytest.raises(FactorOntologyError):
+        list_factors("not_a_real_category")
+
+
+def test_validate_factor_accepts_known_factor_in_its_category():
+    # A factor that genuinely belongs to a category is accepted and returned.
+    assert validate_factor("onchain", "MVRV_NUPL") == "MVRV_NUPL"
+    assert validate_factor("derivatives_microstructure", "perp_funding") == "perp_funding"
+
+
+def test_validate_factor_rejects_factor_not_in_category():
+    # A factor listed under a DIFFERENT category must be rejected for this one
+    # (never coerced/aliased into the requested category).
+    with pytest.raises(FactorOntologyError):
+        validate_factor("onchain", "perp_funding")
+    with pytest.raises(FactorOntologyError):
+        validate_factor("derivatives_microstructure", "MVRV_NUPL")
+
+
+def test_validate_factor_rejects_unknown_category():
+    with pytest.raises(FactorOntologyError):
+        validate_factor("not_a_real_category", "anything")
