@@ -465,9 +465,13 @@ def snapshots_from_dataset(dataset: HistoryDataset, window: int = 30,
         bid = mark * (1 - half)
         ask = mark * (1 + half)
         observed = candle.source_ts_ms  # decide at bar close; candle ts <= observed
-        # Funding is charged only on the bar at/after an actual funding settlement,
-        # using the real settlement rate. Charging on every bar would overstate
-        # funding by the number of bars between settlements (~480x for 1m vs 8h).
+        # Realistic Bitget funding: a settlement rate is attached to the first snapshot
+        # on or after each funding record's time, so the replay accrues funding exactly
+        # once per settlement (via the shared funding model when the bar timestamp is a
+        # real 8h boundary) instead of overstating it on every bar. A snapshot between
+        # settlements carries no funding rate and accrues nothing. The exchange's
+        # conservative per-bar proxy remains the fallback for synthetic fixtures whose
+        # bar timestamps are not settlement-aligned.
         funding_rate: float | None = None
         while fi < len(funding_sorted) and funding_sorted[fi].funding_time_ms <= observed:
             funding_rate = funding_sorted[fi].funding_rate

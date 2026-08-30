@@ -26,6 +26,7 @@ from src.evaluation.funding_model import (  # noqa: E402
     is_settlement_timestamp,
     position_funding,
     reconcile_funding_legs,
+    settlement_funding_leg,
     settlement_timestamps_in_range,
 )
 
@@ -125,3 +126,23 @@ def test_funding_leg_is_dataclass_with_all_fields():
     leg = FundingLeg(ts_ms=EIGHT_HOURS_MS, rate=0.0001, mark=100.0, paid=0.01, received=0.0)
     assert leg.ts_ms == EIGHT_HOURS_MS
     assert leg.paid == 0.01
+
+
+def test_settlement_funding_leg_matches_position_funding_direction():
+    # The per-leg helper must produce the same (paid, received) as the full
+    # position_funding accrual at a single settlement, so the exchange can
+    # delegate every accrual to the model and stay behavior-bounded.
+    paid, received = settlement_funding_leg("BUY", 2.0, 50.0, 0.0001)
+    assert paid == pytest.approx(2.0 * 50.0 * 0.0001)
+    assert received == pytest.approx(0.0)
+    # Negative rate flips for a long (receives).
+    paid_n, received_n = settlement_funding_leg("BUY", 2.0, 50.0, -0.0001)
+    assert paid_n == pytest.approx(0.0)
+    assert received_n == pytest.approx(2.0 * 50.0 * 0.0001)
+    # Short is the mirror.
+    s_paid, s_received = settlement_funding_leg("SELL", 2.0, 50.0, 0.0001)
+    assert s_paid == pytest.approx(0.0)
+    assert s_received == pytest.approx(2.0 * 50.0 * 0.0001)
+    # Unknown side must raise, exactly like position_funding.
+    with pytest.raises(ValueError):
+        settlement_funding_leg("HOLD", 1.0, 100.0, 0.0001)

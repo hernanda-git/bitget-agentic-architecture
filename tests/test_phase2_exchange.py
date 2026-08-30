@@ -148,6 +148,56 @@ def test_closed_trade_includes_funding_accrued_while_position_was_open():
     assert trade["net_pnl"] == pytest.approx(9.9)
 
 
+def test_funding_accrues_one_realistic_leg_per_settlement():
+    """Phase 41: a settlement-aligned event uses the shared funding model and accrues
+    exactly one realistic leg, direction-aware. Two distinct settlements accrue two
+    legs (no collapse to a single charge)."""
+    exchange = FakeExchange(fee_bps=0)
+    exchange.submit_order(OrderRequest("open", "BTCUSDT", "BUY", 1.0, None))
+    exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=100.0, sequence=1,
+                    timestamp_ms=8 * 3600 * 1000, funding_rate=0.0001)
+    )
+    # Long pays the positive 8h rate once: 1.0 * 100.0 * 0.0001 = 0.01.
+    assert exchange.read_balance()["funding_paid"] == pytest.approx(0.01)
+    assert exchange.read_balance()["funding_received"] == pytest.approx(0.0)
+    # A second distinct settlement accrues a second leg (not a collapse to one).
+    exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=100.0, sequence=2,
+                    timestamp_ms=16 * 3600 * 1000, funding_rate=0.0001)
+    )
+    assert exchange.read_balance()["funding_paid"] == pytest.approx(0.02)
+
+
+def test_funding_non_settlement_event_uses_conservative_per_bar_proxy():
+    """Phase 41: synthetic fixtures whose bar timestamps are not settlement-aligned
+    still accrue via the conservative per-bar proxy (a fail-closed upper-bound stress
+    estimate), never silently dropping funding. This is the fallback, not the
+    settlement-accurate path used by real-history replay."""
+    exchange = FakeExchange(fee_bps=0)
+    exchange.submit_order(OrderRequest("open", "BTCUSDT", "BUY", 1.0, None))
+    exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=100.0, sequence=1,
+                    timestamp_ms=1 * 3600 * 1000, funding_rate=0.0001)
+    )
+    # Per-bar proxy: one charge of qty * mark * rate.
+    assert exchange.read_balance()["funding_paid"] == pytest.approx(0.01)
+    assert exchange.read_balance()["funding_received"] == pytest.approx(0.0)
+
+
+def test_funding_settlement_short_receives_positive_rate():
+    """Phase 41: short at a settlement with a positive rate receives (the mirror)."""
+    exchange = FakeExchange(fee_bps=0)
+    exchange.submit_order(OrderRequest("open", "BTCUSDT", "SELL", 2.0, None))
+    exchange.apply_market_event(
+        MarketEvent("BTCUSDT", bid=99.0, ask=101.0, mark=50.0, sequence=1,
+                    timestamp_ms=8 * 3600 * 1000, funding_rate=0.0001)
+    )
+    # Short receives the positive rate: 2.0 * 50.0 * 0.0001 = 0.01 credited.
+    assert exchange.read_balance()["funding_paid"] == pytest.approx(0.0)
+    assert exchange.read_balance()["funding_received"] == pytest.approx(0.01)
+
+
 def test_accounting_includes_fees_funding_slippage_and_return_on_margin():
     result = calculate_trade(side="BUY", quantity=1, entry_price=100, exit_price=110,
                              entry_fee=0.05, exit_fee=0.055, funding_paid=0.1,

@@ -109,3 +109,25 @@ def reconcile_funding_legs(legs: List[FundingLeg]) -> float:
     reported position funding, closing the reconciliation loop on the realistic model.
     """
     return sum(leg.paid for leg in legs) - sum(leg.received for leg in legs)
+
+
+def settlement_funding_leg(side: str, quantity: float, mark: float, rate: float) -> Tuple[float, float]:
+    """One 8h settlement's ``(paid, received)`` for a single position, direction-aware.
+
+    This is the per-leg mirror of ``position_funding``'s inner math, exposed so the
+    paper exchange can delegate each settlement accrual to the same model instead of
+    re-implementing the direction rule. Longs pay a positive rate (shorts receive it);
+    shorts pay a negative rate (longs receive it). Funding is never a per-bar charge.
+
+    Raises ``ValueError`` for an unknown side, exactly like ``position_funding``.
+    """
+    if side not in _VALID_SIDES:
+        raise ValueError(f"funding side must be one of {_VALID_SIDES}, got {side!r}")
+    value = quantity * mark * rate
+    if side == "BUY":
+        paid = max(value, 0.0)
+        received = max(-value, 0.0)
+    else:  # SELL
+        paid = max(-value, 0.0)
+        received = max(value, 0.0)
+    return paid, received

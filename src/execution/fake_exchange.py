@@ -5,6 +5,25 @@ from enum import Enum
 from typing import Any
 from src.accounting.pnl import calculate_trade
 from src.execution.specifications import FeeSchedule, FundingSchedule, VenueSpecification, VenueRuleError
+from src.evaluation.funding_model import is_settlement_timestamp, settlement_funding_leg
+
+
+def _per_bar_funding(side: str, quantity: float, mark: float, rate: float) -> tuple[float, float]:
+    """Conservative per-bar funding proxy (direction-aware).
+
+    Used only when a market event is NOT at a real 8h settlement boundary (e.g. the
+    synthetic ``real_funding=False`` stress path, whose swap-stress proxy deliberately
+    overstates funding as a conservative upper bound). The settlement-accurate path
+    (``apply_funding_settlement``) uses the shared funding model instead. Kept as a
+    separate helper so the two accrual paths can be tested and mutated independently.
+    """
+    if side == "BUY":
+        paid = max(quantity * mark * rate, 0.0)
+        received = max(-quantity * mark * rate, 0.0)
+    else:
+        received = max(quantity * mark * rate, 0.0)
+        paid = max(-quantity * mark * rate, 0.0)
+    return paid, received
 
 class OrderStatus(str, Enum):
     NEW="NEW"; PARTIALLY_FILLED="PARTIALLY_FILLED"; FILLED="FILLED"; CANCEL_REQUESTED="CANCEL_REQUESTED"; CANCELLED="CANCELLED"; REJECTED="REJECTED"; EXPIRED="EXPIRED"
@@ -194,6 +213,24 @@ class FakeExchange:
         position = self.positions[symbol]
         self.positions[symbol] = replace(position, stop_loss=stop_loss, take_profit=take_profit)
 
+    def apply_funding_settlement(self, symbol: str, mark: float, rate: float) -> None:
+        """Accrue funding at one real 8h Bitget settlement using the shared model.
+
+        Delegates the direction-aware (paid, received) math to
+        ``settlement_funding_leg`` so the exchange cannot drift from
+        ``position_funding``'s verified behavior. Only call this when the event
+        timestamp is an actual settlement boundary (see ``apply_market_event``).
+        """
+        for p in self.read_positions(symbol):
+            paid, received = settlement_funding_leg(p.side, p.quantity, mark, rate)
+            self._funding_paid += paid
+            self._funding_received += received
+            self.positions[symbol] = replace(
+                p,
+                funding_paid=p.funding_paid + paid,
+                funding_received=p.funding_received + received,
+            )
+
     def close_position_at_end_of_replay(self, symbol: str, final_mark: float, client_order_id: str) -> FakeOrder:
         """Close the remaining paper position at the final executable quote."""
         position = self.positions.get(symbol)
@@ -211,21 +248,27 @@ class FakeExchange:
         self._last_sequence[event.symbol] = event.sequence
         self.market_prices[event.symbol] = (event.bid, event.ask, event.mark)
         if event.funding_rate:
-            for p in self.read_positions(event.symbol):
-                value = p.quantity * event.mark * event.funding_rate
-                if p.side == "BUY":
-                    paid = max(value, 0.0)
-                    received = max(-value, 0.0)
-                else:
-                    received = max(value, 0.0)
-                    paid = max(-value, 0.0)
-                self._funding_paid += paid
-                self._funding_received += received
-                self.positions[event.symbol] = replace(
-                    p,
-                    funding_paid=p.funding_paid + paid,
-                    funding_received=p.funding_received + received,
-                )
+            # Realistic Bitget funding accrual: funding settles only at the venue's
+            # 8h UTC boundaries. When the event timestamp is an actual settlement,
+            # delegate the direction-aware accrual to the shared funding model so the
+            # accounting matches `position_funding` exactly (one leg, no per-bar proxy).
+            # A non-settlement timestamp (e.g. a synthetic replay bar with no real
+            # settlement time, or the conservative real_funding=False stress path)
+            # keeps the flat per-bar proxy as a conservative upper bound. The model
+            # is the source of truth for settlement-accurate cost; the proxy is a
+            # stress over-estimate that can never be smaller than the real venue bill.
+            if is_settlement_timestamp(event.timestamp_ms):
+                self.apply_funding_settlement(event.symbol, event.mark, event.funding_rate)
+            else:
+                for p in self.read_positions(event.symbol):
+                    paid, received = _per_bar_funding(p.side, p.quantity, event.mark, event.funding_rate)
+                    self._funding_paid += paid
+                    self._funding_received += received
+                    self.positions[event.symbol] = replace(
+                        p,
+                        funding_paid=p.funding_paid + paid,
+                        funding_received=p.funding_received + received,
+                    )
         events = []
         for oid, order in list(self.orders.items()):
             if order.symbol != event.symbol or order.status not in {OrderStatus.NEW, OrderStatus.PARTIALLY_FILLED}: continue
