@@ -60,7 +60,10 @@ continuously extend, challenge, and prune:
   the other millions of bots.
 
 You don't assume omniscience — you *operate as if* you own the full expert map, then
-prove or update each factor against data.
+prove or update each factor against data. The canonical, machine-readable mirror of
+this ontology lives in `src/evaluation/factor_ontology.py`; every hypothesis in the
+registry (`src/evaluation/hypotheses.py`) is bound to one of these categories, and
+`coverage_summary()` makes blind spots in the factor map fail-closed against promotion.
 
 ---
 

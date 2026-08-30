@@ -32,7 +32,8 @@ def test_hypothesis_registry_requires_independent_reproducible_fields():
     registry = HypothesisRegistry()
     hypothesis = Hypothesis(
         hypothesis_id="H-001", title="Trend persistence", mechanism="momentum persists",
-        data="offline candle history", features=("momentum",), entry_exit="enter on breakout; exit at stop/target",
+        data="offline candle history", features=("momentum",), category="time_structure",
+        entry_exit="enter on breakout; exit at stop/target",
         cost_edge="move exceeds fees, spread and slippage", falsification="negative net PnL OOS",
         failure_modes="chop and stale data", data_exclusions="duplicates and incomplete windows",
         oos_gate="walk-forward positive net PnL with minimum sample",
