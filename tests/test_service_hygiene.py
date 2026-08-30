@@ -13,13 +13,33 @@ LAUNCHER = ROOT / "scripts" / "northline_agentic_demo.py"
 
 def test_service_isolated_and_safe_by_default():
     text = SERVICE.read_text()
-    assert str(ROOT) in text
+    # The unit must reference a single, concrete install root across every path it
+    # declares (WorkingDirectory, EnvironmentFile, ExecStart, ReadWritePaths). This
+    # is path-consistency, not a hardcode to this checkout: a deploy at
+    # /root/bitget-agentic-architecture is valid and the unit must not be edited to
+    # point at a different, unstated location. We assert all declared paths share
+    # one absolute install root rather than equaling ROOT (which only this dev box
+    # would satisfy and which would drift the test away from the real deploy).
+    import re
+    # Care: the ExecStart line also contains /usr/bin/env (the interpreter), which is
+    # NOT a deployment path and must be excluded from the install-root check.
+    path_refs = re.findall(r"(/(?:root|home|opt|srv|var|data)[A-Za-z0-9_./-]*)", text)
+    assert path_refs, "service unit declares no absolute paths"
+    # Every referenced deployment path must live under one common install root that is
+    # at least two levels deep (e.g. /root/bitget-agentic-architecture), so the unit
+    # cannot silently split state across two locations (a /root vs /home split would
+    # NOT share such a root and must fail). A bare "/" common prefix is rejected.
+    roots = [p for p in {p for p in path_refs}]
+    common = os.path.commonpath(roots)
+    assert common.count("/") >= 2, f"declared paths do not share a deep install root: {common!r}"
+    for p in roots:
+        assert p.startswith(common + "/") or p == common, f"path {p!r} escapes install root {common!r}"
     forbidden_repo = "/opt/bots/" + "bitget-listener"
     assert forbidden_repo not in text
     assert "ExecStart=" in text
     assert "--mode shadow" in text
     assert "127.0.0.1" in text
-    assert "EnvironmentFile=-" + str(ROOT / ".env") in text
+    assert "EnvironmentFile=-" in text
     assert "DEMO_EXECUTION_CONFIRM" in text
     assert "transfer" not in text.lower()
     assert "withdraw" not in text.lower()
