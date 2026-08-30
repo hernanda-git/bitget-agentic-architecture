@@ -1,0 +1,1 @@
+{"baseline_negative": true, "commit": "d55026a", "error": "", "failed": 0, "notes": "", "passed": 638, "phase": "Phase 46", "promotion_blocked": true, "pushed": true, "recorded_at": "2025-08-30T16:45:00+00:00", "recorded_at_ms": 1756572300000, "skipped": 4, "summary": "first-class factor validation in the ontology (TDD, fail-closed)", "tick_id": "manual-2026-08-30T16:45Z"}

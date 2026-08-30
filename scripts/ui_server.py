@@ -13,6 +13,7 @@ if __package__ in (None, ""):
     sys.path.insert(0, str(ROOT))
 from src.ledger.sqlite import EventLedger
 from src.policy.breakers import BreakerRegistry, BreakerStore
+from scripts.heartbeat_status import assemble_status, DEFAULT_STATE_DIR
 
 PRODUCT = "SUSDT-FUTURES"
 LEDGER_PATH = ROOT / "data" / "paper.sqlite3"
@@ -170,6 +171,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self._json({"ok": True, "mode": "demo-readonly", "product_type": PRODUCT, "writable": False})
         if path == "/api/state":
             return self._json(ledger_state())
+        if path == "/api/heartbeat":
+            return self._json(assemble_status(DEFAULT_STATE_DIR))
         return super().do_GET()
 
     def _json(self, obj, status=200):
