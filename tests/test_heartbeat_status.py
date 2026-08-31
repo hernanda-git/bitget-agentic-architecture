@@ -90,3 +90,67 @@ def test_derive_next_run_is_next_six_hour_boundary():
     # Just after a boundary (18:01) -> next is 00:00 next day.
     nxt2 = derive_next_run(_dt.datetime(2026, 8, 30, 18, 1, 0, tzinfo=_dt.timezone.utc))
     assert nxt2 == _dt.datetime(2026, 8, 31, 0, 0, 0, tzinfo=_dt.timezone.utc)
+
+
+# Phase 50: corpus freshness must surface on the observability dashboard so a
+# stale blessed corpus is VISIBLE and can park heavy evaluation work fail-closed
+# (directive §7 + §11). The observation itself lives in
+# src/evaluation/corpus_staleness (Phase 49, mutation-verified); here we wire it
+# into assemble_status and keep the fail-closed guarantee intact.
+NOW = 1_700_000_000_000  # epoch-ms in ~2023, keeps fetched_at_ms a positive int.
+
+
+def test_corpus_freshness_missing_reported_stale_fail_closed(tmp_path: Path):
+    from scripts.heartbeat_status import _corpus_freshness
+    rep = _corpus_freshness(tmp_path / "absent", now_ms=NOW)
+    assert rep["present"] is False
+    assert rep["stale"] is True
+    assert rep["reason"] == "no_fresh_corpus"
+
+
+def test_corpus_freshness_fresh_and_stale(tmp_path: Path):
+    from scripts.heartbeat_status import _corpus_freshness
+
+    fresh = tmp_path / "fresh"
+    fresh.mkdir()
+    (fresh / "BTCUSDT_1m.json").write_text(
+        json.dumps({"symbol": "BTCUSDT", "fetched_at_ms": NOW - 1000}))
+    rep = _corpus_freshness(fresh, now_ms=NOW)
+    assert rep["present"] is True
+    assert rep["stale"] is False
+    assert rep["reason"] == "fresh"
+
+    old = NOW - (8 * 24 * 3600 * 1000)  # 8 days -> beyond the 7-day policy.
+    stale = tmp_path / "stale"
+    stale.mkdir()
+    (stale / "BTCUSDT_1m.json").write_text(
+        json.dumps({"symbol": "BTCUSDT", "fetched_at_ms": old}))
+    rep2 = _corpus_freshness(stale, now_ms=NOW)
+    assert rep2["present"] is True
+    assert rep2["stale"] is True
+    assert rep2["reason"] == "stale"
+
+
+def test_corpus_freshness_unavailable_falls_back_fail_closed(monkeypatch, tmp_path_factory):
+    # If the observation itself raises, we cannot prove freshness -> fail closed.
+    from scripts.heartbeat_status import _corpus_freshness
+
+    def _boom(*_a, **_k):
+        raise RuntimeError("observation failed")
+    monkeypatch.setattr(
+        "scripts.heartbeat_status.evaluate_corpus_freshness", _boom)
+    rep = _corpus_freshness(tmp_path_factory.mktemp("corpus"), now_ms=NOW)
+    assert rep["present"] is False
+    assert rep["stale"] is True
+    assert rep["reason"] == "unavailable"
+
+
+def test_assemble_status_surfaces_corpus_freshness(tmp_path: Path):
+    from scripts.heartbeat_status import assemble_status
+    status = assemble_status(tmp_path)
+    assert "corpus_freshness" in status
+    cf = status["corpus_freshness"]
+    assert isinstance(cf, dict)
+    for key in ("present", "datasets", "newest_ms", "oldest_ms", "max_age_ms",
+                "stale", "reason", "fresh_ms"):
+        assert key in cf, f"missing corpus_freshness key: {key}"

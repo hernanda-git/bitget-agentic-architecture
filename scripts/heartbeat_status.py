@@ -12,12 +12,19 @@ from __future__ import annotations
 import datetime as _dt
 import json
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from src.evaluation.corpus_staleness import (
+    DEFAULT_MAX_AGE_MS,
+    evaluate_corpus_freshness,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_STATE_DIR = REPO_ROOT / "data" / "heartbeat"
+DEFAULT_CORPUS_DIR = REPO_ROOT / "data" / "history"
 SCHEDULE_CRON = "0 */6 * * *"  # matches cron job d4a8919dc60c
 
 # Fields a tick record may carry. Anything outside this set is dropped so a
@@ -168,6 +175,26 @@ def _resource_guard() -> dict:
         return {"ok": False, "error": f"unavailable: {exc}"}
 
 
+def _corpus_freshness(corpus_dir: Any, *, now_ms: int | None = None) -> dict:
+    """Public-history corpus freshness as a plain dict for the dashboard.
+
+    Delegates to ``evaluate_corpus_freshness`` (Phase 49, mutation-verified) and
+    keeps its fail-closed guarantee: if the observation itself raises we cannot
+    prove freshness, so we report ``stale`` rather than invent "fresh".
+    """
+    if now_ms is None:
+        now_ms = int(time.time() * 1000)
+    try:
+        result = evaluate_corpus_freshness(corpus_dir, now_ms=now_ms)
+        return result.as_dict()
+    except Exception:
+        return {
+            "present": False, "datasets": 0, "newest_ms": None, "oldest_ms": None,
+            "max_age_ms": DEFAULT_MAX_AGE_MS, "stale": True,
+            "reason": "unavailable", "fresh_ms": None,
+        }
+
+
 def derive_next_run(now: _dt.datetime, every_hours: int = 6) -> _dt.datetime:
     """Next future boundary of the form HH:00 where HH % every_hours == 0."""
     if now.tzinfo is None:
@@ -201,6 +228,7 @@ def assemble_status(state_dir: Path = DEFAULT_STATE_DIR) -> dict:
         "phase_reports": _phase_reports(),
         "factor_ontology": _factor_ontology(),
         "resource_guard": _resource_guard(),
+        "corpus_freshness": _corpus_freshness(DEFAULT_CORPUS_DIR),
         "constraints": {
             "shadow_only": True,
             "never_live": True,
