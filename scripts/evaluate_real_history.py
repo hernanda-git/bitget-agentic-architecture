@@ -227,6 +227,15 @@ def main() -> int:
         )
         return 3
 
+    # Fail-closed: park heavy evaluation when the blessed corpus is stale
+    # (directive §11 automation contract). We cannot run trustworthy
+    # evaluation on a stale corpus, so we park rather than produce a
+    # questionable result.
+    from scripts.heartbeat_status import assemble_status, should_park_heavy_work
+    if should_park_heavy_work(assemble_status()):
+        print("CORPUS_STALE_PARKED: corpus freshness stale; heavy evaluation parked fail-closed", file=sys.stderr)
+        return 8
+
     class _NoBudget:
         def __enter__(self):
             return self

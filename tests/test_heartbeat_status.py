@@ -154,3 +154,52 @@ def test_assemble_status_surfaces_corpus_freshness(tmp_path: Path):
     for key in ("present", "datasets", "newest_ms", "oldest_ms", "max_age_ms",
                 "stale", "reason", "fresh_ms"):
         assert key in cf, f"missing corpus_freshness key: {key}"
+
+
+# Phase 51: a consumer that acts on corpus_freshness.stale to park heavy
+# evaluation work fail-closed (directive §11 automation contract). When
+# the blessed corpus is stale we cannot run trustworthy evaluation, so
+# we park it rather than produce a questionable result.
+NOW = 1_700_000_000_000
+
+
+def test_should_park_returns_true_when_corpus_stale():
+    from scripts.heartbeat_status import should_park_heavy_work
+    status = {
+        "corpus_freshness": {
+            "present": True, "datasets": 3, "stale": True,
+            "reason": "stale", "fresh_ms": None,
+        },
+    }
+    assert should_park_heavy_work(status) is True
+
+
+def test_should_park_returns_false_when_corpus_fresh():
+    from scripts.heartbeat_status import should_park_heavy_work
+    status = {
+        "corpus_freshness": {
+            "present": True, "datasets": 3, "stale": False,
+            "reason": "fresh", "fresh_ms": 1000,
+        },
+    }
+    assert should_park_heavy_work(status) is False
+
+
+def test_should_park_returns_true_when_corpus_unavailable():
+    from scripts.heartbeat_status import should_park_heavy_work
+    # Observation itself raised -> we reported stale=True with reason="unavailable"
+    status = {
+        "corpus_freshness": {
+            "present": False, "datasets": 0, "stale": True,
+            "reason": "unavailable", "fresh_ms": None,
+        },
+    }
+    assert should_park_heavy_work(status) is True
+
+
+def test_should_park_fail_closed_on_malformed_status():
+    from scripts.heartbeat_status import should_park_heavy_work
+    # Missing key, empty dict, None -> cannot prove safe -> park (fail closed)
+    assert should_park_heavy_work({}) is True
+    assert should_park_heavy_work({"corpus_freshness": {}}) is True
+    assert should_park_heavy_work(None) is True

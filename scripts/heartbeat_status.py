@@ -237,3 +237,22 @@ def assemble_status(state_dir: Path = DEFAULT_STATE_DIR) -> dict:
             "honesty_gate": "promotion blocked while baseline negative",
         },
     }
+
+
+def should_park_heavy_work(status: dict | None) -> bool:
+    """Return True when heavy evaluation work should be parked fail-closed.
+
+    Parks when the blessed-history corpus is stale (or the status is
+    malformed/missing). We cannot run trustworthy evaluation on a stale
+    corpus, so we park rather than produce a questionable result.
+    Fail-closed: an unknown/unreadable status always parks.
+    """
+    if status is None:
+        return True
+    try:
+        cf = status["corpus_freshness"]
+        if not isinstance(cf, dict):
+            return True
+        return bool(cf.get("stale", True))
+    except (KeyError, TypeError):
+        return True

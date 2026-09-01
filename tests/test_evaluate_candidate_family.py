@@ -203,3 +203,23 @@ def test_evaluate_candidate_family_aborts_fail_closed_when_budget_breaches(negat
     # The breach aborted the scan before replaying the remaining candidates.
     assert calls["baseline"] == 1
     assert budget.calls == 2
+
+
+def test_evaluate_candidate_family_parks_when_corpus_stale(monkeypatch):
+    """Fail-closed: main() returns exit code 8 when corpus freshness is stale."""
+    from scripts.evaluate_candidate_family import main
+
+    stale_status = {
+        "corpus_freshness": {
+            "present": True, "datasets": 3, "stale": True,
+            "reason": "stale", "fresh_ms": None,
+        },
+    }
+    monkeypatch.setattr(
+        "scripts.heartbeat_status.assemble_status", lambda: stale_status
+    )
+    monkeypatch.setattr(
+        "sys.argv", ["evaluate_candidate_family.py", "--symbol", "BTCUSDT:1m:2000"]
+    )
+    result = main()
+    assert result == 8
