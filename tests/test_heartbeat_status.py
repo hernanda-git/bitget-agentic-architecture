@@ -227,3 +227,50 @@ def test_factor_ontology_dashboard_shows_default_hypotheses_coverage(tmp_path: P
     assert fo["promotion_ready"] == expected["promotion_ready"]
     assert fo["promotion_ready"] is True
     assert fo["note"] != "Static registry here is empty; the documentation registry (docs/STRATEGY_HYPOTHESES.md) lists the candidate hypotheses."
+
+# Phase 53: the cron entrypoint (assemble_status) must expose
+# should_park_heavy_work so the dashboard can see when heavy
+# evaluation is parked fail-closed (directive sec. 11 automation contract).
+NOW = 1_700_000_000_000
+
+
+def test_assemble_status_includes_should_park_heavy_work(tmp_path: Path):
+    from scripts.heartbeat_status import assemble_status, record_tick, should_park_heavy_work
+    record_tick(tmp_path, tick_id="x", phase="Phase 53", summary="ok", passed=671, failed=0, skipped=4,
+                baseline_negative=True, commit="abc", pushed=True)
+    status = assemble_status(tmp_path)
+    assert "should_park_heavy_work" in status
+    assert status["should_park_heavy_work"] == should_park_heavy_work(status)
+
+
+def test_assemble_status_should_park_true_when_corpus_stale(tmp_path: Path, monkeypatch):
+    from scripts.heartbeat_status import assemble_status, record_tick
+    record_tick(tmp_path, tick_id="x", phase="Phase 53", summary="ok", passed=671, failed=0, skipped=4,
+                baseline_negative=True, commit="abc", pushed=True)
+    monkeypatch.setattr("scripts.heartbeat_status._corpus_freshness",
+                        lambda *a, **kw: {"present": True, "datasets": 3, "stale": True,
+                                          "reason": "stale", "fresh_ms": None})
+    status = assemble_status(tmp_path)
+    assert status["should_park_heavy_work"] is True
+
+
+def test_assemble_status_should_park_false_when_corpus_fresh(tmp_path: Path, monkeypatch):
+    from scripts.heartbeat_status import assemble_status, record_tick
+    record_tick(tmp_path, tick_id="x", phase="Phase 53", summary="ok", passed=671, failed=0, skipped=4,
+                baseline_negative=True, commit="abc", pushed=True)
+    monkeypatch.setattr("scripts.heartbeat_status._corpus_freshness",
+                        lambda *a, **kw: {"present": True, "datasets": 3, "stale": False,
+                                          "reason": "fresh", "fresh_ms": 1000})
+    status = assemble_status(tmp_path)
+    assert status["should_park_heavy_work"] is False
+
+
+def test_assemble_status_should_park_fail_closed_on_missing_key(tmp_path: Path, monkeypatch):
+    from scripts.heartbeat_status import assemble_status, record_tick
+    record_tick(tmp_path, tick_id="x", phase="Phase 53", summary="ok", passed=671, failed=0, skipped=4,
+                baseline_negative=True, commit="abc", pushed=True)
+    monkeypatch.setattr("scripts.heartbeat_status._corpus_freshness",
+                        lambda *a, **kw: {"present": False, "datasets": 0, "stale": True,
+                                          "reason": "unavailable", "fresh_ms": None})
+    status = assemble_status(tmp_path)
+    assert status["should_park_heavy_work"] is True

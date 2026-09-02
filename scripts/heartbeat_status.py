@@ -213,7 +213,7 @@ def assemble_status(state_dir: Path = DEFAULT_STATE_DIR) -> dict:
             last = json.loads(last_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             last = None
-    return {
+    status = {
         "mode": "readonly-observability",
         "generated_at": _iso(int(_dt.datetime.now(tz=_dt.timezone.utc).timestamp() * 1000)),
         "schedule_cron": SCHEDULE_CRON,
@@ -234,6 +234,8 @@ def assemble_status(state_dir: Path = DEFAULT_STATE_DIR) -> dict:
             "honesty_gate": "promotion blocked while baseline negative",
         },
     }
+    status["should_park_heavy_work"] = should_park_heavy_work(status)
+    return status
 
 
 def should_park_heavy_work(status: dict | None) -> bool:
