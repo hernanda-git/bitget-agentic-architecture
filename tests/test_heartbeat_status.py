@@ -203,3 +203,27 @@ def test_should_park_fail_closed_on_malformed_status():
     assert should_park_heavy_work({}) is True
     assert should_park_heavy_work({"corpus_freshness": {}}) is True
     assert should_park_heavy_work(None) is True
+
+
+# Phase 52: the dashboard must truthfully reflect the documented hypothesis
+# registry so unrepresented categories are visible (directive §3 + §11).
+# Previously _factor_ontology() used an empty HypothesisRegistry, reporting
+# represented_count=0 even though DEFAULT_HYPOTHESES covers all seven categories.
+NOW = 1_700_000_000_000
+
+
+def test_factor_ontology_dashboard_shows_default_hypotheses_coverage(tmp_path: Path):
+    from scripts.heartbeat_status import assemble_status
+    from src.evaluation.hypotheses import DEFAULT_HYPOTHESES
+    from src.evaluation.factor_ontology import coverage_summary
+    record_tick(tmp_path, tick_id="x", phase="Phase 52", summary="ok", passed=670, failed=0, skipped=4,
+                baseline_negative=True, commit="abc", pushed=True)
+    status = assemble_status(tmp_path)
+    fo = status["factor_ontology"]
+    expected = coverage_summary(DEFAULT_HYPOTHESES)
+    assert fo["represented_count"] == expected["represented_count"]
+    assert fo["unrepresented_count"] == expected["unrepresented_count"]
+    assert fo["unrepresented_categories"] == expected["unrepresented_categories"]
+    assert fo["promotion_ready"] == expected["promotion_ready"]
+    assert fo["promotion_ready"] is True
+    assert fo["note"] != "Static registry here is empty; the documentation registry (docs/STRATEGY_HYPOTHESES.md) lists the candidate hypotheses."

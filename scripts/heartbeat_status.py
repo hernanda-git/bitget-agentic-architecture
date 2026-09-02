@@ -148,20 +148,17 @@ def _phase_reports() -> dict:
 def _factor_ontology() -> dict:
     try:
         from src.evaluation.factor_ontology import FACTOR_CATEGORIES, coverage_summary
-        from src.evaluation.hypotheses import HypothesisRegistry
-        reg = HypothesisRegistry()
-        # The auditable registry is currently only populated at runtime; we report
-        # the canonical ontology + that no hypotheses are loaded into the static
-        # registry here (the doc registry is the human-readable source of truth).
-        cov = coverage_summary(reg)
+        from src.evaluation.hypotheses import DEFAULT_HYPOTHESES
+        cov = coverage_summary(DEFAULT_HYPOTHESES)
         return {
             "categories": {k: list(v) for k, v in FACTOR_CATEGORIES.items()},
             "category_count": len(FACTOR_CATEGORIES),
             "represented_count": cov["represented_count"],
+            "unrepresented_count": cov["unrepresented_count"],
             "unrepresented_categories": cov["unrepresented_categories"],
             "promotion_ready": cov["promotion_ready"],
-            "note": "Static registry here is empty; the documentation registry "
-                    "(docs/STRATEGY_HYPOTHESES.md) lists the candidate hypotheses.",
+            "note": "Coverage reflects DEFAULT_HYPOTHESES (docs/STRATEGY_HYPOTHESES.md) "
+                    "populated with documented candidate hypotheses.",
         }
     except Exception as exc:  # fail-closed: never invent ontology state
         return {"error": f"unavailable: {exc}"}
