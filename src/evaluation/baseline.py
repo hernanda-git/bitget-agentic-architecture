@@ -482,12 +482,18 @@ def evaluate_candidate_family(candidates: Iterable, config: BaselineConfig = Bas
             resource_budget.assert_within()
         baseline = run_baseline(snapshots, config)
         wf = run_walk_forward(snapshots, config)
+        # Robustness confidence intervals must use only trades closed inside
+        # chronological OOS windows. Full-replay baseline.trade_pnls includes
+        # train/context trades and would contaminate the OOS evidence.
+        oos_trade_pnls = tuple(
+            float(pnl) for row in wf for pnl in row.get("trade_pnls", ())
+        )
         gate = gate_walk_forward_robustness(
-            wf, trade_pnls=baseline.trade_pnls,
+            wf, trade_pnls=oos_trade_pnls,
             min_closed_trades=min_closed_trades, confidence=confidence, seed=seed,
         )
         per_candidate.append({"name": name, **gate})
-        tests.append({"rows": wf, "trade_pnls": baseline.trade_pnls})
+        tests.append({"rows": wf, "trade_pnls": oos_trade_pnls})
     family = family_wise_robustness(tests, alpha=1.0 - confidence)
     # Family-level adequate-sample gate: a multi-symbol scan must not read as
     # "robust" if any member lacks an adequate sample. A lone well-sampled
