@@ -2,7 +2,7 @@ from __future__ import annotations
 import math
 from statistics import mean, pstdev
 from src.features.registry import FeatureValue, feature
-from src.market.models import MarketSnapshot
+from src.market.models import Candle, MarketSnapshot
 
 
 def _candles(snapshot: MarketSnapshot):
@@ -85,4 +85,57 @@ def build_features(snapshot: MarketSnapshot) -> dict[str, FeatureValue]:
         "open_interest": add_v2("open_interest", float(snapshot.open_interest or 0.0), {"source": "snapshot"}),
         "open_interest_change": add_v2("open_interest_change", 0.0, {"source": "unavailable_without_history"}),
     })
+
+    # ---- Order-flow / depth proxy features (v2) ----
+    # Close-location value: where the close sits within the bar range.
+    # 1.0 = close at high (bullish intrabar pressure), 0.0 = close at low, 0.5 = midpoint.
+    last = candles[-1]
+    rng = last.high - last.low
+    clv = (last.close - last.low) / rng if rng > 0 else 0.5
+
+    # Volume pressure: directional pressure combining CLV deviation from midpoint
+    # with volume anomaly. Sign tracks CLV - 0.5 so bullish position => positive.
+    vol_mult = 1.0 + (volume_zscore if math.isfinite(volume_zscore) else 0.0)
+    volume_pressure = (clv - 0.5) * vol_mult
+
+    # Market impact proxy: body-to-range ratio. Positive = bullish body
+    # (close above open), negative = bearish body.
+    body = last.close - last.open
+    market_impact_proxy = body / rng if rng > 0 else 0.0
+
+    # Spread proxy: observed top-of-book spread in bps from the snapshot.
+    spread_proxy = float(snapshot.spread_bps)
+
+    result.update({
+        "close_location_value": add_v2("close_location_value", clv, {"source": "candle_geometry"}),
+        "volume_pressure": add_v2("volume_pressure", volume_pressure, {"source": "candle_geometry_volume"}),
+        "market_impact_proxy": add_v2("market_impact_proxy", market_impact_proxy, {"source": "candle_geometry"}),
+        "spread_proxy": add_v2("spread_proxy", spread_proxy, {"source": "observed_spread"}),
+    })
+
     return result
+
+
+def make_holding_period_labels(closes: list[float], period: int,
+                                symbol: str = "BTCUSDT",
+                                start_ts_ms: int = 0) -> list[dict]:
+    """Create forward-return labels over a configurable holding period.
+
+    Each label is the return from bar ``i`` to bar ``i + period``:
+    ``closes[i + period] / closes[i] - 1``. Labels whose exit index
+    exceeds the available history are dropped so no future information
+    leaks into the current-step feature set.
+    """
+    if period <= 0:
+        raise ValueError("holding period must be positive")
+    if len(closes) <= period:
+        return []
+    labels = []
+    for i in range(len(closes) - period):
+        labels.append({
+            "forward_return": closes[i + period] / closes[i] - 1,
+            "entry_ts_ms": start_ts_ms + i * 60_000,
+            "exit_ts_ms": start_ts_ms + (i + period) * 60_000,
+            "symbol": symbol,
+        })
+    return labels
