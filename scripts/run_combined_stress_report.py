@@ -108,6 +108,9 @@ def evaluate_one(symbol: str, granularity: str) -> dict:
 
 
 def main() -> int:
+    from scripts.heartbeat_status import assemble_status, should_park_heavy_work
+    if should_park_heavy_work(assemble_status()):
+        return 8
     results = [evaluate_one(s, g) for s, g in DATASETS]
     all_pass = all(r["invariant_all_pass"] for r in results)
     payload = {
