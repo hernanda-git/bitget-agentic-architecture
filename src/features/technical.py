@@ -1,23 +1,88 @@
 from __future__ import annotations
+import math
+from statistics import mean, pstdev
 from src.features.registry import FeatureValue, feature
 from src.market.models import MarketSnapshot
 
+
+def _candles(snapshot: MarketSnapshot):
+    return tuple(snapshot.candles or snapshot.candles_by_window.get("1m", ()))
+
+
 def _closes(snapshot: MarketSnapshot) -> list[float]:
-    return [c.close for c in (snapshot.candles or snapshot.candles_by_window.get("1m", ()))]
+    return [c.close for c in _candles(snapshot)]
+
 
 def build_features(snapshot: MarketSnapshot) -> dict[str, FeatureValue]:
-    closes = _closes(snapshot)
+    """Build causal technical and market-context features.
+
+    Existing v1 primitives are retained for compatibility. New v2 features are
+    deliberately conservative: they use only candles present in this snapshot,
+    preserve snapshot provenance, and represent unavailable optional inputs as
+    neutral zero values rather than inventing observations.
+    """
+    candles = _candles(snapshot)
+    closes = [c.close for c in candles]
     if not closes:
         raise ValueError("features require candles")
+
     def add(name: str, value: float, parameters: dict) -> FeatureValue:
-        return feature(name, value, snapshot.snapshot_hash or snapshot.computed_hash(), snapshot.source_ts_ms, parameters)
+        return feature(name, value, snapshot.snapshot_hash or snapshot.computed_hash(),
+                       snapshot.source_ts_ms, parameters)
+
+    def add_v2(name: str, value: float, parameters: dict) -> FeatureValue:
+        return feature(name, value, snapshot.snapshot_hash or snapshot.computed_hash(),
+                       snapshot.source_ts_ms, parameters, version="technical-v2")
+
     window = min(3, len(closes))
     sma = sum(closes[-window:]) / window
-    returns = [(closes[i] / closes[i-1]) - 1 for i in range(1, len(closes))]
-    volatility = (sum((x - sum(returns[-window:]) / window) ** 2 for x in returns[-window:]) / window) ** 0.5 if returns else 0.0
+    returns = [(closes[i] / closes[i - 1]) - 1 for i in range(1, len(closes))]
+    recent_returns = returns[-window:]
+    avg_return = sum(recent_returns) / window if recent_returns else 0.0
+    volatility = (sum((x - avg_return) ** 2 for x in recent_returns) / window) ** 0.5 if returns else 0.0
     momentum = closes[-1] - closes[max(0, len(closes) - window)]
-    high = max(c.high for c in (snapshot.candles or snapshot.candles_by_window.get("1m", ())))
-    low = min(c.low for c in (snapshot.candles or snapshot.candles_by_window.get("1m", ())))
-    return {"sma": add("sma", sma, {"window": window}), "volatility": add("volatility", volatility, {"window": window}),
-            "momentum": add("momentum", momentum, {"window": window}), "range_high": add("range_high", high, {"window": len(closes)}),
-            "range_low": add("range_low", low, {"window": len(closes)})}
+    high = max(c.high for c in candles)
+    low = min(c.low for c in candles)
+
+    result = {
+        "sma": add("sma", sma, {"window": window}),
+        "volatility": add("volatility", volatility, {"window": window}),
+        "momentum": add("momentum", momentum, {"window": window}),
+        "range_high": add("range_high", high, {"window": len(closes)}),
+        "range_low": add("range_low", low, {"window": len(closes)}),
+    }
+
+    # Causal returns: return_3 falls back to the oldest available close when
+    # fewer than four candles exist; no future candle can enter the calculation.
+    return_1 = closes[-1] / closes[-2] - 1 if len(closes) >= 2 else 0.0
+    base_3 = closes[-4] if len(closes) >= 4 else closes[0]
+    return_3 = closes[-1] / base_3 - 1 if base_3 else 0.0
+
+    true_ranges = []
+    for i, candle in enumerate(candles):
+        previous_close = candles[i - 1].close if i else candle.open
+        true_ranges.append(max(candle.high - candle.low,
+                               abs(candle.high - previous_close),
+                               abs(candle.low - previous_close)))
+    atr_window = min(14, len(true_ranges))
+    atr = mean(true_ranges[-atr_window:]) if true_ranges else 0.0
+
+    volumes = [c.volume for c in candles]
+    volume_window = volumes[-min(20, len(volumes)):]
+    volume_mean = mean(volume_window) if volume_window else 0.0
+    volume_std = pstdev(volume_window) if len(volume_window) > 1 else 0.0
+    volume_zscore = ((volumes[-1] - volume_mean) / volume_std
+                     if volume_std > 0 and math.isfinite(volume_std) else 0.0)
+
+    # A single snapshot has no historical OI series. Returning zero for change
+    # is explicit "unavailable", not an inferred trend.
+    result.update({
+        "return_1": add_v2("return_1", return_1, {"lookback": 1}),
+        "return_3": add_v2("return_3", return_3, {"lookback": 3}),
+        "atr": add_v2("atr", atr, {"window": atr_window}),
+        "volume_zscore": add_v2("volume_zscore", volume_zscore, {"window": len(volume_window)}),
+        "funding_rate": add_v2("funding_rate", float(snapshot.funding_rate or 0.0), {"source": "snapshot"}),
+        "open_interest": add_v2("open_interest", float(snapshot.open_interest or 0.0), {"source": "snapshot"}),
+        "open_interest_change": add_v2("open_interest_change", 0.0, {"source": "unavailable_without_history"}),
+    })
+    return result
