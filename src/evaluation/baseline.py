@@ -8,6 +8,7 @@ from src.evaluation.statistics import bootstrap_ci
 from src.execution.fake_exchange import CloseReason, FakeExchange, OrderRequest
 from src.simulation.events import MarketEvent
 from src.strategies.base import CostAssumptions
+from src.strategies.funding_basis import generate_funding_basis
 from src.strategies.mean_reversion import generate_mean_reversion
 from src.strategies.regime import Regime, classify_regime
 from src.strategies.trend_continuation import generate_trend_continuation
@@ -111,6 +112,7 @@ ALL_STRATEGIES = (
     ("trend_continuation", generate_trend_continuation),
     ("mean_reversion", generate_mean_reversion),
     ("volatility_breakout", generate_volatility_breakout),
+    ("funding_basis", generate_funding_basis),
 )
 
 def _replay_funding_rate(snapshot, funding_bps: float) -> float:

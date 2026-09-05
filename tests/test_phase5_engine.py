@@ -97,7 +97,7 @@ def test_baseline_replay_is_reproducible_and_negative_gate_is_explicit():
     assert result.protection_attachments == result.closed_trades
     assert result.reconciliation_checks == 0
     assert result.fees >= 0 and result.funding >= 0
-    assert set(result.strategy_breakdown) == {"trend_continuation", "mean_reversion", "volatility_breakout"}
+    assert set(result.strategy_breakdown) == {"trend_continuation", "mean_reversion", "volatility_breakout", "funding_basis"}
     assert result.promotion_allowed is False
     assert result.promotion_reason in {"NEGATIVE_NET_PNL", "INCONCLUSIVE_NO_CLOSED_TRADES"}
     assert all(split["train_end"] < split["test_start"] for split in result.walk_forward_splits)
@@ -131,7 +131,7 @@ def test_walk_forward_evaluation_has_disjoint_embargoed_test_windows():
     assert all(item["context_start"] == 0 for item in evaluation)
     assert all(item["context_end"] == item["test_start"] - 1 for item in evaluation)
     assert all(item["test_snapshots"] == 10 for item in evaluation)
-    assert all(set(item["strategy_breakdown"]) == {"trend_continuation", "mean_reversion", "volatility_breakout"}
+    assert all(set(item["strategy_breakdown"]) == {"trend_continuation", "mean_reversion", "volatility_breakout", "funding_basis"}
                for item in evaluation)
 
 

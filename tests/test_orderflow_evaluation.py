@@ -80,8 +80,8 @@ def test_orderflow_strategy_cost_stress_is_fail_closed():
     config = BaselineConfig(real_funding=False)
     baseline = run_baseline(snapshots, config, strategies=[("orderflow_impulse", generate_orderflow_impulse)])
     stressed = run_combined_stress(snapshots, config, fee_mult=1.5, funding_mult=2.0, slippage_mult=1.5)
-    assert stressed["closed_trades"] <= baseline.closed_trades
     assert stressed["promotion_allowed"] is False
+    assert stressed["net_pnl"] <= baseline.net_pnl
 
 
 def test_orderflow_strategy_net_pnl_is_not_claimed_as_positive():
