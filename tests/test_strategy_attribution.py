@@ -22,12 +22,13 @@ from src.evaluation.baseline import (
     summarize_walk_forward,
 )
 from scripts.run_strategy_baseline import make_series
+from src.strategies.funding_basis import generate_funding_basis
 from src.strategies.mean_reversion import generate_mean_reversion
 from src.strategies.trend_continuation import generate_trend_continuation
 from src.strategies.volatility_breakout import generate_volatility_breakout
 
 
-STRATEGY_NAMES = ("trend_continuation", "mean_reversion", "volatility_breakout")
+STRATEGY_NAMES = ("trend_continuation", "mean_reversion", "volatility_breakout", "funding_basis")
 
 
 def _manual_attribution(series, name, generator):
